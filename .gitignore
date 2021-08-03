@@ -1,4 +1,5 @@
 .env
 __pycache__/
 update/
-storage/
+storage/temp/
+storage/settings/

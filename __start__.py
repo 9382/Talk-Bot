@@ -12,3 +12,5 @@ while True:
 		print("main imported successfully - running...")
 		client.run(auth)
 	print("Checking for updates for client...")
+	for i in os.listdir('update'):
+		print(i)

@@ -4,6 +4,7 @@ from datetime import datetime
 from mutagen.mp3 import MP3 #May remove since header funny on TTS generation
 from PIL import Image,ImageDraw,ImageFont,ImageChops
 import re as regex
+import traceback
 import requests
 import asyncio
 import discord
@@ -12,6 +13,7 @@ import random
 import math
 import json
 import time
+import sys
 import os
 import io
 def exists(table,value): #Wanna reduce the try except spam checking for possible values
@@ -20,6 +22,12 @@ def exists(table,value): #Wanna reduce the try except spam checking for possible
         return True
     except:
         return False
+def tempFile():
+    name = "storage/temp/"+str(time.time())+".txt"
+    open(name,"x")
+    return name
+def currentDate():
+    return str(datetime.fromtimestamp(math.floor(time.time()))) #Long function list be like
 fromdict = discord.Embed.from_dict
 numRegex = regex.compile('\d+')
 colours = {'info':0x5555DD,'error':0xFF0000,'success':0x00FF00,'warning':0xFFAA00,'plain':0xAAAAAA}
@@ -38,6 +46,8 @@ nsfwBlockedTerms = {830176881005297714:["loli","shota","gore","cub","young","chi
 async def filterMessage(msg,forceFilter=False): #Main filter handler, just await it with msg var to filter it
     if exists(loggedMessages,msg): #If already queued for deletion
         return True
+    if not exists(wordBlockList,msg.guild.id): #on_ready causing on_error loop, gonna try catch with this. Why it isnt already catching idfk
+        wordBlockList[msg.guild.id] = {}
     for i in wordBlockList[msg.guild.id]:
         if not wordBlockList[msg.guild.id][i]:
             continue
@@ -51,17 +61,43 @@ async def filterMessage(msg,forceFilter=False): #Main filter handler, just await
                     print("[Filter] Embed Title Filtered:",embed.title,'|->',i)
                     loggedMessages[msg] = time.time()+wordBlockList[msg.guild.id][i]
                     return True
+            except:
+                pass
+            try:
                 if embed.description.lower().find(i) != -1:
                     print("[Filter] Embed Description Filtered:",embed.description,'|->',i)
                     loggedMessages[msg] = time.time()+wordBlockList[msg.guild.id][i]
                     return True
             except:
                 pass
+
 client = commands.Bot(command_prefix='##',help_command=None,intents=discord.Intents(guilds=True,messages=True,guild_messages=True,members=True,voice_states=True))
+logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932}
+@client.event
+async def on_error(error,*args,**kwargs):
+    print("[Fatal Error] Causing command:",args[0].content,"error:")
+    traceback.print_exc(file=sys.stderr)
+    try: #Notifying of error
+        args[0].channel.send(embed=fromdict({'title':'Fatal Error','description':'A fatal error has occured and has been automatically reported to the creator','color':colours['error']}))
+    except Exception as exc:
+        print("[Fatal Error] Failed to alert the user of the fail:",exc)
+    try: #Logging
+        errorFile = tempFile()
+        file = open(errorFile,"w")
+        traceback.print_exc(file=file)
+        file.close()
+        await client.get_channel(logChannels['errors']).send("Error in client\nTime: "+currentDate()+"\nCausing command: "+args[0].content,file=discord.File(errorFile))
+        os.remove(errorFile)
+    except Exception as exc:
+        print("[Fatal Error] Failed to log:",exc)
 @client.event
 async def on_ready():
     await client.change_presence(activity=discord.Game(name='##cmds'))
     print('connected v'+discord.__version__)
+    try: #Notifying of error
+        await client.get_channel(logChannels['boot-ups']).send("Ive connected at "+currentDate())
+    except:
+        pass
 devCommands = {} #Only for me - basically dev testing
 adminCommands = {} #This will take priority over user commands should a naming conflict exist
 userCommands = {}
@@ -277,10 +313,10 @@ async def cmdList(msg,args): #just handles itself and its lovely
             if not (commandGroup in allGroups):
                 allGroups.append(commandGroup)
                 allGroupsText += "\n`"+commandGroup+"`"
-        await msg.channel.send(embed=fromdict({'title':'Select command list','description':'Please select a command subsection from this list:'+allGroupsText,'color':colours['info']}),delete_after=60)
+        await msg.channel.send(embed=fromdict({'title':'Select command list','description':'Please select a command subsection from this list:'+allGroupsText,'color':colours['info']}))
         return
     else:
-        cmdList = (isAdmin and args[1] == "admin" and adminCommands) or args[1]
+        cmdList = (args[1] == "admin" and adminCommands) or args[1]
     if type(cmdList) == str: #Not the adminCommands table, gotta base off group
         cmdList = {}
         for command in userCommands:
@@ -298,7 +334,7 @@ async def cmdList(msg,args): #just handles itself and its lovely
             argRequired = commandInfo['i'][argName]
             argMessageContent += " "+((argRequired and f"<{argName}>") or f"[{argName}]")
         cmdMessageContent += "\n`"+command+argMessageContent+"` - "+commandInfo['d']
-    await msg.channel.send(embed=fromdict({'title':'Command List','description':cmdMessageContent,'color':colours['info']}),delete_after=120)
+    await msg.channel.send(embed=fromdict({'title':'Command List','description':cmdMessageContent,'color':colours['info']}))
 addCommand(["commands","cmds"],cmdList,1,"List all commands",{"section":False},None,"general")
 
 async def filterTagList(msg,tagList):
@@ -356,7 +392,7 @@ async def getPostList(msg,sitetype,tags):
         loaded = json.loads(postList)
         for i in loaded:
             if not exists(i,"id"):
-                continue #Somehow posts without an ID can appear????
+                continue #Somehow posts without an ID can appear?? probs requirements
             postInfo = {}
             postInfo["postPage"] = "https://danbooru.donmai.us/posts/"+str(i["id"])
             postInfo["fileURL"] = i["file_url"]
