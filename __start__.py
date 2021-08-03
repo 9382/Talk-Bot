@@ -1,7 +1,7 @@
 from time import sleep
 from dotenv import dotenv_values
 import os
-auths = dotenv_values()
+auth = dotenv_values()['BOTAUTH']
 while True:
 	print("Starting client.run")
 	try:
@@ -10,5 +10,5 @@ while True:
 		print("[!] Import error for client:",exc)
 	else:
 		print("main imported successfully - running...")
-		client.run(botauth)
+		client.run(auth)
 	print("Checking for updates for client...")
