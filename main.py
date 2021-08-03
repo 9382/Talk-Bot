@@ -692,5 +692,3 @@ async def imageComp(msg,args):
     await msg.channel.send(targetUser.name+' in a box',file=discord.File(fileName))
     os.remove(fileName)
 addCommand("imaget",imageComp,0,"",{},None,"dev")
-
-return client
