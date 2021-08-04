@@ -586,18 +586,6 @@ async def publicVote(msg,args):
                 pass #User input sanitasion cause some guys gonna go [haha]
 addCommand("vote",publicVote,10,"Make a public vote about anything with an optional image",{"text":True,"imagefile":False},None,"general")
 
-async def forceEmbedTest(msg,args):
-    totalStr = ""
-    for i in args:
-        if i != "##d_embedtest":
-            totalStr += i + " "
-    await msg.channel.send("Dev",embed=fromdict({'title':'Dev','description':totalStr}))
-addCommand("d_embedtest",forceEmbedTest,0,"",{},None,"dev")
-async def printArgs(msg,args):
-    print(args)
-    await msg.channel.send(str(args))
-addCommand("d_argtest",printArgs,0,"",{},None,"dev")
-
 import deathbattle as db
 async def deathBattle(msg,args):
     u2 = exists(args,1) and numRegex.search(args[1]) and msg.guild.get_member(int(numRegex.search(args[1]).group()))
