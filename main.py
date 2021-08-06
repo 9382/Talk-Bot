@@ -622,14 +622,21 @@ addCommand("deathbattle",deathBattle,1,"Fight someone to the death!",{"@user":Fa
 
 async def presetAudioTest(msg,args):
     if msg.author.voice:
-        if not exists(args,1):
-            args.insert(1,"sigma")
-        file = "storage/temp/"+args[1]+".mp3"
-        vc = await msg.author.voice.channel.connect() #Join
-        vc.play(await discord.FFmpegOpusAudio.from_probe(file)) #Audio
-        audio = MP3(file)
-        await asyncio.sleep(audio.info.length+1)
-        await vc.disconnect()
+        try:
+            if not exists(args,1):
+                args.insert(1,"sigma")
+            file = "storage/temp/"+args[1]+".mp3"
+            vc = await msg.author.voice.channel.connect() #Join
+            vc.play(await discord.FFmpegOpusAudio.from_probe(file)) #Audio
+            audio = MP3(file)
+            await asyncio.sleep(audio.info.length+1)
+            await vc.disconnect()
+        except Exception as exc:
+            await msg.channel.send("It fucked up, idk\n",exc)
+            try:
+                vc.disconnect()
+            except:
+                pass
     else:
         pass
 addCommand("presetaudio",presetAudioTest,0,"",{},None,"dev")
