@@ -78,7 +78,7 @@ async def on_error(error,*args,**kwargs):
     print("[Fatal Error] Causing command:",args[0].content,"error:")
     traceback.print_exc(file=sys.stderr)
     try: #Notifying of error
-        args[0].channel.send(embed=fromdict({'title':'Fatal Error','description':'A fatal error has occured and has been automatically reported to the creator','color':colours['error']}))
+        await args[0].channel.send(embed=fromdict({'title':'Fatal Error','description':'A fatal error has occured and has been automatically reported to the creator','color':colours['error']}))
     except Exception as exc:
         print("[Fatal Error] Failed to alert the user of the fail:",exc)
     try: #Logging
@@ -654,6 +654,7 @@ async def speakTTS(msg,args):
         handlingTTS = True
         while len(ttsQueue) > 0:
             try:
+                vc = await msg.author.voice.channel.connect() #Join
                 dialouge = ttsQueue.pop(0)
                 ttsObject = pyttsx3.init()
                 fileName = "tts_dialouge_"+str(time.time())+".mp3"
@@ -661,7 +662,7 @@ async def speakTTS(msg,args):
                 ttsObject.setProperty('rate',80)
                 ttsObject.save_to_file(dialouge,fileName)
                 ttsObject.runAndWait()
-                vc = await msg.author.voice.channel.connect() #Join
+                await asyncio.sleep(.5)
                 vc.play(await discord.FFmpegOpusAudio.from_probe(fileName)) #Audio
                 await asyncio.sleep(len(msg.content)/20+1)
                 await vc.disconnect()
@@ -677,7 +678,8 @@ async def speakTTS(msg,args):
                     await vc.disconnect()
                 except:
                     pass
-addCommand("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"dev")
+        handlingTTS = False
+addCommand("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"general")
 
 def createScore(n1,n2):
     return 100-((n1+n2)%100)
