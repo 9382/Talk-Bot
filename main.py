@@ -22,8 +22,8 @@ def exists(table,value): #Wanna reduce the try except spam checking for possible
         return True
     except:
         return False
-def tempFile():
-    name = "storage/temp/"+str(time.time())+".txt"
+def tempFile(extension="txt"):
+    name = "storage/temp/"+str(time.time())+"."+extension
     open(name,"x")
     return name
 def currentDate():
@@ -622,14 +622,17 @@ addCommand("deathbattle",deathBattle,1,"Fight someone to the death!",{"@user":Fa
 
 async def presetAudioTest(msg,args):
     if msg.author.voice:
-        await msg.channel.send('[DEV] Ok gonna try in ur vc')
+        if not exists(args,1):
+            args[1] == "sigma.mp3"
+        file = "storage/temp/"+args[1]
+        # await msg.channel.send('[DEV] Ok gonna try in ur vc')
         vc = await msg.author.voice.channel.connect() #Join
-        vc.play(await discord.FFmpegOpusAudio.from_probe("sigma.mp3")) #Audio
-        audio = MP3("sigma.mp3")
+        vc.play(await discord.FFmpegOpusAudio.from_probe(file)) #Audio
+        audio = MP3(file)
         await asyncio.sleep(audio.info.length+2)
         await vc.disconnect()
     else:
-        await msg.channel.send('[DEV] Get in a VC before trying that idiot')
+        pass# await msg.channel.send('[DEV] Get in a VC before trying that idiot')
 addCommand("presetaudio",presetAudioTest,0,"",{},None,"dev")
 
 ttsQueue = []
@@ -657,16 +660,20 @@ async def speakTTS(msg,args):
                 vc = await msg.author.voice.channel.connect() #Join
                 dialouge = ttsQueue.pop(0)
                 ttsObject = pyttsx3.init()
-                fileName = "tts_dialouge_"+str(time.time())+".mp3"
+                fileName = tempFile("mp3")
                 ttsObject.setProperty("voice",ttsObject.getProperty('voices')[0].id)
-                ttsObject.setProperty('rate',80)
+                ttsObject.setProperty('rate',120)
                 ttsObject.save_to_file(dialouge,fileName)
                 ttsObject.runAndWait()
-                await asyncio.sleep(.5)
                 vc.play(await discord.FFmpegOpusAudio.from_probe(fileName)) #Audio
-                await asyncio.sleep(len(msg.content)/20+1)
-                await vc.disconnect()
-                os.remove(fileName)
+                await asyncio.sleep(MP3(fileName))
+                while True:
+                    try:
+                        os.remove(fileName)
+                    except:
+                        pass
+                    else:
+                        break
             except Exception as exc:
                 handlingTTS = False
                 print("[TTS] Something failed:",exc)
@@ -679,6 +686,10 @@ async def speakTTS(msg,args):
                 except:
                     pass
         handlingTTS = False
+        try:
+            await vc.disconnect()
+        except:
+            pass
 addCommand("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"general")
 
 def createScore(n1,n2):
