@@ -623,16 +623,15 @@ addCommand("deathbattle",deathBattle,1,"Fight someone to the death!",{"@user":Fa
 async def presetAudioTest(msg,args):
     if msg.author.voice:
         if not exists(args,1):
-            args[1] == "sigma.mp3"
-        file = "storage/temp/"+args[1]
-        # await msg.channel.send('[DEV] Ok gonna try in ur vc')
+            args.insert(1,"sigma")
+        file = "storage/temp/"+args[1]+".mp3"
         vc = await msg.author.voice.channel.connect() #Join
         vc.play(await discord.FFmpegOpusAudio.from_probe(file)) #Audio
         audio = MP3(file)
-        await asyncio.sleep(audio.info.length+2)
+        await asyncio.sleep(audio.info.length+1)
         await vc.disconnect()
     else:
-        pass# await msg.channel.send('[DEV] Get in a VC before trying that idiot')
+        pass
 addCommand("presetaudio",presetAudioTest,0,"",{},None,"dev")
 
 ttsQueue = []
