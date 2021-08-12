@@ -72,6 +72,7 @@ async def filterMessage(msg,forceFilter=False): #Main filter handler, just await
                 pass
 
 client = commands.Bot(command_prefix='##',help_command=None,intents=discord.Intents(guilds=True,messages=True,guild_messages=True,members=True,voice_states=True))
+#Note that due to the on_message handler, i cant use the regular @bot.event shit, so custom handler it is
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932}
 @client.event
 async def on_error(error,*args,**kwargs):
