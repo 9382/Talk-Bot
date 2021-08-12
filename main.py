@@ -33,11 +33,11 @@ numRegex = regex.compile('\d+')
 colours = {'info':0x5555DD,'error':0xFF0000,'success':0x00FF00,'warning':0xFFAA00,'plain':0xAAAAAA}
 #Add saving to files here, when i can be bloody bothered to deal with THAT
 #To be fair, it honestly wont be that bad, i just like feeling like itll be hard because im an idiot
-wordBlockList = {}#830176881005297714:{"nigger":3600,"fag":3600,"faggot":3600,"nigga":3600}}
+wordBlockList = {}
 loggedMessages = {}
-channelList = {}#830176881005297714:{"message-log":172800,"pit-of-hell":129600,"nsfw-bot":129600}}
+channelList = {}
 queuedChannels = {}
-nsfwBlockedTerms = {}#830176881005297714:["loli","shota","gore","cub","young","child","bestiality","beastiality","zoophilia","disembodied","severed","blood","disembodied_limb"]}
+nsfwBlockedTerms = {}
 async def filterMessage(msg,forceFilter=False): #Main filter handler, just await it with msg var to filter it
     if exists(loggedMessages,msg): #If already queued for deletion
         return True
@@ -338,6 +338,9 @@ addCommand("d_forcedelete",forcedelete,0,"",None,None,"dev")
 
 async def forceExit(msg,args):
     print("Client was force-exited",time.time())
+    print("Invoking save")
+    await updateConfigFiles()
+    print("Save finished")
     await client.close()
 addCommand("d_forceupdate",forceExit,0,"",None,None,"dev")
 
