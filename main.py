@@ -33,16 +33,11 @@ numRegex = regex.compile('\d+')
 colours = {'info':0x5555DD,'error':0xFF0000,'success':0x00FF00,'warning':0xFFAA00,'plain':0xAAAAAA}
 #Add saving to files here, when i can be bloody bothered to deal with THAT
 #To be fair, it honestly wont be that bad, i just like feeling like itll be hard because im an idiot
-wordBlockList = {830176881005297714:{"nigger":3600,"fag":3600,"faggot":3600,"nigga":3600}}
+wordBlockList = {}#830176881005297714:{"nigger":3600,"fag":3600,"faggot":3600,"nigga":3600}}
 loggedMessages = {}
-channelList = {830176881005297714:{"message-log":172800,"pit-of-hell":129600,"nsfw-bot":129600}}
+channelList = {}#830176881005297714:{"message-log":172800,"pit-of-hell":129600,"nsfw-bot":129600}}
 queuedChannels = {}
-for guild in channelList:
-    for i in channelList[guild]:
-        if not exists(queuedChannels,guild):
-            queuedChannels[guild] = {}
-        queuedChannels[guild][i] = time.time()+channelList[guild][i] #Wont work with move to multi-server. So get fixing, lazy
-nsfwBlockedTerms = {830176881005297714:["loli","shota","gore","cub","young","child","bestiality","beastiality","zoophilia","disembodied","severed","blood","disembodied_limb"]}
+nsfwBlockedTerms = {}#830176881005297714:["loli","shota","gore","cub","young","child","bestiality","beastiality","zoophilia","disembodied","severed","blood","disembodied_limb"]}
 async def filterMessage(msg,forceFilter=False): #Main filter handler, just await it with msg var to filter it
     if exists(loggedMessages,msg): #If already queued for deletion
         return True
@@ -82,7 +77,11 @@ client = commands.Bot(command_prefix='##',help_command=None,intents=discord.Inte
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932}
 @client.event
 async def on_error(error,*args,**kwargs):
-    print("[Fatal Error] Causing command:",args[0].content,"error:")
+    if exists(args,0):
+        causingCommand = args[0].content
+    else:
+        causingCommand = "<none>"
+    print("[Fatal Error] Causing command:",causingCommand,"error:")
     traceback.print_exc(file=sys.stderr)
     try: #Notifying of error
         await args[0].channel.send(embed=fromdict({'title':'Fatal Error','description':'A fatal error has occured and has been automatically reported to the creator','color':colours['error']}))
@@ -93,7 +92,7 @@ async def on_error(error,*args,**kwargs):
         file = open(errorFile,"w")
         traceback.print_exc(file=file)
         file.close()
-        await client.get_channel(logChannels['errors']).send("Error in client\nTime: "+currentDate()+"\nCausing command: "+args[0].content,file=discord.File(errorFile))
+        await client.get_channel(logChannels['errors']).send("Error in client\nTime: "+currentDate()+"\nCausing command: "+causingCommand,file=discord.File(errorFile))
         os.remove(errorFile)
     except Exception as exc:
         print("[Fatal Error] Failed to log:",exc)
@@ -101,7 +100,7 @@ async def on_error(error,*args,**kwargs):
 async def on_ready():
     await client.change_presence(activity=discord.Game(name='##cmds'))
     print('connected v'+discord.__version__)
-    try: #Notifying of error
+    try: #Notifying of start-up
         await client.get_channel(logChannels['boot-ups']).send("Ive connected at "+currentDate())
     except:
         pass
@@ -290,8 +289,35 @@ async def constantChannelCheck(): #For queued channel clearing
                             await cloneChannel(t.id)
     except Exception as exc:
         print("[!] ChannelClear Exception:",str(exc))
+@tasks.loop(seconds=60)
+async def updateConfigFiles(): #So i dont have pre-coded values
+    print("Updating config")
+    try:
+        for guild in client.guilds:
+            if not exists(wordBlockList,guild.id):
+                wordBlockList[guild.id] = {}
+            if not exists(channelList,guild.id):
+                channelList[guild.id] = {}
+            if not exists(nsfwBlockedTerms,guild.id):
+                nsfwBlockedTerms[guild.id] = []
+            fileName = 'storage/settings/'+str(guild.id)+".json"
+            backup = None
+            if os.path.isfile(fileName):
+                backup = open(fileName).read()
+            new = open(fileName,"w")
+            try:
+                new.write(json.dumps({"guild":guild.id,"wordBlockList":wordBlockList[guild.id],"channelList":channelList[guild.id],"nsfwBlockedTerms":nsfwBlockedTerms[guild.id]}))
+            except:
+                if backup:
+                    new.write(backup)
+                else:
+                    print("[!] UpdateConfig failed to write with no available backup -",fileName)
+            new.close()
+    except Exception as exc:
+        print("[!] UpdateConfig Exception:",str(exc))
 constantMessageCheck.start()
 constantChannelCheck.start()
+updateConfigFiles.start()
 
 async def d_exec(msg,args):
     try:
@@ -309,6 +335,11 @@ async def forcedelete(msg,args):
             print("Set",i.id,"to 0")
     print("Messages set for deletion, you are good to end the script in a few seconds")
 addCommand("d_forcedelete",forcedelete,0,"",None,None,"dev")
+
+async def forceExit(msg,args):
+    print("Client was force-exited",time.time())
+    await client.close()
+addCommand("d_forceupdate",forceExit,0,"",None,None,"dev")
 
 async def cmdList(msg,args): #just handles itself and its lovely
     isAdmin = msg.author.guild_permissions.administrator
@@ -625,7 +656,7 @@ async def deathBattle(msg,args):
     await dbMessage.edit(content=':anger: Death Battle!',embed=fromdict(
         {'author':{'name':u1.name+' is challenging '+u2.name},'description':description,'fields':[{'name':u1.name,'value':i.u1hp,'inline':True},{'name':u2.name,'value':i.u2hp,'inline':True}],'color':colours['info']}
     ))
-addCommand("deathbattle",deathBattle,1,"Fight someone to the death!",{"@user":False},None,"general")
+addCommand("deathbattle",deathBattle,1,"Fight someone to the death!",{"@user":False},None,"dev")
 
 async def presetAudioTest(msg,args):
     if msg.author.voice:
@@ -742,3 +773,25 @@ async def imageComp(msg,args):
     await msg.channel.send(targetUser.name+' in a box',file=discord.File(fileName))
     os.remove(fileName)
 addCommand("imaget",imageComp,0,"",{},None,"dev")
+
+async def why(msg,args):
+    print(wordBlockList)
+addCommand("ff",why,0,"",{},None,"dev")
+
+for i in os.listdir('storage/settings'):
+    j = json.loads(open('storage/settings/'+i).read())
+    guild = j['guild']
+    for type in j:
+        print(type)
+        if type == "wordBlockList":
+            wordBlockList[guild] = j[type]
+            print("set",j[type])
+        if type == "channelList":
+            channelList[guild] = j[type]
+        if type == "nsfwBlockedTerms":
+            nsfwBlockedTerms[guild] = j[type]
+    for i in channelList[guild]:
+        if not exists(queuedChannels,guild):
+            queuedChannels[guild] = {}
+        queuedChannels[guild][i] = time.time()+channelList[guild][i]
+print('loaded config')

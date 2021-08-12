@@ -8,6 +8,7 @@ try:
 	from main import client
 except ImportError as exc:
 	print("[!] Import error for client:",exc)
+	sleep(3)
 else:
 	print("main imported successfully - running...")
 	try:
