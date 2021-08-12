@@ -49,11 +49,17 @@ async def filterMessage(msg,forceFilter=False): #Main filter handler, just await
     if not exists(wordBlockList,msg.guild.id): #on_ready causing on_error loop, gonna try catch with this. Why it isnt already catching idfk
         wordBlockList[msg.guild.id] = {}
     for i in wordBlockList[msg.guild.id]:
-        if not wordBlockList[msg.guild.id][i]:
+        if wordBlockList[msg.guild.id][i] == None:
             continue
         if msg.content.lower().find(i) != -1 or forceFilter:
             print("[Filter] Msg Filtered:",msg.content,'|->',i)
-            loggedMessages[msg] = time.time()+wordBlockList[msg.guild.id][i]
+            if wordBlockList[msg.guild.id][i] > 0:
+                loggedMessages[msg] = time.time()+wordBlockList[msg.guild.id][i]
+            else:
+                try:
+                    await msg.delete()
+                except:
+                    loggedMessages[msg] = time.time()
             return True
         for embed in msg.embeds:
             try:
@@ -99,7 +105,7 @@ async def on_ready():
         await client.get_channel(logChannels['boot-ups']).send("Ive connected at "+currentDate())
     except:
         pass
-devCommands = {} #Only for me - basically dev testing
+devCommands = {} #basically testing and back-end commands
 adminCommands = {} #This will take priority over user commands should a naming conflict exist
 userCommands = {}
 def addCommand(command,function,ratelimit,description,descriptionArgs,extraInfo,group,descriptionReference=None): #function must be async and have msg,args
@@ -477,7 +483,7 @@ async def list_admin(msg,args):
     finalMessage = ""
     if args[1] == "words":
         for i in wordBlockList[msg.guild.id]:
-            if wordBlockList[msg.guild.id][i]:
+            if wordBlockList[msg.guild.id][i] != None:
                 index += 1
                 finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'" '+simplifySeconds(wordBlockList[msg.guild.id][i])
         await msg.channel.send(embed=fromdict({'title':'Blocked Word List','description':'List of banned words, and how long until the message gets deleted:'+finalMessage,'color':colours['info']}),delete_after=60)
