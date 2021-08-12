@@ -774,18 +774,12 @@ async def imageComp(msg,args):
     os.remove(fileName)
 addCommand("imaget",imageComp,0,"",{},None,"dev")
 
-async def why(msg,args):
-    print(wordBlockList)
-addCommand("ff",why,0,"",{},None,"dev")
-
 for i in os.listdir('storage/settings'):
     j = json.loads(open('storage/settings/'+i).read())
     guild = j['guild']
     for type in j:
-        print(type)
         if type == "wordBlockList":
             wordBlockList[guild] = j[type]
-            print("set",j[type])
         if type == "channelList":
             channelList[guild] = j[type]
         if type == "nsfwBlockedTerms":
