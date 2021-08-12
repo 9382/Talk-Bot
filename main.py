@@ -1,7 +1,7 @@
 from discord.ext import commands
 from discord.ext import tasks
 from datetime import datetime
-from mutagen.mp3 import MP3 #May remove since header funny on TTS generation
+# from mutagen.mp3 import MP3 #May remove since header funny on TTS generation
 from PIL import Image,ImageDraw,ImageFont,ImageChops
 import re as regex
 import traceback
@@ -291,7 +291,7 @@ async def constantChannelCheck(): #For queued channel clearing
         print("[!] ChannelClear Exception:",str(exc))
 @tasks.loop(seconds=60)
 async def updateConfigFiles(): #So i dont have pre-coded values
-    print("Updating config")
+    # print("Updating config")
     try:
         for guild in client.guilds:
             if not exists(wordBlockList,guild.id):
@@ -737,7 +737,7 @@ async def speakTTS(msg,args):
             await vc.disconnect()
         except:
             pass
-addCommand("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"general")
+addCommand("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"dev")
 
 def createScore(n1,n2):
     return 100-((n1+n2)%100)
@@ -780,13 +780,13 @@ addCommand("imaget",imageComp,0,"",{},None,"dev")
 for i in os.listdir('storage/settings'):
     j = json.loads(open('storage/settings/'+i).read())
     guild = j['guild']
-    for type in j:
-        if type == "wordBlockList":
-            wordBlockList[guild] = j[type]
-        if type == "channelList":
-            channelList[guild] = j[type]
-        if type == "nsfwBlockedTerms":
-            nsfwBlockedTerms[guild] = j[type]
+    for tableType in j:
+        if tableType == "wordBlockList":
+            wordBlockList[guild] = j[tableType]
+        if tableType == "channelList":
+            channelList[guild] = j[tableType]
+        if tableType == "nsfwBlockedTerms":
+            nsfwBlockedTerms[guild] = j[tableType]
     for i in channelList[guild]:
         if not exists(queuedChannels,guild):
             queuedChannels[guild] = {}
