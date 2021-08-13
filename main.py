@@ -31,8 +31,6 @@ def currentDate():
 fromdict = discord.Embed.from_dict
 numRegex = regex.compile('\d+')
 colours = {'info':0x5555DD,'error':0xFF0000,'success':0x00FF00,'warning':0xFFAA00,'plain':0xAAAAAA}
-#Add saving to files here, when i can be bloody bothered to deal with THAT
-#To be fair, it honestly wont be that bad, i just like feeling like itll be hard because im an idiot
 wordBlockList = {}
 loggedMessages = {}
 channelList = {}
