@@ -69,7 +69,6 @@ async def filterMessage(msg,forceFilter=False): #Main filter handler, just await
                     return True
             except:
                 pass
-
 client = commands.Bot(command_prefix='##',help_command=None,intents=discord.Intents(guilds=True,messages=True,guild_messages=True,members=True,voice_states=True))
 #Note that due to the on_message handler, i cant use the regular @bot.event shit, so custom handler it is
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932}
@@ -82,7 +81,7 @@ async def on_error(error,*args,**kwargs):
     print("[Fatal Error] Causing command:",causingCommand,"error:")
     traceback.print_exc(file=sys.stderr)
     try: #Notifying of error
-        await args[0].channel.send(embed=fromdict({'title':'Fatal Error','description':'A fatal error has occured and has been automatically reported to the creator','color':colours['error']}))
+        pass# await args[0].channel.send(embed=fromdict({'title':'Fatal Error','description':'A fatal error has occured and has been automatically reported to the creator','color':colours['error']}))
     except Exception as exc:
         print("[Fatal Error] Failed to alert the user of the fail:",exc)
     try: #Logging
@@ -172,6 +171,8 @@ async def on_message(msg):
             if await doTheCheck(msg,args,command,devCommands[command]):
                 return
     await filterMessage(msg)
+    if type(msg.author) == discord.User: #Webhook
+        return
     if msg.author.guild_permissions.administrator:
         for command in adminCommands:
             if await doTheCheck(msg,args,command,adminCommands[command]):
@@ -251,24 +252,46 @@ async def cloneChannel(channelid):
         return newchannel
     except Exception as exc:
         print("[CloneChannel] Exception:",str(exc))
-        return
+stopCycling = False
+finishedLastCycle = False
 @tasks.loop(seconds=1)
 async def constantMessageCheck(): #For message filter
+    global finishedLastCycle
+    if stopCycling:
+        finishedLastCycle = True
+        return
     try:
         toDeleteList = {}
         loggedMessagesCache = loggedMessages #If table size changes during calculations, it errors. Thats bad
         for i in loggedMessagesCache:
-            if loggedMessagesCache[i] and loggedMessagesCache[i] < time.time():
-                if not exists(toDeleteList,i.channel.id):
-                    toDeleteList[i.channel.id] = []
-                toDeleteList[i.channel.id].append(i)
-                loggedMessages[i] = None
+            if loggedMessagesCache[i]:
+                if type(i) == discord.Message or type(i) == discord.PartialMessage:
+                    if loggedMessagesCache[i] < time.time():
+                        if not exists(toDeleteList,i.channel.id):
+                            toDeleteList[i.channel.id] = []
+                        toDeleteList[i.channel.id].append(i)
+                        loggedMessages[i] = None
+                else:
+                    msgInfo = loggedMessagesCache[i]
+                    if not msgInfo["t"]: #IDEK how
+                        loggedMessages[i] = None
+                        continue
+                    msgInfo["c"] = int(msgInfo["c"]) #Dont ask, its to do with how it saved, ok?
+                    if msgInfo["t"] < time.time():
+                        channel = client.get_channel(msgInfo["c"])
+                        if channel:
+                            if not exists(toDeleteList,msgInfo["c"]):
+                                toDeleteList[msgInfo["c"]] = []
+                            partialMessage = discord.PartialMessage(channel=channel,id=i)
+                            if partialMessage:
+                                toDeleteList[msgInfo["c"]].append(partialMessage)
+                                loggedMessages[i] = None
         if toDeleteList != {}:
             for channel in toDeleteList:
                 try:
                     await client.get_channel(channel).delete_messages(toDeleteList[channel])
                 except Exception as exc:
-                    print("[?] BulkDelete Exception:",exc)
+                    print("[?] BulkDelete",exc)
     except Exception as exc:
         print("[LoggedMessages] Exception:",exc)
 @tasks.loop(seconds=10)
@@ -287,7 +310,7 @@ async def constantChannelCheck(): #For queued channel clearing
                             await cloneChannel(t.id)
     except Exception as exc:
         print("[!] ChannelClear Exception:",str(exc))
-@tasks.loop(seconds=60)
+@tasks.loop(seconds=90)
 async def updateConfigFiles(): #So i dont have pre-coded values
     # print("Updating config")
     try:
@@ -317,12 +340,57 @@ constantMessageCheck.start()
 constantChannelCheck.start()
 updateConfigFiles.start()
 
+async def forceUpdate(msg,args):
+    global stopCycling
+    print("Client was force-exited via forceUpdate()",time.time())
+    print("Hanging until messageCheck has finished its cycle or 20s, whatever is shorter")
+    stopCycling = True
+    sleepTime = 0
+    while True:
+        if finishedLastCycle == True or sleepTime>=20: #? idk
+            break
+        sleepTime+=1
+        await asyncio.sleep(1)
+    loggedMessagesCache2 = loggedMessages #If table size changes during calculations, it errors. Thats bad
+    print("Invoking save - sleep time:",sleepTime)
+    toSave = {}
+    for message in loggedMessagesCache2:
+        if type(message) == discord.Message or type(message) == discord.PartialMessage:
+            if not exists(toSave,message.channel.id):
+                toSave[message.channel.id] = {}
+            toSave[message.channel.id][message.id] = loggedMessagesCache2[message]
+        else:
+            info = loggedMessagesCache2[message]
+            if not info:
+                continue
+            if not exists(toSave,info["c"]):
+                toSave[info["c"]] = {}
+            toSave[info["c"]][message] = info["t"]
+    backup = None
+    if os.path.isfile('storage/settings/deletion_queue.json'):
+        backup = open('storage/settings/deletion_queue.json').read()
+    new = open('storage/settings/deletion_queue.json','w')
+    try:
+        new.write(json.dumps(toSave))
+    except:
+        if backup:
+            new.write(backup)
+        else:
+            print("[!] UpdateConfig failed to write with no available backup -",fileName)
+    new.close()
+    print("Deletion queue save finished")
+    await updateConfigFiles()
+    print("Default save finished")
+    print("Closing")
+    await client.close()
+addCommand("d_forceupdate",forceUpdate,0,"",{},None,"dev")
+
 async def d_exec(msg,args):
     try:
         exec(msg.content[9:])
     except Exception as exc:
         print("[Dev] Nice custom exec, but it failed. Command:",msg.content[9:],"Exception:",exc)
-addCommand("d_exec",d_exec,0,"",None,None,"dev") #Dev commands cant appear in ##cmds, no need to declare shit
+addCommand("d_exec",d_exec,0,"",{},None,"dev") #Dev commands cant appear in ##cmds, no need to declare shit
 
 async def forcedelete(msg,args):
     global loggedMessages
@@ -332,15 +400,7 @@ async def forcedelete(msg,args):
             loggedMessages[i] = time.time()
             print("Set",i.id,"to 0")
     print("Messages set for deletion, you are good to end the script in a few seconds")
-addCommand("d_forcedelete",forcedelete,0,"",None,None,"dev")
-
-async def forceExit(msg,args):
-    print("Client was force-exited",time.time())
-    print("Invoking save")
-    await updateConfigFiles()
-    print("Save finished")
-    await client.close()
-addCommand("d_forceupdate",forceExit,0,"",None,None,"dev")
+addCommand("d_forcedelete",forcedelete,0,"",{},None,"dev")
 
 async def cmdList(msg,args): #just handles itself and its lovely
     isAdmin = msg.author.guild_permissions.administrator
@@ -376,11 +436,11 @@ async def cmdList(msg,args): #just handles itself and its lovely
     await msg.channel.send(embed=fromdict({'title':'Command List','description':cmdMessageContent,'color':colours['info']}))
 addCommand(["commands","cmds"],cmdList,1,"List all commands",{"section":False},None,"general")
 
-async def filterTagList(msg,tagList):
+async def filterTagList(msg,tagList): #Why did i do this into a function again? idk
     for i in nsfwBlockedTerms[msg.guild.id]:
         if i in tagList.lower():
             return True #True means filtered
-async def getPostList(msg,sitetype,tags):
+async def getPostList(msg,sitetype,tags): ##APIs be like
     returnContent = []
     anyMessageFiltered = False
     index = 0
@@ -448,7 +508,7 @@ async def getPostList(msg,sitetype,tags):
             await msg.channel.send(embed=fromdict({'title':'No Posts','description':'No posts were found under your requested tags','color':colours['error']}))
         return
     return returnContent
-async def nsfwScrape(msg,args,sitetype): #Consider converting this script to using the aiohttp module
+async def nsfwScrape(msg,args,sitetype): #I spent hours on this and idk if i should be happy about it
     if not msg.channel.is_nsfw():
         await msg.channel.send(embed=fromdict({'title':'Disallowed','description':'You can only use NSFW commands in channels marked as NSFW','color':colours['error']}),delete_after=10)
         return
@@ -483,7 +543,7 @@ async def blockWord(msg,args):#
     except:
         pass
     if len(args) < 3:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a word to ban and its time until deletion','color':colours['error']}),delete_after=30)
+        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a word to ban and its time until deletion','color':colours['error']}),delete_after=10)
         return
     success,result = strToTimeAdd(args[2])
     if not success:
@@ -491,20 +551,19 @@ async def blockWord(msg,args):#
         return
     word = args[1].lower()
     wordBlockList[msg.guild.id][word] = result
-    await msg.channel.send(embed=fromdict({'title':'Success','description':'Any messages containing '+word+' will be deleted after '+simplifySeconds(result),'color':colours['success']}),delete_after=30)
+    await msg.channel.send(embed=fromdict({'title':'Success','description':'Any messages containing '+word+' will be deleted after '+simplifySeconds(result),'color':colours['success']}))
 addCommand("blockword",blockWord,0,"Add a word to the filter list",{"word":True,"deletiontime":True},None,"admin")
-
 async def unblockWord(msg,args):
     try:
         await msg.delete()
     except:
         pass
     if len(args) < 2:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a word to unban','color':colours['error']}),delete_after=60)
+        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a word to unban','color':colours['error']}),delete_after=10)
         return
     word = args[1].lower()
     wordBlockList[msg.guild.id][word] = None
-    await msg.channel.send(embed=fromdict({'title':'Success','description':word+' is allowed again','color':colours['success']}),delete_after=60)
+    await msg.channel.send(embed=fromdict({'title':'Success','description':word+' is allowed again','color':colours['success']}))
 addCommand("unblockword",unblockWord,0,"Remove a word from the filter list",{"word":True},None,"admin")
 
 async def list_admin(msg,args):
@@ -518,18 +577,18 @@ async def list_admin(msg,args):
             if wordBlockList[msg.guild.id][i] != None:
                 index += 1
                 finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'" '+simplifySeconds(wordBlockList[msg.guild.id][i])
-        await msg.channel.send(embed=fromdict({'title':'Blocked Word List','description':'List of banned words, and how long until the message gets deleted:'+finalMessage,'color':colours['info']}),delete_after=60)
+        await msg.channel.send(embed=fromdict({'title':'Blocked Word List','description':'List of banned words, and how long until the message gets deleted:'+finalMessage,'color':colours['info']}))
     elif args[1] == "channels":
         for i in channelList[msg.guild.id]:
             if channelList[msg.guild.id][i]:
                 index += 1
                 finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'" every '+simplifySeconds(channelList[msg.guild.id][i])
-        await msg.channel.send(embed=fromdict({'title':'Clear Channel List','description':'List of channels that are set to clear every so often:'+finalMessage,'color':colours['info']}),delete_after=60)
+        await msg.channel.send(embed=fromdict({'title':'Clear Channel List','description':'List of channels that are set to clear every so often:'+finalMessage,'color':colours['info']}))
     elif args[1] == "tags":
         for i in nsfwBlockedTerms[msg.guild.id]:
             index += 1
             finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'"'
-        await msg.channel.send(embed=fromdict({'title':'Blocked Tags List','description':'List of tags that are blocked on the NSFW commands:'+finalMessage,'color':colours['info']}),delete_after=60)
+        await msg.channel.send(embed=fromdict({'title':'Blocked Tags List','description':'List of tags that are blocked on the NSFW commands:'+finalMessage,'color':colours['info']}))
     else:
         await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:\n`list words`\n`list channels`\n`list tags`','color':colours['info']}))
         return
@@ -555,7 +614,6 @@ async def clearChannel(msg,args):
             if channelName == t.name:
                 await cloneChannel(t.id)
 addCommand("clearchannel",clearChannel,0,"Add a channel to be cleared every so often OR clear now (no frequency)",{"channelName":True,"frequency":False},None,"admin")
-
 async def unclearChannel(msg,args):
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a channel name to stop clearing','color':colours['error']}),delete_after=60)
@@ -574,7 +632,6 @@ async def blockNSFWTag(msg,args):
     nsfwBlockedTerms[msg.guild.id].append(word)
     await msg.channel.send(embed=fromdict({'title':'Success','description':'Any posts containing \''+word+'\' will not be sent','color':colours['success']}),delete_after=60)
 addCommand("blocktag",blockNSFWTag,0,"Block certain tags from showing in NSFW commands",{"tag":True},None,"admin")
-
 async def unblockNSFWTag(msg,args):
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a tag to unblock','color':colours['error']}),delete_after=60)
@@ -748,13 +805,8 @@ async def scoreTest2(msg,args):
         targetUser2 = random.choice(msg.guild.members)
     await msg.channel.send(embed=fromdict({'title':'Score with '+targetUser1.name+' and '+targetUser2.name,'description':str(createScore(targetUser1.id,targetUser2.id))}))
 addCommand("compare",scoreTest2,0,"",{},None,"dev")
-async def exacttest(msg,args):
-    n1 = int(args[1])
-    n2 = int(args[2])
-    await msg.channel.send(embed=fromdict({'title':'Score with '+args[1]+' and '+args[2],'description':str(createScore(n1,n2))}))
-addCommand("exacttest",exacttest,0,"",{},None,"dev")
 
-def circularMask(im):
+async def circularMask(im):
     size = (im.size[0]*3,im.size[1]*3)
     mask = Image.new("L",size)
     d = ImageDraw.Draw(mask)
@@ -765,7 +817,7 @@ async def imageComp(msg,args):
     targetUser = random.choice(msg.guild.members)
     background = Image.open('imageTest.png') #Image.new("RGBA",size,0) for plain backgronds
     imageFile = Image.open(io.BytesIO(requests.get(targetUser.avatar_url_as(static_format="png",size=256)).content)) #What a mess
-    circularMask(imageFile)
+    await circularMask(imageFile)
     background.paste(imageFile,(8,8)) #Used to be for red box, now just obscure placement
     d = ImageDraw.Draw(background)
     d.text((137,269),targetUser.name,fill="black",anchor="mt",font=ImageFont.truetype('calibri.ttf',35))
@@ -777,6 +829,12 @@ addCommand("imaget",imageComp,0,"",{},None,"dev")
 
 for i in os.listdir('storage/settings'):
     j = json.loads(open('storage/settings/'+i).read())
+    if i == "deletion_queue.json":
+        for channelid in j:
+            for messageid in j[channelid]:
+                loggedMessages[messageid] = {"c":channelid,"t":j[channelid][messageid]}
+        print("loggedMessages",loggedMessages)
+        continue
     guild = j['guild']
     for tableType in j:
         if tableType == "wordBlockList":
