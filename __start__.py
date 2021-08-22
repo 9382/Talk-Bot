@@ -6,7 +6,7 @@ auth = dotenv_values()['BOTAUTH']
 print("Starting...")
 try:
     from main import client
-except ImportError as exc:
+except Exception as exc:
     print("[!] Import error for client:",exc)
     sleep(3)
 else:
