@@ -36,11 +36,14 @@ loggedMessages = {}
 channelList = {}
 queuedChannels = {}
 nsfwBlockedTerms = {}
+mediaFilterList = {}
 async def filterMessage(msg,forceFilter=False): #Main filter handler, just await it with msg var to filter it
     if exists(loggedMessages,msg): #If already queued for deletion
         return True
     if not exists(wordBlockList,msg.guild.id): #on_ready causing on_error loop, gonna try catch with this. Why it isnt already catching idfk
         wordBlockList[msg.guild.id] = {}
+    if not exists(mediaFilterList,str(msg.channel.id)): #this would probably fail too, so doing this pre-emptively
+        mediaFilterList[str(msg.channel.id)] = None
     for i in wordBlockList[msg.guild.id]:
         if wordBlockList[msg.guild.id][i] == None:
             continue
@@ -69,6 +72,24 @@ async def filterMessage(msg,forceFilter=False): #Main filter handler, just await
                     return True
             except:
                 pass
+    if mediaFilterList[str(msg.channel.id)] != None:
+        if msg.content.lower().find("https://cdn.discordapp.com/attachments/") != -1 or msg.content.lower().find("https://tenor.com/view/") != -1:
+            if mediaFilterList[str(msg.channel.id)] > 0:
+                loggedMessages[msg] = time.time()+mediaFilterList[str(msg.channel.id)]
+            else:
+                try:
+                    await msg.delete()
+                except:
+                    loggedMessages[msg] = time.time()
+        for i in msg.attachments:
+            if i.url.lower().find("https://cdn.discordapp.com/attachments/") != -1 or i.url.lower().find("https://tenor.com/view/") != -1:
+                if mediaFilterList[str(msg.channel.id)] > 0:
+                    loggedMessages[msg] = time.time()+mediaFilterList[str(msg.channel.id)]
+                else:
+                    try:
+                        await msg.delete()
+                    except:
+                        loggedMessages[msg] = time.time()
 client = commands.Bot(command_prefix='##',help_command=None,intents=discord.Intents(guilds=True,messages=True,guild_messages=True,members=True,voice_states=True))
 #Note that due to the on_message handler, i cant use the regular @bot.event shit, so custom handler it is
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932}
@@ -165,6 +186,8 @@ async def on_message(msg):
         channelList[msg.guild.id] = {}
     if not exists(nsfwBlockedTerms,msg.guild.id):
         nsfwBlockedTerms[msg.guild.id] = []
+    if not exists(mediaFilterList,msg.channel.id):
+        mediaFilterList[msg.channel.id] = None
     args = msg.content.split(' ') #Please keep in mind the first argument is the calling command
     if msg.author.id == 260016427900076033: #Funny commands just for me
         for command in devCommands:
@@ -336,6 +359,7 @@ async def updateConfigFiles(): #So i dont have pre-coded values
             new.close()
     except Exception as exc:
         print("[!] UpdateConfig Exception:",str(exc))
+        await asyncio.sleep(1)
 constantMessageCheck.start()
 constantChannelCheck.start()
 updateConfigFiles.start()
@@ -363,6 +387,8 @@ async def forceUpdate(msg,args):
             info = loggedMessagesCache2[message]
             if not info:
                 continue
+            if not info["t"]:
+                continue
             if not exists(toSave,info["c"]):
                 toSave[info["c"]] = {}
             toSave[info["c"]][message] = info["t"]
@@ -379,6 +405,23 @@ async def forceUpdate(msg,args):
             print("[!] UpdateConfig failed to write with no available backup -",fileName)
     new.close()
     print("Deletion queue save finished")
+    toSave = {}
+    for channel in mediaFilterList:
+        if mediaFilterList[channel] != None:
+            toSave[channel] = mediaFilterList[channel]
+    backup = None
+    if os.path.isfile('storage/settings/media_filters.json'):
+        backup = open('storage/settings/media_filters.json').read()
+    new = open('storage/settings/media_filters.json','w')
+    try:
+        new.write(toSave)
+    except:
+        if backup:
+            new.write(backup)
+        else:
+            print("[!] UpdateConfig failed to write with no available backup -",fileName)
+    new.close()
+    print("Media filter list save finished")
     await updateConfigFiles()
     print("Default save finished")
     print("Closing")
@@ -794,6 +837,22 @@ async def speakTTS(msg,args):
             pass
 addCommand("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"dev")
 
+async def blockMedia(msg,args):
+    if len(args) < 2:
+        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include the time until deletion','color':colours['error']}),delete_after=10)
+        return
+    success,result = strToTimeAdd(args[1])
+    if not success:
+        await msg.channel.send(embed=fromdict({'title':'Error','description':result,'color':colours['error']}),delete_after=30)
+        return
+    mediaFilterList[str(msg.channel.id)] = result
+    await msg.channel.send(embed=fromdict({'title':'Success','description':'All media will be deleted after '+simplifySeconds(result),'color':colours['success']}))
+addCommand("blockmedia",blockMedia,0,"Remove all media in a channel after a certain duration",{"deletiontime":True},None,"admin")
+async def unblockMedia(msg,args):
+    mediaFilterList[str(msg.channel.id)] = None
+    await msg.channel.send(embed=fromdict({'title':'Success','description':'Media will no longer be removed','color':colours['success']}))
+addCommand("unblockmedia",unblockMedia,0,"Stop auto-filtering a channel's media",{},None,"admin")
+
 def createScore(n1,n2):
     return 100-((n1+n2)%100)
 async def scoreTest2(msg,args):
@@ -833,7 +892,9 @@ for i in os.listdir('storage/settings'):
         for channelid in j:
             for messageid in j[channelid]:
                 loggedMessages[messageid] = {"c":channelid,"t":j[channelid][messageid]}
-        print("loggedMessages",loggedMessages)
+        continue
+    if i == "media_filters.json":
+        mediaFilterList = j
         continue
     guild = j['guild']
     for tableType in j:
