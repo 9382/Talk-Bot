@@ -1,7 +1,7 @@
-from discord.ext import commands
-from discord.ext import tasks
+from discord.ext import commands #Unrequired? I import all of discord anyways
+from discord.ext import tasks #Unrequired? I import all of discord anyways
 from datetime import datetime
-# from mutagen.mp3 import MP3 #May remove since header funny on TTS generation
+from mutagen.mp3 import MP3 #May remove since header funny on TTS generation
 from PIL import Image,ImageDraw,ImageFont,ImageChops
 import re as regex
 import traceback
@@ -16,6 +16,7 @@ import time
 import sys
 import os
 import io
+prefix = "##"
 def exists(table,value): #Wanna reduce the try except spam checking for possible values
     try:
         table[value]
@@ -90,7 +91,7 @@ async def filterMessage(msg,forceFilter=False): #Main filter handler, just await
                         await msg.delete()
                     except:
                         loggedMessages[msg] = time.time()
-client = commands.Bot(command_prefix='##',help_command=None,intents=discord.Intents(guilds=True,messages=True,guild_messages=True,members=True,voice_states=True))
+client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,guild_messages=True,members=True,voice_states=True))
 #Note that due to the on_message handler, i cant use the regular @bot.event shit, so custom handler it is
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932}
 @client.event
@@ -122,6 +123,27 @@ async def on_ready():
         await client.get_channel(logChannels['boot-ups']).send("Ive connected at "+currentDate())
     except:
         pass
+def findVoiceClient(guildId): #Find the relevant voice client object for the specified guild. Returns None if none are found
+    for voiceObj in client.voice_clients:
+        if voiceObj.guild.id == guildId:
+            return voiceObj
+VCList = {}
+async def connectToVc(channel,idleTimeout=60,ignorePlaying=False):
+    vc = findVoiceClient(channel.guild.id)
+    if vc:
+        if vc.is_playing():
+            if not ignorePlaying:
+                return
+            else:
+                vc.stop()
+        await vc.move_to(channel)
+    else:
+        vc = await channel.connect()
+    if not exists(VCList,vc):
+        VCList[vc] = {}
+    VCList[vc]["idleTimeout"] = idleTimeout
+    VCList[vc]["lastActiveTime"] = time.time()
+    return vc
 devCommands = {} #basically testing and back-end commands
 adminCommands = {} #This will take priority over user commands should a naming conflict exist
 userCommands = {}
@@ -149,7 +171,7 @@ ratelimitInfo = {}
 async def doTheCheck(msg,args,command,commandInfo): #Dont wanna type this 3 times
     if not exists(ratelimitInfo,msg.author.id): #Prevent ratelimit logic from erroring
         ratelimitInfo[msg.author.id] = {}
-    callingCommand = '##'+command
+    callingCommand = prefix+command
     if msg.content.lower().startswith(callingCommand): #Find the fitting command if it exists
         arg0 = args[0]
         args[0] = arg0[:len(callingCommand)]
@@ -162,7 +184,8 @@ async def doTheCheck(msg,args,command,commandInfo): #Dont wanna type this 3 time
         if validPoint > time.time(): #If lastTime + rateLimit > currentTime: Dont allow
             if not ratelimitVars['a']: #If not already warned: Warn
                 ratelimitVars['a'] = True
-                await msg.channel.send(embed=fromdict({'title':'Slow Down','description':'That command is limited for another '+str(validPoint - time.time())[:4]+' more seconds','color':colours['warning']}),delete_after=validPoint - time.time())
+                validTime = validPoint-time.time()
+                await msg.channel.send(embed=fromdict({'title':'Slow Down','description':'That command is limited for '+str(validTime)[:4]+' more seconds','color':colours['warning']}),delete_after=validTime)
             return True
         ratelimitVars['t'] = time.time() #Update last time, passed rate limit check
         ratelimitVars['a'] = False #The 'a' is just so you cant make the bot spam cooldown messages for the same command
@@ -332,7 +355,7 @@ async def constantChannelCheck(): #For queued channel clearing
                             queuedChannels[guild.id][channelName] = time.time()+channelList[channelName]
                             await cloneChannel(t.id)
     except Exception as exc:
-        print("[!] ChannelClear Exception:",str(exc))
+        print("[!] ChannelClear Exception:",exc)
 @tasks.loop(seconds=90)
 async def updateConfigFiles(): #So i dont have pre-coded values
     # print("Updating config")
@@ -358,11 +381,22 @@ async def updateConfigFiles(): #So i dont have pre-coded values
                     print("[!] UpdateConfig failed to write with no available backup -",fileName)
             new.close()
     except Exception as exc:
-        print("[!] UpdateConfig Exception:",str(exc))
+        print("[!] UpdateConfig Exception:",exc)
         await asyncio.sleep(1)
+@tasks.loop(seconds=2)
+async def VCCheck():
+    try:
+        for vc in VCList:
+            if vc.is_playing():
+                VCList[vc]["lastActiveTime"] = time.time()
+            elif time.time()-VCList[vc]["idleTimeout"] > VCList[vc]["lastActiveTime"]:
+                await vc.disconnect()
+    except Exception as exc:
+        print("[! VCCheck Exception:",exc)
 constantMessageCheck.start()
 constantChannelCheck.start()
 updateConfigFiles.start()
+VCCheck.start()
 
 async def forceUpdate(msg,args):
     global stopCycling
@@ -760,24 +794,19 @@ async def deathBattle(msg,args):
 addCommand("deathbattle",deathBattle,1,"Fight someone to the death!",{"@user":False},None,"dev")
 
 async def presetAudioTest(msg,args):
-    if msg.author.voice:
-        try:
-            if not exists(args,1):
-                args.insert(1,"sigma")
-            file = "storage/temp/"+args[1]+".mp3"
-            vc = await msg.author.voice.channel.connect() #Join
-            vc.play(await discord.FFmpegOpusAudio.from_probe(file)) #Audio
-            audio = MP3(file)
-            await asyncio.sleep(audio.info.length+1)
-            await vc.disconnect()
-        except Exception as exc:
-            await msg.channel.send("It fucked up, idk\n",exc)
-            try:
-                vc.disconnect()
-            except:
-                pass
-    else:
-        pass
+    if not msg.author.voice:
+        return
+    if not exists(args,1):
+        args.insert(1,"sigma")
+    file = "storage/temp/"+args[1]+".mp3"
+    vc = await connectToVc(msg.author.voice.channel,idleTimeout=5,ignorePlaying=True) #Join
+    if not vc:
+        await msg.channel.send("Couldnt join the vc, probably cause i was busy")
+        return
+    vc.play(await discord.FFmpegOpusAudio.from_probe(file)) #Audio
+    # while vc.is_playing():
+    #     await asyncio.sleep(1)
+    # await vc.disconnect()
 addCommand("presetaudio",presetAudioTest,0,"",{},None,"dev")
 
 ttsQueue = []
