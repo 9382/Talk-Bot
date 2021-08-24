@@ -1,7 +1,6 @@
 from discord.ext import commands #Unrequired? I import all of discord anyways
 from discord.ext import tasks #Unrequired? I import all of discord anyways
 from datetime import datetime
-from mutagen.mp3 import MP3 #May remove since header funny on TTS generation
 from PIL import Image,ImageDraw,ImageFont,ImageChops
 import re as regex
 import traceback
@@ -128,7 +127,7 @@ def findVoiceClient(guildId): #Find the relevant voice client object for the spe
         if voiceObj.guild.id == guildId:
             return voiceObj
 VCList = {}
-async def connectToVc(channel,idleTimeout=60,ignorePlaying=False):
+async def connectToVC(channel,idleTimeout=60,ignorePlaying=False):
     vc = findVoiceClient(channel.guild.id)
     if vc:
         if vc.is_playing():
@@ -482,8 +481,8 @@ addCommand("d_forcedelete",forcedelete,0,"",{},None,"dev")
 async def cmdList(msg,args): #just handles itself and its lovely
     isAdmin = msg.author.guild_permissions.administrator
     if not exists(args,1):
-        allGroups = (isAdmin and ["admin"]) or [] #only runs through userCommands
-        allGroupsText = (isAdmin and "\n`admin`") or ""
+        allGroups = ["admin"] #only runs through userCommands
+        allGroupsText = "\n`admin`"
         for command in userCommands:
             commandGroup = userCommands[command]['g']
             if not (commandGroup in allGroups):
@@ -492,7 +491,7 @@ async def cmdList(msg,args): #just handles itself and its lovely
         await msg.channel.send(embed=fromdict({'title':'Select command list','description':'Please select a command subsection from this list:'+allGroupsText,'color':colours['info']}))
         return
     else:
-        cmdList = (args[1] == "admin" and adminCommands) or args[1]
+        cmdList = (args[1] == "admin" and adminCommands) or (args[1] == "dev" and msg.author.id == 260016427900076033 and devCommands) or args[1]
     if type(cmdList) == str: #Not the adminCommands table, gotta base off group
         cmdList = {}
         for command in userCommands:
@@ -609,10 +608,10 @@ async def nsfwScrape(msg,args,sitetype): #I spent hours on this and idk if i sho
     except Exception as exc:
         print("[NSFW] "+sitetype+" Exception:",exc)
         await msg.channel.send(embed=fromdict({'title':'Unexpected Error','description':'Something unexpected went wrong, hopefully it wont happen again.\n\nError: '+str(exc),'color':colours['error']}))
-addCommand("r34",nsfwScrape,2,"Get an NSFW post on rule34 with optional tags",{"tags":False},"rule34","NSFW")
-addCommand("e621",nsfwScrape,2,"Get an NSFW post on e621 with optional tags",{"tags":False},"e621","NSFW")
-addCommand("hentai",nsfwScrape,2,"Get an NSFW post on danbooru with optional tags",{"tags":False},"danbooru","NSFW")
-addCommand("irl",nsfwScrape,2,"Get an NSFW post on realbooru with optional tags",{"tags":False},"realbooru","NSFW")
+addCommand("r34",nsfwScrape,3,"Get an NSFW post on rule34 with optional tags",{"tags":False},"rule34","NSFW")
+addCommand("e621",nsfwScrape,3,"Get an NSFW post on e621 with optional tags",{"tags":False},"e621","NSFW")
+addCommand("hentai",nsfwScrape,3,"Get an NSFW post on danbooru with optional tags",{"tags":False},"danbooru","NSFW")
+addCommand("irl",nsfwScrape,3,"Get an NSFW post on realbooru with optional tags",{"tags":False},"realbooru","NSFW")
 
 async def blockWord(msg,args):#
     try:
@@ -799,7 +798,7 @@ async def presetAudioTest(msg,args):
     if not exists(args,1):
         args.insert(1,"sigma")
     file = "storage/temp/"+args[1]+".mp3"
-    vc = await connectToVc(msg.author.voice.channel,idleTimeout=5,ignorePlaying=True) #Join
+    vc = await connectToVC(msg.author.voice.channel,idleTimeout=1,ignorePlaying=True) #Join
     if not vc:
         await msg.channel.send("Couldnt join the vc, probably cause i was busy")
         return
@@ -815,56 +814,45 @@ async def speakTTS(msg,args):
     global ttsQueue
     global handlingTTS
     if not msg.author.voice:
-        await msg.channel.send(embed=fromdict({'title':'No VC','description':'You must be in a voice channel when using this command','color':colours['error']}),delete_after=30)
+        await msg.channel.send(embed=fromdict({'title':'No VC','description':'You must be in a voice channel when using this command','color':colours['error']}),delete_after=10)
         return
     if len(ttsQueue) >= 3:
-        await msg.channel.send(embed=fromdict({"title":"Queue Full","description":"The TTS Queue is currently full, wait for the current one to finish first","color":colours['error']}),delete_after=30)
+        await msg.channel.send(embed=fromdict({"title":"Queue Full","description":"The TTS Queue is currently full, wait for the current one to finish first","color":colours['error']}),delete_after=10)
         return
     if len(msg.content)-6 > 130:
-        await msg.channel.send(embed=fromdict({"title":"Too Long","description":"TTS is capped at 130 characters. Your message is "+str(len(msg.content)-6),"color":colours["error"]}),delete_after=30)
+        await msg.channel.send(embed=fromdict({"title":"Too Long","description":"TTS is capped at 130 characters. Your message is "+str(len(msg.content)-6),"color":colours["error"]}),delete_after=10)
         return
     if len(msg.content)-6 < 1:
-        await msg.channel.send(embed=fromdict({"title":"No Content","description":"You need to provide something to speak","color":colours["error"]}),delete_after=30)
+        await msg.channel.send(embed=fromdict({"title":"No Content","description":"You need to provide something to speak","color":colours["error"]}),delete_after=10)
         return
     ttsQueue.append(msg.content[6:])
     if not handlingTTS:
         handlingTTS = True
+        ttsChannel = msg.author.voice.channel
         while len(ttsQueue) > 0:
-            try:
-                vc = await msg.author.voice.channel.connect() #Join
-                dialouge = ttsQueue.pop(0)
-                ttsObject = pyttsx3.init()
-                fileName = tempFile("mp3")
-                ttsObject.setProperty("voice",ttsObject.getProperty('voices')[0].id)
-                ttsObject.setProperty('rate',120)
-                ttsObject.save_to_file(dialouge,fileName)
-                ttsObject.runAndWait()
-                vc.play(await discord.FFmpegOpusAudio.from_probe(fileName)) #Audio
-                await asyncio.sleep(MP3(fileName))
-                while True:
-                    try:
-                        os.remove(fileName)
-                    except:
-                        pass
-                    else:
-                        break
-            except Exception as exc:
-                handlingTTS = False
-                print("[TTS] Something failed:",exc)
+            vc = await connectToVC(ttsChannel)
+            if not vc:
+                await asyncio.sleep(1)
+                continue
+            dialouge = ttsQueue.pop(0)
+            ttsObject = pyttsx3.init()
+            fileName = tempFile("mp3")
+            ttsObject.setProperty("voice",ttsObject.getProperty('voices')[0].id)
+            ttsObject.setProperty('rate',120)
+            ttsObject.save_to_file(dialouge,fileName)
+            ttsObject.runAndWait()
+            vc.play(await discord.FFmpegOpusAudio.from_probe(fileName)) #Audio
+            while vc.is_playing():
+                await asyncio.sleep(0.5)
+            while True:
                 try:
                     os.remove(fileName)
                 except:
                     pass
-                try:
-                    await vc.disconnect()
-                except:
-                    pass
+                else:
+                    break
         handlingTTS = False
-        try:
-            await vc.disconnect()
-        except:
-            pass
-addCommand("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"dev")
+addCommand("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"general")
 
 async def blockMedia(msg,args):
     if len(args) < 2:
