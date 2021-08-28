@@ -90,7 +90,7 @@ async def filterMessage(msg,forceFilter=False): #Main filter handler, just await
                         await msg.delete()
                     except:
                         loggedMessages[msg] = time.time()
-client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,guild_messages=True,members=True,voice_states=True))
+client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True))
 #Note that due to the on_message handler, i cant use the regular @bot.event shit, so custom handler it is
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932}
 @client.event
@@ -202,6 +202,9 @@ async def on_message(msg):
         elif msg.author.id != client.user.id:
             await msg.channel.send(embed=fromdict({'title':'Not here','description':'This bot can only be used in a server, and not dms','color':colours['error']}))
         return
+    await filterMessage(msg)
+    if type(msg.author) == discord.User: #Webhook
+        return
     if not exists(wordBlockList,msg.guild.id): #This entire exists() section is to avoid crashing later on
         wordBlockList[msg.guild.id] = {}
     if not exists(channelList,msg.guild.id):
@@ -215,9 +218,6 @@ async def on_message(msg):
         for command in devCommands:
             if await doTheCheck(msg,args,command,devCommands[command]):
                 return
-    await filterMessage(msg)
-    if type(msg.author) == discord.User: #Webhook
-        return
     if msg.author.guild_permissions.administrator:
         for command in adminCommands:
             if await doTheCheck(msg,args,command,adminCommands[command]):
@@ -613,7 +613,7 @@ addCommand("e621",nsfwScrape,3,"Get an NSFW post on e621 with optional tags",{"t
 addCommand("hentai",nsfwScrape,3,"Get an NSFW post on danbooru with optional tags",{"tags":False},"danbooru","NSFW")
 addCommand("irl",nsfwScrape,3,"Get an NSFW post on realbooru with optional tags",{"tags":False},"realbooru","NSFW")
 
-async def blockWord(msg,args):#
+async def blockWord(msg,args):
     try:
         await msg.delete()
     except:
@@ -803,9 +803,6 @@ async def presetAudioTest(msg,args):
         await msg.channel.send("Couldnt join the vc, probably cause i was busy")
         return
     vc.play(await discord.FFmpegOpusAudio.from_probe(file)) #Audio
-    # while vc.is_playing():
-    #     await asyncio.sleep(1)
-    # await vc.disconnect()
 addCommand("presetaudio",presetAudioTest,0,"",{},None,"dev")
 
 ttsQueue = []
@@ -825,34 +822,38 @@ async def speakTTS(msg,args):
     if len(msg.content)-6 < 1:
         await msg.channel.send(embed=fromdict({"title":"No Content","description":"You need to provide something to speak","color":colours["error"]}),delete_after=10)
         return
-    ttsQueue.append(msg.content[6:])
+    ttsQueue.append({"m":msg.content[6:],"c":msg.author.voice.channel})
     if not handlingTTS:
         handlingTTS = True
-        ttsChannel = msg.author.voice.channel
         while len(ttsQueue) > 0:
-            vc = await connectToVC(ttsChannel)
+            dialouge = ttsQueue[0]
+            vc = await connectToVC(dialouge["c"])
             if not vc:
                 await asyncio.sleep(1)
                 continue
-            dialouge = ttsQueue.pop(0)
+            ttsQueue.pop(0)
             ttsObject = pyttsx3.init()
             fileName = tempFile("mp3")
             ttsObject.setProperty("voice",ttsObject.getProperty('voices')[0].id)
-            ttsObject.setProperty('rate',120)
-            ttsObject.save_to_file(dialouge,fileName)
+            # ttsObject.setProperty("volume",ttsObject.getProperty("volume")*10)
+            ttsObject.setProperty('rate',160)
+            ttsObject.save_to_file(dialouge["m"],fileName)
             ttsObject.runAndWait()
-            vc.play(await discord.FFmpegOpusAudio.from_probe(fileName)) #Audio
-            while vc.is_playing():
-                await asyncio.sleep(0.5)
-            while True:
+            while True: #Keeps thinking its not connected even though it is. Logic
                 try:
-                    os.remove(fileName)
+                    vc.play(await discord.FFmpegOpusAudio.from_probe(fileName)) #Audio
                 except:
                     pass
                 else:
                     break
+            while vc.is_playing():
+                await asyncio.sleep(0.5)
+            try:
+                os.remove(fileName)
+            except:
+                pass
         handlingTTS = False
-addCommand("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"general")
+addCommand("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"dev")
 
 async def blockMedia(msg,args):
     if len(args) < 2:
@@ -891,7 +892,7 @@ async def circularMask(im):
     im.putalpha(mask)
 async def imageComp(msg,args):
     targetUser = random.choice(msg.guild.members)
-    background = Image.open('imageTest.png') #Image.new("RGBA",size,0) for plain backgronds
+    background = Image.open('storage/assets/imageTest.png') #Image.new("RGBA",size,0) for plain backgronds
     imageFile = Image.open(io.BytesIO(requests.get(targetUser.avatar_url_as(static_format="png",size=256)).content)) #What a mess
     await circularMask(imageFile)
     background.paste(imageFile,(8,8)) #Used to be for red box, now just obscure placement
@@ -922,6 +923,8 @@ for i in os.listdir('storage/settings'):
         if tableType == "nsfwBlockedTerms":
             nsfwBlockedTerms[guild] = j[tableType]
     for i in channelList[guild]:
+        if not channelList[guild][i]:
+            continue
         if not exists(queuedChannels,guild):
             queuedChannels[guild] = {}
         queuedChannels[guild][i] = time.time()+channelList[guild][i]
