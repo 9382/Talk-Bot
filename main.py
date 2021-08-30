@@ -90,6 +90,15 @@ async def filterMessage(msg,forceFilter=False): #Main filter handler, just await
                         await msg.delete()
                     except:
                         loggedMessages[msg] = time.time()
+        for embed in msg.embeds:
+            if embed.image:
+                if mediaFilterList[str(msg.channel.id)] > 0:
+                    loggedMessages[msg] = time.time()+mediaFilterList[str(msg.channel.id)]
+                else:
+                    try:
+                        await msg.delete()
+                    except:
+                        loggedMessages[msg] = time.time()
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True))
 #Note that due to the on_message handler, i cant use the regular @bot.event shit, so custom handler it is
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932}
@@ -534,7 +543,10 @@ async def getPostList(msg,sitetype,tags): ##APIs be like
                 postInfo = {}
                 postID = numRegex.search(getPostIDRegex.search(i).group()).group()
                 postInfo["postPage"] = f"https://{site}/index.php?page=post&s=view&id="+postID
-                fileURL = getImageURLRegex.search(i).group()[11:]
+                try:
+                    fileURL = getImageURLRegex.search(i).group()[11:]
+                except:
+                    continue #Invalid post :)
                 postInfo["fileURL"] = fileURL
                 postInfo["fileType"] = ((fileURL.find('.mp4') > 0 or fileURL.find('.webm') > 0) and "Video") or "Image" #Yes
                 tags = getPostTagsRegex.search(i).group()
