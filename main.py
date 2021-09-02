@@ -37,6 +37,8 @@ channelList = {}
 queuedChannels = {}
 nsfwBlockedTerms = {}
 mediaFilterList = {}
+logChannelList = {}
+guildInviteTrack = {}
 async def filterMessage(msg,forceFilter=False): #Main filter handler, just await it with msg var to filter it
     if exists(loggedMessages,msg): #If already queued for deletion
         return True
@@ -99,6 +101,15 @@ async def filterMessage(msg,forceFilter=False): #Main filter handler, just await
                         await msg.delete()
                     except:
                         loggedMessages[msg] = time.time()
+async def getGuildInviteStats(guild):
+    toReturn = {}
+    try:
+        invites = await guild.invites()
+    except:
+        return
+    for invite in invites:
+        toReturn[invite.id] = {"m":invite.inviter,"u":invite.uses}
+    return toReturn
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True))
 #Note that due to the on_message handler, i cant use the regular @bot.event shit, so custom handler it is
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932}
@@ -131,6 +142,29 @@ async def on_ready():
         await client.get_channel(logChannels['boot-ups']).send("Ive connected at "+currentDate())
     except:
         pass
+@client.event
+async def on_guild_join(guild):
+    guildInviteTrack[guild.id] = await getGuildInviteStats(guild)
+    logChannelList[guild.id] = None
+@client.event
+async def on_member_join(member):
+    guild = member.guild
+    if not exists(guildInviteTrack,guild.id) or not guildInviteTrack[guild.id]:
+        guildInviteTrack[guild.id] = await getGuildInviteStats(guild)
+        return
+    invitesBefore = guildInviteTrack[guild.id]
+    invitesAfter = await getGuildInviteStats(guild)
+    if not invitesAfter:
+        return
+    for inviteId in invitesAfter:
+        inviteInfo = invitesAfter[inviteId]
+        if not exists(invitesBefore,inviteId):
+            invitesBefore[inviteId] = {"m":inviteInfo["m"],"u":0}
+        if invitesBefore[inviteId]["u"] < inviteInfo["u"]:
+            if logChannelList[guild.id]:
+                await client.get_channel(logChannelList[guild.id]).send(embed=fromdict({"title":"Invite Log","description":f"User {member} has joined through {inviteInfo['m']}'s invite (discord.gg/{inviteId})\nInvite is at {inviteInfo['u']} uses","color":colours["info"]}))
+            break
+    guildInviteTrack[guild.id] = invitesAfter
 def findVoiceClient(guildId): #Find the relevant voice client object for the specified guild. Returns None if none are found
     for voiceObj in client.voice_clients:
         if voiceObj.guild.id == guildId:
@@ -375,13 +409,15 @@ async def updateConfigFiles(): #So i dont have pre-coded values
                 channelList[guild.id] = {}
             if not exists(nsfwBlockedTerms,guild.id):
                 nsfwBlockedTerms[guild.id] = []
+            if not exists(logChannelList,guild.id):
+                logChannelList[guild.id] = None
             fileName = 'storage/settings/'+str(guild.id)+".json"
             backup = None
             if os.path.isfile(fileName):
                 backup = open(fileName).read()
             new = open(fileName,"w")
             try:
-                new.write(json.dumps({"guild":guild.id,"wordBlockList":wordBlockList[guild.id],"channelList":channelList[guild.id],"nsfwBlockedTerms":nsfwBlockedTerms[guild.id]}))
+                new.write(json.dumps({"guild":guild.id,"wordBlockList":wordBlockList[guild.id],"channelList":channelList[guild.id],"nsfwBlockedTerms":nsfwBlockedTerms[guild.id],"logChannel":logChannelList[guild.id]}))
             except:
                 if backup:
                     new.write(backup)
@@ -401,10 +437,16 @@ async def VCCheck():
                 await vc.disconnect()
     except Exception as exc:
         print("[! VCCheck Exception:",exc)
+@tasks.loop(seconds=5)
+async def keepGuildInviteUpdated():
+    for guild in client.guilds:
+        if not exists(guildInviteTrack,guild.id) or not guildInviteTrack[guild.id]:
+            guildInviteTrack[guild.id] = await getGuildInviteStats(guild)
 constantMessageCheck.start()
 constantChannelCheck.start()
 updateConfigFiles.start()
 VCCheck.start()
+keepGuildInviteUpdated.start()
 
 async def forceUpdate(msg,args):
     global stopCycling
@@ -456,7 +498,7 @@ async def forceUpdate(msg,args):
         backup = open('storage/settings/media_filters.json').read()
     new = open('storage/settings/media_filters.json','w')
     try:
-        new.write(toSave)
+        new.write(json.dumps(toSave))
     except:
         if backup:
             new.write(backup)
@@ -520,6 +562,21 @@ async def cmdList(msg,args): #just handles itself and its lovely
         cmdMessageContent += "\n`"+command+argMessageContent+"` - "+commandInfo['d']
     await msg.channel.send(embed=fromdict({'title':'Command List','description':cmdMessageContent,'color':colours['info']}))
 addCommand(["commands","cmds"],cmdList,1,"List all commands",{"section":False},None,"general")
+
+async def setLogChannel(msg,args):
+    if not exists(args,1):
+        await msg.channel.send(embed=fromdict({"title":"No channel","description":"Please provide a channel, either by mentioning it or by putting its ID","color":colours["error"]}))
+        return
+    wantedChannel = numRegex.search(args[1]) and client.get_channel(int(numRegex.search(args[1]).group()))
+    if not wantedChannel:
+        await msg.channel.send(embed=fromdict({"title":"Not found","description":"The channel provided either doesnt exist, or i cant access it","color":colours["error"]}))
+        return
+    if wantedChannel.guild.id != msg.guild.id:
+        await msg.channel.send(embed=fromdict({"title":"No","description":"Your log channel must be in your guild, not someone else's","color":colours["error"]}))
+        return
+    logChannelList[msg.guild.id] = wantedChannel.id
+    await msg.channel.send(embed=fromdict({"title":"Success","description":"Set log channel successfully","color":colours["success"]}))
+addCommand("setlogs",setLogChannel,3,"Set the log channel to the channel provided",{"channel":True},None,"admin")
 
 async def filterTagList(msg,tagList): #Why did i do this into a function again? idk
     for i in nsfwBlockedTerms[msg.guild.id]:
@@ -916,15 +973,24 @@ async def imageComp(msg,args):
     os.remove(fileName)
 addCommand("imaget",imageComp,0,"",{},None,"dev")
 
+async def printThis(msg,args):
+    print(msg.content)
+addCommand("ddd",printThis,0,"",{},None,"dev")
+
+print('done commands')
 for i in os.listdir('storage/settings'):
-    j = json.loads(open('storage/settings/'+i).read())
+    try:
+        j = json.loads(open('storage/settings/'+i).read())
+    except:
+        print("[JSON] Load failed for file",i)
+        continue #Failsafe
     if i == "deletion_queue.json":
         for channelid in j:
             for messageid in j[channelid]:
                 loggedMessages[messageid] = {"c":channelid,"t":j[channelid][messageid]}
         continue
     if i == "media_filters.json":
-        mediaFilterList = j
+        mediaFilterList = j #Redesign this to be guild specific, thanks!
         continue
     guild = j['guild']
     for tableType in j:
@@ -934,6 +1000,8 @@ for i in os.listdir('storage/settings'):
             channelList[guild] = j[tableType]
         if tableType == "nsfwBlockedTerms":
             nsfwBlockedTerms[guild] = j[tableType]
+        if tableType == "logChannel":
+            logChannelList[guild] = j[tableType]
     for i in channelList[guild]:
         if not channelList[guild][i]:
             continue
