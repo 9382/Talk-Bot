@@ -649,7 +649,7 @@ async def nsfwScrape(msg,args,sitetype): #I spent hours on this and idk if i sho
             return
         if postList:
             chosenPost = random.choice(postList)
-            await msg.channel.send(embed=fromdict({'title':msg.author.name+'\'s '+sitetype+' search (Click here to go to the post)','url':chosenPost["postPage"],'image':{'url':chosenPost["fileURL"]},'description':'**Tags**: '+regex.sub('_','\\_',chosenPost["tags"]),'color':colours['info']}))
+            await msg.channel.send(embed=fromdict({'title':f"{msg.author.name}'s {sitetype} search (Click here to go to the post)",'url':chosenPost["postPage"],'image':{'url':chosenPost["fileURL"]},'description':'**Tags**: '+regex.sub('_','\\_',chosenPost["tags"]),'color':colours['info']}))
             if chosenPost["fileType"] == "Video":
                 await msg.channel.send(chosenPost["fileURL"])
     except Exception as exc:
@@ -678,7 +678,7 @@ async def unblockWord(msg,args):
         return
     word = args[1].lower()
     wordBlockList[msg.guild.id][word] = None
-    await msg.channel.send(embed=fromdict({'title':'Success','description':word+' is allowed again','color':colours['success']}))
+    await msg.channel.send(embed=fromdict({'title':'Success','description':f'{word} is allowed again','color':colours['success']}))
 addCommand("unblockword",unblockWord,0,"Remove a word from the filter list",{"word":True},None,"admin")
 
 async def list_admin(msg,args):
@@ -692,18 +692,18 @@ async def list_admin(msg,args):
             if wordBlockList[msg.guild.id][i] != None:
                 index += 1
                 finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'" '+simplifySeconds(wordBlockList[msg.guild.id][i])
-        await msg.channel.send(embed=fromdict({'title':'Blocked Word List','description':'List of banned words, and how long until the message gets deleted:'+finalMessage,'color':colours['info']}))
+        await msg.channel.send(embed=fromdict({'title':'Blocked Word List','description':f'List of banned words, and how long until the message gets deleted:{finalMessage}','color':colours['info']}))
     elif args[1] == "channels":
         for i in channelList[msg.guild.id]:
             if channelList[msg.guild.id][i]:
                 index += 1
                 finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'" every '+simplifySeconds(channelList[msg.guild.id][i])
-        await msg.channel.send(embed=fromdict({'title':'Clear Channel List','description':'List of channels that are set to clear every so often:'+finalMessage,'color':colours['info']}))
+        await msg.channel.send(embed=fromdict({'title':'Clear Channel List','description':f'List of channels that are set to clear every so often:{finalMessage}','color':colours['info']}))
     elif args[1] == "tags":
         for i in nsfwBlockedTerms[msg.guild.id]:
             index += 1
             finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'"'
-        await msg.channel.send(embed=fromdict({'title':'Blocked Tags List','description':'List of tags that are blocked on the NSFW commands:'+finalMessage,'color':colours['info']}))
+        await msg.channel.send(embed=fromdict({'title':'Blocked Tags List','description':f'List of tags that are blocked on the NSFW commands:{finalMessage}','color':colours['info']}))
     else:
         await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:\n`list words`\n`list channels`\n`list tags`','color':colours['info']}))
         return
