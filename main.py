@@ -492,16 +492,6 @@ async def d_exec(msg,args):
         print("[Dev] Nice custom exec, but it failed. Command:",msg.content[9:],"Exception:",exc)
 addCommand("d_exec",d_exec,0,"",{},None,"dev")
 
-async def forcedelete(msg,args):
-    global loggedMessages
-    print("Setting messages for deletion...")
-    for i in loggedMessages:
-        if loggedMessages[i]:
-            loggedMessages[i] = time.time()
-            print("Set",i.id,"to 0")
-    print("Messages set for deletion, you are good to end the script in a few seconds")
-addCommand("d_forcedelete",forcedelete,0,"",{},None,"dev")
-
 async def cmdList(msg,args): #just handles itself and its lovely
     isAdmin = msg.author.guild_permissions.administrator
     if not exists(args,1):
