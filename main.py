@@ -39,6 +39,17 @@ nsfwBlockedTerms = {}
 mediaFilterList = {}
 logChannelList = {}
 guildInviteTrack = {}
+async def setFilterTime(msg,bufferTime):
+    deleteTime = time.time()+bufferTime
+    if bufferTime > 0:
+        loggedMessages[msg] = deleteTime
+    else:
+        try:
+            await msg.delete()
+        except:
+            loggedMessages[msg] = deleteTime
+    return True
+findMediaRegex = regex.compile("https?://(cdn\.discordapp\.com/attachments/|tenor\.com/view/)")
 async def filterMessage(msg,forceFilter=False): #Main filter handler, just await it with msg var to filter it
     if exists(loggedMessages,msg): #If already queued for deletion
         return True
@@ -47,60 +58,27 @@ async def filterMessage(msg,forceFilter=False): #Main filter handler, just await
     if not exists(mediaFilterList,str(msg.channel.id)): #this would probably fail too, so doing this pre-emptively
         mediaFilterList[str(msg.channel.id)] = None
     for i in wordBlockList[msg.guild.id]:
-        if wordBlockList[msg.guild.id][i] == None:
+        bufferTime = wordBlockList[msg.guild.id][i]
+        if bufferTime == None:
             continue
         if msg.content.lower().find(i) != -1 or forceFilter:
             print("[Filter] Msg Filtered:",msg.content,'|->',i)
-            if wordBlockList[msg.guild.id][i] > 0:
-                loggedMessages[msg] = time.time()+wordBlockList[msg.guild.id][i]
-            else:
-                try:
-                    await msg.delete()
-                except:
-                    loggedMessages[msg] = time.time()
-            return True
+            return await setFilterTime(msg,bufferTime)
         for embed in msg.embeds:
-            try:
-                if embed.title.lower().find(i) != -1:
-                    print("[Filter] Embed Title Filtered:",embed.title,'|->',i)
-                    loggedMessages[msg] = time.time()+wordBlockList[msg.guild.id][i]
-                    return True
-            except:
-                pass
-            try:
-                if embed.description.lower().find(i) != -1:
-                    print("[Filter] Embed Description Filtered:",embed.description,'|->',i)
-                    loggedMessages[msg] = time.time()+wordBlockList[msg.guild.id][i]
-                    return True
-            except:
-                pass
-    if mediaFilterList[str(msg.channel.id)] != None:
-        if msg.content.lower().find("https://cdn.discordapp.com/attachments/") != -1 or msg.content.lower().find("https://tenor.com/view/") != -1:
-            if mediaFilterList[str(msg.channel.id)] > 0:
-                loggedMessages[msg] = time.time()+mediaFilterList[str(msg.channel.id)]
-            else:
-                try:
-                    await msg.delete()
-                except:
-                    loggedMessages[msg] = time.time()
+            if embed.title and embed.title.lower().find(i) != -1:
+                return await setFilterTime(msg,bufferTime)
+            if embed.description and embed.description.lower().find(i) != -1:
+                return await setFilterTime(msg,bufferTime)
+    bufferTime = mediaFilterList[str(msg.channel.id)]
+    if bufferTime != None:
+        if findMediaRegex.search(msg.content.lower()):
+            return await setFilterTime(msg,bufferTime)
         for i in msg.attachments:
-            if i.url.lower().find("https://cdn.discordapp.com/attachments/") != -1 or i.url.lower().find("https://tenor.com/view/") != -1:
-                if mediaFilterList[str(msg.channel.id)] > 0:
-                    loggedMessages[msg] = time.time()+mediaFilterList[str(msg.channel.id)]
-                else:
-                    try:
-                        await msg.delete()
-                    except:
-                        loggedMessages[msg] = time.time()
+            if findMediaRegex.search(i.url.lower()):
+                return await setFilterTime(msg,bufferTime)
         for embed in msg.embeds:
             if embed.image:
-                if mediaFilterList[str(msg.channel.id)] > 0:
-                    loggedMessages[msg] = time.time()+mediaFilterList[str(msg.channel.id)]
-                else:
-                    try:
-                        await msg.delete()
-                    except:
-                        loggedMessages[msg] = time.time()
+                return await setFilterTime(msg,bufferTime)
 async def getGuildInviteStats(guild):
     toReturn = {}
     try:
