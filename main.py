@@ -26,6 +26,30 @@ def tempFile(extension="txt"):
     name = "storage/temp/"+str(time.time())+"."+extension
     open(name,"x")
     return name
+def safeWriteToFile(filename,content,encoding="UTF-8"):
+    backup = None
+    if os.path.isfile(filename):
+        try:
+            backup = open(filename,"rb").read()
+        except:
+            print("[Safe Write] Failed to open",filename,"- Probably access issues")
+            return
+    try:
+        file = open(filename,"w",encoding=encoding)
+    except:
+        print("[Safe Write] Failed to open",filename,"- Probably access issues")
+        return
+    try:
+        file.write(content)
+    except Exception as exc:
+        file.close()
+        if backup:
+            open(filename,"rb").write(backup)
+            print("[Safe Write] Failed to write to",filename,":",exc)
+        else:
+            print("[Safe Write] Failed to write to",filename,"with no backup available:",exc)
+        return
+    return True
 def currentDate():
     return str(datetime.fromtimestamp(math.floor(time.time()))) #Long function list be like
 fromdict = discord.Embed.from_dict
@@ -361,7 +385,7 @@ async def constantMessageCheck(): #For message filter
                 try:
                     await client.get_channel(channel).delete_messages(toDeleteList[channel])
                 except Exception as exc:
-                    print("[?] BulkDelete",exc)
+                    pass# print("[?] BulkDelete",exc)
     except Exception as exc:
         print("[LoggedMessages] Exception:",exc)
 @tasks.loop(seconds=10)
@@ -394,18 +418,7 @@ async def updateConfigFiles(): #So i dont have pre-coded values
             if not exists(logChannelList,guild.id):
                 logChannelList[guild.id] = None
             fileName = 'storage/settings/'+str(guild.id)+".json"
-            backup = None
-            if os.path.isfile(fileName):
-                backup = open(fileName).read()
-            new = open(fileName,"w")
-            try:
-                new.write(json.dumps({"guild":guild.id,"wordBlockList":wordBlockList[guild.id],"channelList":channelList[guild.id],"nsfwBlockedTerms":nsfwBlockedTerms[guild.id],"logChannel":logChannelList[guild.id]}))
-            except:
-                if backup:
-                    new.write(backup)
-                else:
-                    print("[!] UpdateConfig failed to write with no available backup -",fileName)
-            new.close()
+            safeWriteToFile(fileName,json.dumps({"guild":guild.id,"wordBlockList":wordBlockList[guild.id],"channelList":channelList[guild.id],"nsfwBlockedTerms":nsfwBlockedTerms[guild.id],"logChannel":logChannelList[guild.id]}))
     except Exception as exc:
         print("[!] UpdateConfig Exception:",exc)
         await asyncio.sleep(1)
@@ -446,47 +459,25 @@ async def forceUpdate(msg,args):
     toSave = {}
     for message in loggedMessagesCache2:
         if type(message) == discord.Message or type(message) == discord.PartialMessage:
+            if not loggedMessagesCache2[message]:
+                continue
             if not exists(toSave,message.channel.id):
                 toSave[message.channel.id] = {}
             toSave[message.channel.id][message.id] = loggedMessagesCache2[message]
         else:
             info = loggedMessagesCache2[message]
-            if not info:
-                continue
-            if not info["t"]:
+            if not info or not info["t"]:
                 continue
             if not exists(toSave,info["c"]):
                 toSave[info["c"]] = {}
             toSave[info["c"]][message] = info["t"]
-    backup = None
-    if os.path.isfile('storage/settings/deletion_queue.json'):
-        backup = open('storage/settings/deletion_queue.json').read()
-    new = open('storage/settings/deletion_queue.json','w')
-    try:
-        new.write(json.dumps(toSave))
-    except:
-        if backup:
-            new.write(backup)
-        else:
-            print("[!] UpdateConfig failed to write with no available backup -",fileName)
-    new.close()
+    safeWriteToFile("storage/settings/deletion_queue.json",json.dumps(toSave))
     print("Deletion queue save finished")
     toSave = {}
     for channel in mediaFilterList:
         if mediaFilterList[channel] != None:
             toSave[channel] = mediaFilterList[channel]
-    backup = None
-    if os.path.isfile('storage/settings/media_filters.json'):
-        backup = open('storage/settings/media_filters.json').read()
-    new = open('storage/settings/media_filters.json','w')
-    try:
-        new.write(json.dumps(toSave))
-    except:
-        if backup:
-            new.write(backup)
-        else:
-            print("[!] UpdateConfig failed to write with no available backup -",fileName)
-    new.close()
+    safeWriteToFile("storage/settings/media_filters.json",json.dumps(toSave))
     print("Media filter list save finished")
     await updateConfigFiles()
     print("Default save finished")
