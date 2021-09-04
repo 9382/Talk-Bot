@@ -105,8 +105,12 @@ async def on_error(error,*args,**kwargs):
         print("[Fatal Error] Failed to alert the user of the fail:",exc)
     try: #Logging
         errorFile = tempFile()
-        file = open(errorFile,"w")
-        traceback.print_exc(file=file)
+        file = open(errorFile,"w",encoding="ANSI")
+        try:
+            traceback.print_exc(file=file)
+        except Exception as exc:
+            print("[Fatal Error] Error Log file failed to write:",exc)
+            pass
         file.close()
         await client.get_channel(logChannels['errors']).send("Error in client\nTime: "+currentDate()+"\nCausing command: "+causingCommand,file=discord.File(errorFile))
         os.remove(errorFile)
