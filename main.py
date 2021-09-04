@@ -495,7 +495,7 @@ async def d_exec(msg,args):
         exec(msg.content[9:])
     except Exception as exc:
         print("[Dev] Nice custom exec, but it failed. Command:",msg.content[9:],"Exception:",exc)
-addCommand("d_exec",d_exec,0,"",{},None,"dev") #Dev commands cant appear in ##cmds, no need to declare shit
+addCommand("d_exec",d_exec,0,"",{},None,"dev")
 
 async def forcedelete(msg,args):
     global loggedMessages
@@ -578,9 +578,9 @@ async def getPostList(msg,sitetype,tags): ##APIs be like
                 postInfo = {}
                 postID = numRegex.search(getPostIDRegex.search(i).group()).group()
                 postInfo["postPage"] = f"https://{site}/index.php?page=post&s=view&id="+postID
-                try:
+                if getImageURLRegex.search(i):
                     fileURL = getImageURLRegex.search(i).group()[11:]
-                except:
+                else:
                     continue #Invalid post :)
                 postInfo["fileURL"] = fileURL
                 postInfo["fileType"] = ((fileURL.find('.mp4') > 0 or fileURL.find('.webm') > 0) and "Video") or "Image" #Yes
@@ -635,11 +635,11 @@ async def nsfwScrape(msg,args,sitetype): #I spent hours on this and idk if i sho
     if not msg.channel.is_nsfw():
         await msg.channel.send(embed=fromdict({'title':'Disallowed','description':'You can only use NSFW commands in channels marked as NSFW','color':colours['error']}),delete_after=10)
         return
-    try: #Unstable script due to all the HTTP responses. I mean, who else doesnt love fat try except sections :troll:
+    try: #Unstable script due to all the HTTP responses
         args.remove(args[0]) #Remove calling command, dont want that as a tag
         tags = ""
         for i in args:
-            tags = tags+i+"+" #A trailing + is fine, sites just ignore it as its whitespace to em
+            tags = tags+i+"+" #A trailing + is fine
         postList = None
         try:
             postList = await getPostList(msg,sitetype,tags)
@@ -661,27 +661,19 @@ addCommand("hentai",nsfwScrape,3,"Get an NSFW post on danbooru with optional tag
 addCommand("irl",nsfwScrape,3,"Get an NSFW post on realbooru with optional tags",{"tags":False},"realbooru","NSFW")
 
 async def blockWord(msg,args):
-    try:
-        await msg.delete()
-    except:
-        pass
-    if len(args) < 3:
+    if not exists(args,2):
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a word to ban and its time until deletion','color':colours['error']}),delete_after=10)
         return
     success,result = strToTimeAdd(args[2])
     if not success:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':result,'color':colours['error']}),delete_after=30)
+        await msg.channel.send(embed=fromdict({'title':'Error','description':result,'color':colours['error']}),delete_after=10)
         return
     word = args[1].lower()
     wordBlockList[msg.guild.id][word] = result
     await msg.channel.send(embed=fromdict({'title':'Success','description':'Any messages containing '+word+' will be deleted after '+simplifySeconds(result),'color':colours['success']}))
 addCommand("blockword",blockWord,0,"Add a word to the filter list",{"word":True,"deletiontime":True},None,"admin")
 async def unblockWord(msg,args):
-    try:
-        await msg.delete()
-    except:
-        pass
-    if len(args) < 2:
+    if not exists(args,1):
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a word to unban','color':colours['error']}),delete_after=10)
         return
     word = args[1].lower()
