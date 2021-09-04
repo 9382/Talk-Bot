@@ -372,7 +372,7 @@ async def constantChannelCheck(): #For queued channel clearing
                 if channelCloneTime and channelCloneTime < time.time():
                     for t in guildChannelList:
                         if channelName == t.name:
-                            queuedChannels[guild.id][channelName] = time.time()+channelList[channelName]
+                            queuedChannels[guild.id][channelName] = time.time()+channelList[guild.id][channelName]
                             await cloneChannel(t.id)
     except Exception as exc:
         print("[!] ChannelClear Exception:",exc)
