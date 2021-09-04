@@ -162,7 +162,7 @@ async def on_member_join(member):
             invitesBefore[inviteId] = {"m":inviteInfo["m"],"u":0}
         if invitesBefore[inviteId]["u"] < inviteInfo["u"]:
             if logChannelList[guild.id]:
-                await client.get_channel(logChannelList[guild.id]).send(embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}>/{member} has joined through <@{inviteInfo['m'].id}>/{inviteInfo['m']}'s invite (discord.gg/{inviteId})\nInvite is at {inviteInfo['u']} uses","color":colours["info"]}))
+                await client.get_channel(logChannelList[guild.id]).send(embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}> ({member}) has joined through <@{inviteInfo['m'].id}> ({inviteInfo['m']})'s invite (discord.gg/{inviteId})\nInvite is at {inviteInfo['u']} uses","color":colours["info"]}))
             break
     guildInviteTrack[guild.id] = invitesAfter
 def findVoiceClient(guildId): #Find the relevant voice client object for the specified guild. Returns None if none are found
