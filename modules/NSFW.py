@@ -1,3 +1,23 @@
+async def blockNSFWTag(msg,args):
+    if len(args) < 2:
+        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a tag to block','color':colours['error']}),delete_after=30)
+        return
+    word = msg.content[11:].lower()
+    nsfwBlockedTerms[msg.guild.id].append(word)
+    await msg.channel.send(embed=fromdict({'title':'Success','description':'Any posts containing \''+word+'\' will not be sent','color':colours['success']}))
+addCommand("blocktag",blockNSFWTag,0,"Block certain tags from showing in NSFW commands",{"tag":True},None,"admin")
+async def unblockNSFWTag(msg,args):
+    if len(args) < 2:
+        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a tag to unblock','color':colours['error']}),delete_after=30)
+        return
+    word = msg.content[13:].lower()
+    try:
+        nsfwBlockedTerms[msg.guild.id].remove(word)
+    except:
+        pass
+    await msg.channel.send(embed=fromdict({'title':'Success','description':'Any posts containing \''+word+'\' will no longer be blocked','color':colours['success']}))
+addCommand("unblocktag",unblockNSFWTag,0,"Allow certain tags to be in NSFW commands again",{"tag":True},None,"admin")
+
 async def filterTagList(msg,tagList): #Why did i do this into a function again? idk
     for i in nsfwBlockedTerms[msg.guild.id]:
         if i in tagList.lower():

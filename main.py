@@ -609,26 +609,6 @@ async def unclearChannel(msg,args):
     await msg.channel.send(embed=fromdict({'title':'Success','description':channelName+' will no longer be cleared','color':colours['success']}))
 addCommand("unclearchannel",unclearChannel,0,"Stop a channel from being auto-cleared",{"channelName":True},None,"admin")
 
-async def blockNSFWTag(msg,args):
-    if len(args) < 2:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a tag to block','color':colours['error']}),delete_after=30)
-        return
-    word = msg.content[11:].lower()
-    nsfwBlockedTerms[msg.guild.id].append(word)
-    await msg.channel.send(embed=fromdict({'title':'Success','description':'Any posts containing \''+word+'\' will not be sent','color':colours['success']}))
-addCommand("blocktag",blockNSFWTag,0,"Block certain tags from showing in NSFW commands",{"tag":True},None,"admin")
-async def unblockNSFWTag(msg,args):
-    if len(args) < 2:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a tag to unblock','color':colours['error']}),delete_after=30)
-        return
-    word = msg.content[13:].lower()
-    try:
-        nsfwBlockedTerms[msg.guild.id].remove(word)
-    except:
-        pass
-    await msg.channel.send(embed=fromdict({'title':'Success','description':'Any posts containing \''+word+'\' will no longer be blocked','color':colours['success']}))
-addCommand("unblocktag",unblockNSFWTag,0,"Allow certain tags to be in NSFW commands again",{"tag":True},None,"admin")
-
 async def publicVote(msg,args):
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You gotta include the thing to vote on','color':colours['error']}),delete_after=30)
