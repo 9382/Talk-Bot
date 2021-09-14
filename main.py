@@ -283,6 +283,7 @@ async def on_raw_message_edit(msg): #On message edit to avoid bypassing
         pass #Dont care if this errors since it bloody will and its not an issue
     else:
         await filterMessage(messageObj)
+multList = {"s":1,"m":60,"h":3600,"d":86400}
 def strToTimeAdd(duration):
     timeMult = duration[-1].lower()
     timeAmount = duration[:-1]
@@ -290,14 +291,8 @@ def strToTimeAdd(duration):
         timeAmount = int(timeAmount)
     except:
         return False,"timeAmount must be an integer"
-    if timeMult == "s":
-        return True,timeAmount
-    elif timeMult == "m":
-        return True,timeAmount*60
-    elif timeMult == "h":
-        return True,timeAmount*3600
-    elif timeMult == "d":
-        return True,timeAmount*86400
+    if timeMult in multList:
+        return True,timeAmount*multList[timeMult]
     else:
         return False,"Time period must be s, m, h or d"
 def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
