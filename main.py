@@ -937,6 +937,18 @@ async def gimmePing(msg,args):
     await message.edit(content=str(round((time.time()-startTime)*1000))+" ms")
 addCommand("ping",gimmePing,0,"",{},None,"dev")
 
+''' Load modules from the modules folder
+The commands are added via the Commands table in each module
+The main code can be found in modules/__main__.py '''
+from modules.__main__ import command_list
+for tupleList in command_list:
+    try:
+        name,function,ratelimit,description,descriptionArgs,extraInfo,group = tupleList
+    except:
+        print("Failed to import",tupleList[0],f": invalid tuple size (Expected 7, got {len(tupleList)})")
+        continue
+    addCommand(name,function,ratelimit,description,descriptionArgs,extraInfo,group)
+
 print('done commands')
 for i in os.listdir('storage/settings'):
     try:
