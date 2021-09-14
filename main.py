@@ -706,56 +706,6 @@ async def deathBattle(msg,args):
     ))
 addCommand("deathbattle",deathBattle,1,"Fight someone to the death!",{"@user":False},None,"dev")
 
-ttsQueue = []
-handlingTTS = False
-async def speakTTS(msg,args):
-    global ttsQueue
-    global handlingTTS
-    if not msg.author.voice:
-        await msg.channel.send(embed=fromdict({'title':'No VC','description':'You must be in a voice channel when using this command','color':colours['error']}),delete_after=10)
-        return
-    if len(ttsQueue) >= 3:
-        await msg.channel.send(embed=fromdict({"title":"Queue Full","description":"The TTS Queue is currently full, wait for the current one to finish first","color":colours['error']}),delete_after=10)
-        return
-    if len(msg.content)-6 > 130:
-        await msg.channel.send(embed=fromdict({"title":"Too Long","description":"TTS is capped at 130 characters. Your message is "+str(len(msg.content)-6),"color":colours["error"]}),delete_after=10)
-        return
-    if len(msg.content)-6 < 1:
-        await msg.channel.send(embed=fromdict({"title":"No Content","description":"You need to provide something to speak","color":colours["error"]}),delete_after=10)
-        return
-    ttsQueue.append({"m":msg.content[6:],"c":msg.author.voice.channel})
-    if not handlingTTS:
-        handlingTTS = True
-        while len(ttsQueue) > 0:
-            dialouge = ttsQueue[0]
-            vc = await connectToVC(dialouge["c"])
-            if not vc:
-                await asyncio.sleep(1)
-                continue
-            ttsQueue.pop(0)
-            ttsObject = pyttsx3.init()
-            fileName = tempFile("mp3")
-            ttsObject.setProperty("voice",ttsObject.getProperty('voices')[0].id)
-            # ttsObject.setProperty("volume",ttsObject.getProperty("volume")*10)
-            ttsObject.setProperty('rate',160)
-            ttsObject.save_to_file(dialouge["m"],fileName)
-            ttsObject.runAndWait()
-            while True: #Keeps thinking its not connected even though it is. Logic
-                try:
-                    vc.play(await discord.FFmpegOpusAudio.from_probe(fileName)) #Audio
-                except:
-                    pass
-                else:
-                    break
-            while vc.is_playing():
-                await asyncio.sleep(0.5)
-            try:
-                os.remove(fileName)
-            except:
-                pass
-        handlingTTS = False
-addCommand("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"dev")
-
 async def blockMedia(msg,args):
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include the time until deletion','color':colours['error']}),delete_after=10)
