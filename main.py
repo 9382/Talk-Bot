@@ -931,6 +931,11 @@ addCommand("imaget",imageComp,0,"",{},None,"dev")
 async def printThis(msg,args):
     print(msg.content)
 addCommand("ddd",printThis,0,"",{},None,"dev")
+async def gimmePing(msg,args):
+    startTime = time.time()
+    message = await msg.channel.send("<???> ms")
+    await message.edit(content=str(round((time.time()-startTime)*1000))+" ms")
+addCommand("ping",gimmePing,0,"",{},None,"dev")
 
 print('done commands')
 for i in os.listdir('storage/settings'):
