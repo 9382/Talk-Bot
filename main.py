@@ -17,6 +17,7 @@ import os
 import io
 prefix = "##"
 def exists(table,value): #Wanna reduce the try except spam checking for possible values
+    # "Why not use hasattr?" hasattr doesnt support numbers in dictionaries
     try:
         table[value]
         return True
@@ -277,7 +278,7 @@ async def on_message(msg):
 @client.event
 async def on_raw_message_edit(msg): #On message edit to avoid bypassing
     try:
-        messageObj = await client.get_channel(int(msg.data['channel_id'])).get_partial_message(int(msg.data['id'])).fetch()
+        messageObj = discord.PartialMessage(channel=client.get_channel(int(msg.data['channel_id'])),id=int(msg.data['id']))
     except:
         pass #Dont care if this errors since it bloody will and its not an issue
     else:
@@ -555,7 +556,7 @@ async def unblockWord(msg,args):
     await msg.channel.send(embed=fromdict({'title':'Success','description':f'{word} is allowed again','color':colours['success']}))
 addCommand("unblockword",unblockWord,0,"Remove a word from the filter list",{"word":True},None,"admin")
 
-async def list_admin(msg,args):
+async def list_admin(msg,args): # God this looks horrible. NOTE: Patch this up at some point
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:\n`list words`\n`list channels`\n`list tags`','color':colours['info']}))
         return
@@ -588,7 +589,7 @@ async def clearChannel(msg,args):
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a channel name','color':colours['error']}),delete_after=30)
         return
     channelName = args[1]
-    frequency = (exists(args,2) and args[2]) or None
+    frequency = exists(args,2) and args[2]
     if frequency:
         success,result = strToTimeAdd(frequency)
         if not success:
