@@ -45,6 +45,7 @@ for i in os.listdir('update'): #What a mess
     else:
         os.remove('update/'+i)
     oldFile.close()
+print("Rebooting...")
 if platform.startswith("win"): #win32/win64
     os.system('start __start__.py')
 else: #Assume linux - use sh
