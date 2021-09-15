@@ -1,3 +1,5 @@
+# Anything with NSFW gets chucked here
+
 async def blockNSFWTag(msg,args):
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a tag to block','color':colours['error']}),delete_after=30)
@@ -117,9 +119,7 @@ async def nsfwScrape(msg,args,sitetype): #I spent hours on this and idk if i sho
     except Exception as exc:
         print("[NSFW] "+sitetype+" Exception:",exc)
         await msg.channel.send(embed=fromdict({'title':'Unexpected Error','description':'Something unexpected went wrong, hopefully it wont happen again.\n\nError: '+str(exc),'color':colours['error']}))
-Commands = [
-    ("r34",nsfwScrape,3,"Get an NSFW post on rule34 with optional tags",{"tags":False},"rule34","NSFW"),
-    #("e621",nsfwScrape,3,"Get an NSFW post on e621 with optional tags",{"tags":False},"e621","NSFW"),
-    ("hentai",nsfwScrape,3,"Get an NSFW post on danbooru with optional tags",{"tags":False},"danbooru","NSFW"),
-    ("irl",nsfwScrape,3,"Get an NSFW post on realbooru with optional tags",{"tags":False},"realbooru","NSFW")
-]
+addCommand("r34",nsfwScrape,3,"Get an NSFW post on rule34 with optional tags",{"tags":False},"rule34","NSFW")
+#addCommand("e621",nsfwScrape,3,"Get an NSFW post on e621 with optional tags",{"tags":False},"e621","NSFW")
+addCommand("hentai",nsfwScrape,3,"Get an NSFW post on danbooru with optional tags",{"tags":False},"danbooru","NSFW")
+addCommand("irl",nsfwScrape,3,"Get an NSFW post on realbooru with optional tags",{"tags":False},"realbooru","NSFW")

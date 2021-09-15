@@ -1,5 +1,5 @@
-from discord.ext import commands #Unrequired? I import all of discord anyways
-from discord.ext import tasks #Unrequired? I import all of discord anyways
+from discord.ext import commands
+from discord.ext import tasks
 from datetime import datetime
 from PIL import Image,ImageDraw,ImageFont,ImageChops
 import re as regex
@@ -698,17 +698,10 @@ async def unblockMedia(msg,args):
 addCommand("unblockmedia",unblockMedia,0,"Stop auto-filtering a channel's media",{},None,"admin")
 
 ''' Load modules from the modules folder
-The commands are added via the Commands table in each module
+Only use this for storing commands that dont rely on other commands, as load order is random
 This is so i dont clog up the entirety of this main script with like 2k lines
 The main code can be found in modules/__main__.py '''
-from modules.__main__ import command_list
-for tupleList in command_list:
-    try:
-        name,function,ratelimit,description,descriptionArgs,extraInfo,group = tupleList
-    except:
-        print("Failed to import",tupleList[0],f": invalid tuple size (Expected 7, got {len(tupleList)})")
-        continue
-    addCommand(name,function,ratelimit,description,descriptionArgs,extraInfo,group)
+from modules import __main__
 
 print('done commands')
 for i in os.listdir('storage/settings'):

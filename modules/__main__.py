@@ -1,8 +1,6 @@
 # Handler for the modules folder
 # __import__ isnt friendly with sub-dirs, fromfile makes no sense, and ive got no wifi to figure out how, so exec it is
 import os
-__all__ = ["command_list"]
-command_list = []
 for fname in os.listdir("modules"):
     if not fname.endswith(".py"):
         continue
@@ -12,9 +10,7 @@ for fname in os.listdir("modules"):
     if fname == "__main__":
         continue
     try:
-        exec(f"from modules.{fname} import Commands")
+        exec(f"from modules import {fname}")
     except Exception as exc:
-        print(exc)
-    else:
-        command_list.extend(Commands)
+        print("[Modules]",exc)
 print("Module importer finished")

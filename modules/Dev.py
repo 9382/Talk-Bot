@@ -1,4 +1,4 @@
-''' Pretty much every command under "dev" will be here '''
+# Pretty much every command under "dev" will be here
 
 async def d_exec(msg,args):
     try:
