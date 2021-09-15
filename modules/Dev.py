@@ -2,10 +2,12 @@
 
 async def d_exec(msg,args):
     try:
-        exec(msg.content[9:])
+        exec(msg.content[10:])
     except Exception as exc:
-        print("[Dev] Nice custom exec, but it failed. Command:",msg.content[9:],"Exception:",exc)
-addCommand("d_exec",d_exec,0,"",{},None,"dev")
+        print("[Dev] Nice custom exec, but it failed. Command:",msg.content[10:],"Exception:",exc)
+    else:
+        print("[Dev] Successful exec")
+addCommand("d -exec",d_exec,0,"",{},None,"dev")
 
 async def presetAudioTest(msg,args):
     if not msg.author.voice:

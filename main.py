@@ -479,7 +479,7 @@ async def forceUpdate(msg,args):
     print("Default save finished")
     print("Closing")
     await client.close()
-addCommand("d_forceupdate",forceUpdate,0,"",{},None,"dev")
+addCommand("d -update",forceUpdate,0,"",{},None,"dev")
 
 async def cmdList(msg,args): #just handles itself and its lovely
     isAdmin = msg.author.guild_permissions.administrator
