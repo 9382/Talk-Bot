@@ -697,11 +697,20 @@ async def unblockMedia(msg,args):
     await msg.channel.send(embed=fromdict({'title':'Success','description':'Media will no longer be removed','color':colours['success']}))
 addCommand("unblockmedia",unblockMedia,0,"Stop auto-filtering a channel's media",{},None,"admin")
 
+print('attempting import')
 ''' Load modules from the modules folder
 Only use this for storing commands that dont rely on other commands, as load order is random
 This is so i dont clog up the entirety of this main script with like 2k lines
 The main code can be found in modules/__main__.py '''
-from modules import __main__
+from modules.__main__ import command_list
+print("->")
+for tupleList in command_list:
+    try:
+        name,function,ratelimit,description,descriptionArgs,extraInfo,group = tupleList
+    except:
+        print("Failed to import",tupleList[0],f": invalid tuple size (Expected 7, got {len(tupleList)})")
+        continue
+    addCommand(name,function,ratelimit,description,descriptionArgs,extraInfo,group)
 
 print('done commands')
 for i in os.listdir('storage/settings'):

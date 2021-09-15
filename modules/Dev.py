@@ -1,4 +1,8 @@
 # Pretty much every command under "dev" will be here
+__all__ = ["Commands"]
+Commands = []
+def addCommand(a,b,c,d,e,f,g):
+    Commands.append((a,b,c,d,e,f,g))
 
 async def d_exec(msg,args):
     try:
