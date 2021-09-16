@@ -669,14 +669,17 @@ print('attempting import')
 Only use this for storing commands that dont rely on other commands, as load order is random
 This is so i dont clog up the entirety of this main script with like 2k lines
 The main code can be found in modules/__main__.py '''
-from modules.__main__ import command_list
-for tupleList in command_list:
-    try:
-        name,function,ratelimit,description,descriptionArgs,extraInfo,group = tupleList
-    except:
-        print("Failed to import",tupleList[0],f": invalid tuple size (Expected 7, got {len(tupleList)})")
-    else:
-        addCommand(name,function,ratelimit,description,descriptionArgs,extraInfo,group)
+from modules.__main__ import exec_list,load_modules
+load_modules("Main")
+async def loadModulesAsync(msg,args):
+    load_modules("User "+msg.author.name)
+addCommand("d -reload modules",loadModulesAsync,0,"",{},None,"dev")
+print("Tuple acceptable")
+for contents in exec_list:
+    # try:
+    exec(contents,globals())
+    # except Exception as exc:
+    #     print("[Modules] Module import error ->",exc)
 
 print('done commands')
 for i in os.listdir('storage/settings'):

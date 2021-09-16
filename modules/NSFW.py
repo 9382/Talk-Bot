@@ -1,8 +1,4 @@
 # Anything with NSFW gets chucked here
-__all__ = ["Commands"]
-Commands = []
-def addCommand(a,b,c,d,e,f,g):
-    Commands.append((a,b,c,d,e,f,g))
 
 async def blockNSFWTag(msg,args):
     if len(args) < 2:
