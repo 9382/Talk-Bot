@@ -2,7 +2,7 @@
 
 async def d_exec(msg,args):
     try:
-        exec(msg.content[10:])
+        exec(msg.content[10:],globals())
     except Exception as exc:
         print("[Dev] Nice custom exec, but it failed. Command:",msg.content[10:],"Exception:",exc)
     else:
