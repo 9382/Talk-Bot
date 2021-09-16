@@ -647,40 +647,6 @@ async def publicVote(msg,args):
                 pass #User input sanitasion cause some guys gonna go [haha]
 addCommand("vote",publicVote,10,"Make a public vote about anything with an optional image",{"text":True,"imagefile":False},None,"general")
 
-import deathbattle as db
-async def deathBattle(msg,args):
-    u2 = exists(args,1) and numRegex.search(args[1]) and msg.guild.get_member(int(numRegex.search(args[1]).group()))
-    if not u2:
-        u2 = random.choice(msg.guild.members)
-    u1 = msg.author
-    dbResults = db.calculate(db.user(u1.name,u1.id),db.user(u2.name,u2.id))
-    dbMessage = await msg.channel.send(':anger: Death Battle!',embed=fromdict(
-        {'author':{'name':u1.name+' is challenging '+u2.name},'fields':[{'name':u1.name,'value':'100','inline':True},{'name':u2.name,'value':'100','inline':True}],'color':colours['info']}
-    ))
-    previousAttacks = [None]*2
-    await asyncio.sleep(2)
-    for i in dbResults['log']:
-        description = ""
-        for h in previousAttacks:
-            if h:
-                description += h+"\n"
-        description += i.hitMsg
-        await dbMessage.edit(content=':anger: Death Battle!',embed=fromdict(
-            {'author':{'name':u1.name+' is challenging '+u2.name},'description':description,'fields':[{'name':u1.name,'value':i.u1hp,'inline':True},{'name':u2.name,'value':i.u2hp,'inline':True}],'color':colours['info']}
-        ))
-        previousAttacks.pop(0)
-        previousAttacks.append(i.hitMsg)
-        await asyncio.sleep(1.6)
-    description = ""
-    for h in previousAttacks:
-        if h:
-            description += h+"\n"
-    description += "__**"+dbResults['winner'].name+"**__ won the fight!"
-    await dbMessage.edit(content=':anger: Death Battle!',embed=fromdict(
-        {'author':{'name':u1.name+' is challenging '+u2.name},'description':description,'fields':[{'name':u1.name,'value':i.u1hp,'inline':True},{'name':u2.name,'value':i.u2hp,'inline':True}],'color':colours['info']}
-    ))
-addCommand("deathbattle",deathBattle,1,"Fight someone to the death!",{"@user":False},None,"dev")
-
 async def blockMedia(msg,args):
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include the time until deletion','color':colours['error']}),delete_after=10)
