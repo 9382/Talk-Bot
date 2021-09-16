@@ -354,28 +354,29 @@ async def constantMessageCheck(): #For message filter
         toDeleteList = {}
         loggedMessagesCache = loggedMessages #If table size changes during calculations, it errors. Thats bad
         for i in loggedMessagesCache:
-            if loggedMessagesCache[i]:
-                if type(i) == discord.Message or type(i) == discord.PartialMessage:
-                    if loggedMessagesCache[i] < time.time():
-                        if not exists(toDeleteList,i.channel.id):
-                            toDeleteList[i.channel.id] = []
-                        toDeleteList[i.channel.id].append(i)
-                        loggedMessages[i] = None
-                else:
-                    msgInfo = loggedMessagesCache[i]
-                    if not msgInfo["t"]: #IDEK how
-                        loggedMessages[i] = None
-                        continue
-                    msgInfo["c"] = int(msgInfo["c"]) #Dont ask, its to do with how it saved, ok?
-                    if msgInfo["t"] < time.time():
-                        channel = client.get_channel(msgInfo["c"])
-                        if channel:
-                            if not exists(toDeleteList,msgInfo["c"]):
-                                toDeleteList[msgInfo["c"]] = []
-                            partialMessage = discord.PartialMessage(channel=channel,id=i)
-                            if partialMessage:
-                                toDeleteList[msgInfo["c"]].append(partialMessage)
-                                loggedMessages[i] = None
+            if not loggedMessagesCache[i]:
+                continue
+            if type(i) == discord.Message or type(i) == discord.PartialMessage:
+                if loggedMessagesCache[i] < time.time():
+                    if not exists(toDeleteList,i.channel.id):
+                        toDeleteList[i.channel.id] = []
+                    toDeleteList[i.channel.id].append(i)
+                    loggedMessages[i] = None
+            else:
+                msgInfo = loggedMessagesCache[i]
+                if not msgInfo["t"]: #IDEK how
+                    loggedMessages[i] = None
+                    continue
+                msgInfo["c"] = int(msgInfo["c"]) #Dont ask, its to do with how it saved, ok?
+                if msgInfo["t"] < time.time():
+                    channel = client.get_channel(msgInfo["c"])
+                    if channel:
+                        if not exists(toDeleteList,msgInfo["c"]):
+                            toDeleteList[msgInfo["c"]] = []
+                        partialMessage = discord.PartialMessage(channel=channel,id=i)
+                        if partialMessage:
+                            toDeleteList[msgInfo["c"]].append(partialMessage)
+                            loggedMessages[i] = None
         if toDeleteList != {}:
             for channel in toDeleteList:
                 try:
