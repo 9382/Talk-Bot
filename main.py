@@ -669,10 +669,17 @@ print('attempting import')
 Only use this for storing commands that dont rely on other commands, as load order is random
 This is so i dont clog up the entirety of this main script with like 2k lines
 The main code can be found in modules/__main__.py '''
-from modules.__main__ import exec_list,load_modules
-load_modules("Main")
+from modules.__main__ import load_modules
+def loadModules(origin=None):
+    exec_list = load_modules(origin)
+    for contents in exec_list:
+        try:
+            exec(contents,globals())
+        except Exception as exc:
+            print("[Modules] Module import error ->",exc)
+loadModules("Main")
 async def loadModulesAsync(msg,args):
-    load_modules("User "+msg.author.name)
+    loadModules("User "+msg.author.name)
 addCommand("d -reload modules",loadModulesAsync,0,"",{},None,"dev")
 
 print('done commands')

@@ -14,8 +14,4 @@ def load_modules(origin=None):
         if fname == "__main__.py":
             continue
         exec_list.append(bytes("#coding: utf-8\n","utf-8")+open("modules/"+fname,"rb").read())
-    for contents in exec_list:
-        try:
-            exec(contents,globals())
-        except Exception as exc:
-            print("[Modules] Module import error ->",exc)
+    return exec_list
