@@ -87,6 +87,7 @@ async def speakTTS(msg,args): # This is a bit of a mess. Maybe an improve, how a
         await msg.channel.send(embed=fromdict({"title":"No Content","description":"You need to provide something to speak","color":colours["error"]}),delete_after=10)
         return
     ttsQueue.append({"m":msg.content[6:],"c":msg.author.voice.channel})
+    ### NOTE: Rewrite this into a @tasks.loop() loop, to avoid illogical handling as shown below :)
     if not handlingTTS:
         handlingTTS = True
         while len(ttsQueue) > 0:
@@ -99,7 +100,6 @@ async def speakTTS(msg,args): # This is a bit of a mess. Maybe an improve, how a
             ttsObject = pyttsx3.init()
             fileName = tempFile("mp3")
             ttsObject.setProperty("voice",ttsObject.getProperty('voices')[0].id)
-            # ttsObject.setProperty("volume",ttsObject.getProperty("volume")*10)
             ttsObject.setProperty('rate',160)
             ttsObject.save_to_file(dialouge["m"],fileName)
             ttsObject.runAndWait()
