@@ -2,10 +2,10 @@
 # __import__ isnt friendly with sub-dirs, fromfile makes no sense, and ive got no wifi to figure out how, so exec it is
 # Note 2: I gave up with globals, im not researching how to make them work with eachother, so its bytes exec time :) :) :)
 import os
-exec_list = []
-__all__ = ["exec_list","load_modules"]
+__all__ = ["load_modules"]
 def load_modules(origin=None):
     print("Loading modules origin=",origin)
+    exec_list = []
     for fname in os.listdir("modules"):
         if not fname.endswith(".py"):
             continue
@@ -14,3 +14,8 @@ def load_modules(origin=None):
         if fname == "__main__.py":
             continue
         exec_list.append(bytes("#coding: utf-8\n","utf-8")+open("modules/"+fname,"rb").read())
+    for contents in exec_list:
+        try:
+            exec(contents,globals())
+        except Exception as exc:
+            print("[Modules] Module import error ->",exc)

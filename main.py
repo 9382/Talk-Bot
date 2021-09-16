@@ -674,12 +674,6 @@ load_modules("Main")
 async def loadModulesAsync(msg,args):
     load_modules("User "+msg.author.name)
 addCommand("d -reload modules",loadModulesAsync,0,"",{},None,"dev")
-print("Tuple acceptable")
-for contents in exec_list:
-    # try:
-    exec(contents,globals())
-    # except Exception as exc:
-    #     print("[Modules] Module import error ->",exc)
 
 print('done commands')
 for i in os.listdir('storage/settings'):
