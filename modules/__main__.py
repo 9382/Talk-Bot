@@ -14,21 +14,11 @@ def loadModules(origin=None):
         if fname == "__main__":
             continue
         try:
-            exec(f"from modules.{fname} import Commands")
-            print(":)")
-            if hasattr(globals(),"Commands"):
-                command_list.extend(Commands)
-            else:
-                print("No commands for",fname)
+            exec(f"from modules.{fname} import Commands",globals())
         except Exception as exc:
             print("[Modules]",fname,"failed:",exc)
         else:
-            pass
-            # print(":)")
-            # if hasattr(globals(),"Commands"):
-            #     command_list.extend(Commands)
-            # else:
-            #     print("No commands for",fname)
+            command_list.extend(Commands)
 async def loadModulesAsync(msg,args):
     loadModules("CMD -> "+msg.author.name)
 command_list.append(("d -reload modules",loadModulesAsync,0,"",{},None,"dev"))

@@ -703,14 +703,13 @@ Only use this for storing commands that dont rely on other commands, as load ord
 This is so i dont clog up the entirety of this main script with like 2k lines
 The main code can be found in modules/__main__.py '''
 from modules.__main__ import command_list
-print("->")
 for tupleList in command_list:
     try:
         name,function,ratelimit,description,descriptionArgs,extraInfo,group = tupleList
     except:
         print("Failed to import",tupleList[0],f": invalid tuple size (Expected 7, got {len(tupleList)})")
-        continue
-    addCommand(name,function,ratelimit,description,descriptionArgs,extraInfo,group)
+    else:
+        addCommand(name,function,ratelimit,description,descriptionArgs,extraInfo,group)
 
 print('done commands')
 for i in os.listdir('storage/settings'):
