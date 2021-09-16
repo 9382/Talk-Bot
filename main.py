@@ -680,7 +680,7 @@ def loadModules(origin=None):
 loadModules("Main")
 async def loadModulesAsync(msg,args):
     loadModules("User "+msg.author.name)
-addCommand("d -reload modules",loadModulesAsync,0,"",{},None,"dev")
+addCommand("d -reload modules",loadModulesAsync,0,"Reloads all the modules",{},None,"dev")
 
 print('done commands')
 for i in os.listdir('storage/settings'):
