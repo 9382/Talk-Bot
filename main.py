@@ -221,7 +221,7 @@ async def doTheCheck(msg,args,command,commandInfo): #Dont wanna type this 3 time
     if not exists(ratelimitInfo,msg.author.id): #Prevent ratelimit logic from erroring
         ratelimitInfo[msg.author.id] = {}
     callingCommand = prefix+command
-    if msg.content.lower().startswith(callingCommand) and (not msg.content[len(callingCommand)] or msg.content[len(callingCommand)] == " " or msg.content[len(callingCommand)] == "\n"): #Find the fitting command if it exists
+    if msg.content.lower().startswith(callingCommand) and (not exists(msg.content,len(callingCommand)) or msg.content[len(callingCommand)] == " " or msg.content[len(callingCommand)] == "\n"): #Find the fitting command if it exists
         arg0 = args[0]
         args[0] = arg0[:len(callingCommand)]
         if arg0[len(callingCommand)+1:]:
