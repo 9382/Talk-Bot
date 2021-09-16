@@ -5,7 +5,7 @@ async def blockNSFWTag(msg,args):
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a tag to block','color':colours['error']}),delete_after=30)
         return
     word = msg.content[11:].lower()
-    nsfwBlockedTerms[msg.guild.id].append(word)
+    getMegaTable(msg).NSFWBlockList.append(word)
     await msg.channel.send(embed=fromdict({'title':'Success','description':'Any posts containing \''+word+'\' will not be sent','color':colours['success']}))
 addCommand("blocktag",blockNSFWTag,0,"Block certain tags from showing in NSFW commands",{"tag":True},None,"admin")
 async def unblockNSFWTag(msg,args):
@@ -14,7 +14,7 @@ async def unblockNSFWTag(msg,args):
         return
     word = msg.content[13:].lower()
     try:
-        nsfwBlockedTerms[msg.guild.id].remove(word)
+        getMegaTable(msg).NSFWBlockList.remove(word)
     except:
         pass
     await msg.channel.send(embed=fromdict({'title':'Success','description':'Any posts containing \''+word+'\' will no longer be blocked','color':colours['success']}))
