@@ -112,7 +112,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
             return
         if buffer <= 0:
             try:
-                await asyncio.run(msg.delete())
+                asyncio.run(msg.delete())
                 return buffer
             except:
                 pass
