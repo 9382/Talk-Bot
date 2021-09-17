@@ -45,7 +45,7 @@ def safeWriteToFile(filename,content,encoding="UTF-8"):
     except Exception as exc:
         file.close()
         if backup:
-            open(filename,"rb").write(backup)
+            open(filename,"wb").write(backup)
             print("[Safe Write] Failed to write to",filename,":",exc)
         else:
             print("[Safe Write] Failed to write to",filename,"with no backup available:",exc)
