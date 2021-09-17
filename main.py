@@ -60,18 +60,16 @@ loggedMessages = {} # Consider moving logged messages into GMT - it could provid
 guildMegaTable = {}
 class GuildObject: #Why didnt i do this before? Python is class orientated anyways
     def __init__(self,gid):
-        if exists(guildMegaTable,gid):
-            self = guildMegaTable[gid]
-        else:
-            self.Guild = gid
-            self.WordBlockList = {}
-            self.NSFWBlockList = []
-            self.InviteTrack = None
-            self.LogChannel = None
-            self.MediaFilters = {}
-            self.ChannelClearList = {}
-            self.QueuedChannels = {}
-            guildMegaTable[gid] = self
+        self.Guild = gid
+        self.WordBlockList = {}
+        self.NSFWBlockList = []
+        self.InviteTrack = None
+        self.LogChannel = None
+        self.MediaFilters = {}
+        self.ChannelClearList = {}
+        self.QueuedChannels = {}
+        self.LoggedMessages = {}
+        guildMegaTable[gid] = self
     def Log(self,content=None,embed=None):
         if self.LogChannel and client.get_channel(self.LogChannel):
             try:
@@ -204,8 +202,8 @@ async def on_ready():
         pass
 @client.event
 async def on_guild_join(guild):
-    gmt = getMegaTable(guild)
-    gmt.InviteTrack = await getGuildInviteStats(guild)
+    guildMegaTable[guild.id] = GuildObject(guild.id) # Force default settings
+    getMegaTable(guild).InviteTrack = await getGuildInviteStats(guild)
 @client.event
 async def on_member_join(member):
     guild = member.guild
