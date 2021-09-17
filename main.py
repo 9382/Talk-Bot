@@ -504,7 +504,7 @@ async def forceUpdate(msg,args):
     print("Save finished")
     print("Closing")
     await client.close()
-addCommand("d -update",forceUpdate,0,"",{},None,"dev")
+addCommand("d -update",forceUpdate,0,"Updates the bot, force saving configs",{},None,"dev")
 
 async def cmdList(msg,args): #just handles itself and its lovely
     isAdmin = msg.author.guild_permissions.administrator
