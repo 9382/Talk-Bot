@@ -66,7 +66,7 @@ class FilteredMessage:
         self.Deletion = expirey
         self.Message = messageObj # Do not get directly, use GetMessageObj
         self.MessageId = msgid
-        self.Channel = channel
+        self.Channel = channelid
     def GetMessageObj(self):
         if self.Message:
             return self.Message
@@ -76,7 +76,7 @@ class FilteredMessage:
             self.Message = messageObj
             return messageObj
     def Expired(self):
-        return time.time() < Deletion
+        return time.time() > self.Deletion
 class GuildObject: #Why didnt i do this before? Python is class orientated anyways
     def __init__(self,gid):
         self.Guild = gid
@@ -97,8 +97,8 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 print("Log failed?")
                 pass
     def GetMediaFilter(self,channel):
-        if exists(self.MediaFilterList,channel):
-            return self.MediaFilterList[channel]
+        if exists(self.MediaFilters,channel):
+            return self.MediaFilters[channel]
     def AddChannelClear(self,channel,cycle): # Why in a function? Cause its easier to handle QueuedChannels this way
         self.ChannelClearList[channel] = cycle
         self.QueuedChannels[channel] = time.time()+cycle
@@ -125,12 +125,12 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
             return self.AddToFilter(msg,forced)
         for word in self.WordBlockList:
             buffer = self.WordBlockList[word] # Should never be None now, hopefully
-            if msg.content.lower().find(i) != -1:
+            if msg.content.lower().find(word) != -1:
                 return self.AddToFilter(msg,buffer)
             for embed in msg.embeds:
-                if embed.title and embed.title.lower().find(i) != -1:
+                if embed.title and embed.title.lower().find(word) != -1:
                     return self.AddToFilter(msg,buffer)
-                if embed.description and embed.description.lower().find(i) != -1:
+                if embed.description and embed.description.lower().find(word) != -1:
                     return self.AddToFilter(msg,buffer)
         buffer = self.GetMediaFilter(msg.channel.id)
         if buffer != None:
@@ -351,7 +351,7 @@ async def on_message(msg):
 @client.event
 async def on_raw_message_edit(msg): #On message edit to avoid bypassing
     try:
-        messageObj = discord.PartialMessage(channel=client.get_channel(int(msg.data['channel_id'])),id=int(msg.data['id']))
+        messageObj = await discord.PartialMessage(channel=client.get_channel(int(msg.data['channel_id'])),id=int(msg.data['id'])).fetch()
     except:
         pass #Dont care if this errors since it bloody will and its not an issue
     else:
@@ -450,6 +450,8 @@ async def constantChannelCheck(): #For queued channel clearing
             gmt = getMegaTable(guild)
             guildChannelList = guild.text_channels
             for channel in guildChannelList:
+                if not exists(gmt.QueuedChannels,channel.name):
+                    continue
                 channelTime = gmt.QueuedChannels[channel.name]
                 if channelTime < time.time():
                     gmt.QueuedChannels[channel.name] = time.time()+gmt.ChannelClearList[channel.name]
@@ -498,25 +500,8 @@ async def forceUpdate(msg,args):
         sleepTime+=1
         await asyncio.sleep(1)
     print("Invoking save - sleep time:",sleepTime)
-    toSave = {}
-    for message in loggedMessages: # We dont need to cache as the message handler is now halted (hopefully)
-        if type(message) == discord.Message or type(message) == discord.PartialMessage:
-            if not loggedMessages[message]:
-                continue
-            if not exists(toSave,message.channel.id):
-                toSave[message.channel.id] = {}
-            toSave[message.channel.id][message.id] = loggedMessages[message]
-        else:
-            info = loggedMessages[message]
-            if not info or not info["t"]:
-                continue
-            if not exists(toSave,info["c"]):
-                toSave[info["c"]] = {}
-            toSave[info["c"]][message] = info["t"]
-    safeWriteToFile("storage/settings/deletion_queue.json",json.dumps(toSave))
-    print("Deletion queue save finished")
     await updateConfigFiles()
-    print("Default save finished")
+    print("Save finished")
     print("Closing")
     await client.close()
 addCommand("d -update",forceUpdate,0,"",{},None,"dev")
