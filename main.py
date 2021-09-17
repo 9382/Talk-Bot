@@ -54,9 +54,28 @@ def currentDate():
     return str(datetime.fromtimestamp(math.floor(time.time()))) #Long function list be like
 fromdict = discord.Embed.from_dict
 numRegex = regex.compile('\d+')
+findMediaRegex = regex.compile("https?://(cdn\.discordapp\.com/attachments/|tenor\.com/view/)")
 colours = {'info':0x5555DD,'error':0xFF0000,'success':0x00FF00,'warning':0xFFAA00,'plain':0xAAAAAA}
-loggedMessages = {} # Consider moving logged messages into GMT - it could provide a few benefits now that its supportable
-guildMegaTable = {}
+guildMegaTable = {} # All in one
+class FilteredMessage:
+    def __init__(self,expirey,msgid=None,channelid=None,messageObj=None):
+        if messageObj:
+            msgid = messageObj.id
+            channelid = messageObj.channel.id
+        self.Deletion = expirey
+        self.Message = messageObj # Do not get directly, use GetMessageObj
+        self.MessageId = msgid
+        self.Channel = channel
+    def GetMessageObj(self):
+        if self.Message:
+            return self.Message
+        channel = client.get_channel(self.Channel)
+        if channel:
+            messageObj = discord.PartialMessage(channel=channel,id=self.MessageId)
+            self.Message = messageObj
+            return messageObj
+    def Expired(self):
+        return time.time() < Deletion
 class GuildObject: #Why didnt i do this before? Python is class orientated anyways
     def __init__(self,gid):
         self.Guild = gid
@@ -67,7 +86,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         self.MediaFilters = {}
         self.ChannelClearList = {}
         self.QueuedChannels = {}
-        self.LoggedMessages = {}
+        self.LoggedMessages = []
         guildMegaTable[gid] = self
     def Log(self,content=None,embed=None):
         if self.LogChannel and client.get_channel(self.LogChannel):
@@ -76,25 +95,6 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
             except:
                 print("Log failed?")
                 pass
-    def CreateSave(self):
-        return {"Guild":self.Guild,
-                "WordBlockList":self.WordBlockList,
-                "ChannelClearList":self.ChannelClearList,
-                "NSFWBlockList":self.NSFWBlockList,
-                "LogChannel":self.LogChannel,
-                "MediaFilters":self.MediaFilters,
-                "QueuedChannels":self.QueuedChannels
-        } #How lovely
-    def LoadSave(self,data):
-        try:
-            self.WordBlockList = data["WordBlockList"]
-            self.ChannelClearList = data["ChannelClearList"]
-            self.NSFWBlockList = data["NSFWBlockList"]
-            self.LogChannel = data["LogChannel"]
-            self.MediaFilters = data["MediaFilters"]
-            self.QueuedChannels = data["QueuedChannels"]
-        except:
-            print("[GuildObject] Invalid data:",data)
     def GetMediaFilter(self,channel):
         if exists(self.MediaFilterList,channel):
             return self.MediaFilterList[channel]
@@ -106,9 +106,78 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
             self.ChannelClearList.pop(channel)
         if exists(self.QueuedChannels,channel):
             self.QueuedChannels.pop(channel)
+    def AddToFilter(self,msg,buffer):
+        if not buffer: # Failsafe, just in case
+            return
+        if buffer <= 0:
+            try:
+                await asyncio.run(msg.delete())
+                return buffer
+            except:
+                pass
+        self.LoggedMessages.append(FilteredMessage(time.time()+buffer,messageObj=msg))
+        return buffer
+    def FilterMessage(self,msg,forced=False): # Now guild specific, how nice :)
+        if exists(self.LoggedMessages,msg):
+            return time.time()-self.LoggedMessages[msg]
+        if type(forced) == type(0):
+            return self.AddToFilter(msg,forced)
+        for word in self.WordBlockList:
+            buffer = self.WordBlockList[word] # Should never be None now, hopefully
+            if msg.content.lower().find(i) != -1:
+                return self.AddToFilter(msg,buffer)
+            for embed in msg.embeds:
+                if embed.title and embed.title.lower().find(i) != -1:
+                    return self.AddToFilter(msg,buffer)
+                if embed.description and embed.description.lower().find(i) != -1:
+                    return self.AddToFilter(msg,buffer)
+        buffer = self.GetMediaFilter(msg.channel.id)
+        if buffer != None:
+            if findMediaRegex.search(msg.content.lower()):
+                return self.AddToFilter(msg,buffer)
+            for i in msg.attachments:
+                if findMediaRegex.search(i.url.lower()):
+                    return self.AddToFilter(msg,buffer)
+            for embed in msg.embeds:
+                if embed.image:
+                    return self.AddToFilter(msg,buffer)
+    def CachedLoggedMessages(self):
+        return self.LoggedMessages
+    def FormatLoggedMessages(self):
+        LoggedMessagesSave = {}
+        for message in self.CachedLoggedMessages():
+            if not exists(LoggedMessagesSave,message.Channel):
+                loggedMessagesSave[message.Channel] = {}
+            LoggedMessagesSave[message.Channel][message.MessageId] = message.Deletion
+        return LoggedMessagesSave
+    def CreateSave(self):
+        return {"Guild":self.Guild,
+                "WordBlockList":self.WordBlockList,
+                "ChannelClearList":self.ChannelClearList,
+                "NSFWBlockList":self.NSFWBlockList,
+                "LogChannel":self.LogChannel,
+                "MediaFilters":self.MediaFilters,
+                "QueuedChannels":self.QueuedChannels,
+                "LoggedMessages":self.FormatLoggedMessages()
+        } #How lovely
+    def LoadSave(self,data):
+        try:
+            self.WordBlockList = data["WordBlockList"]
+            self.ChannelClearList = data["ChannelClearList"]
+            self.NSFWBlockList = data["NSFWBlockList"]
+            self.LogChannel = data["LogChannel"]
+            self.MediaFilters = data["MediaFilters"]
+            self.QueuedChannels = data["QueuedChannels"]
+            self.LoggedMessages = []
+            for channel in data["LoggedMessages"]:
+                for message in data["LoggedMessages"][channel]:
+                    expirey = data["LoggedMessages"][channel][message]
+                    self.LoggedMessages.append(FilteredMessage(expirey,int(message),int(channel)))
+        except:
+            print("[GuildObject] Invalid data:",data)
 def checkMegaTable(gid):
     if not exists(guildMegaTable,gid):
-        guildMegaTable[gid] = GuildObject(gid)#{"Guild":gid,"wordBlocks":{},"nsfwBlocks":[],"inviteTrack":{},"logChannels":{},"mediaFilters":{},"channelClears":{}}
+        guildMegaTable[gid] = GuildObject(gid)
 def getMegaTable(obj):
     gid = None
     if type(obj) == discord.Message or type(obj) == discord.PartialMessage:
@@ -120,44 +189,6 @@ def getMegaTable(obj):
     if gid:
         checkMegaTable(gid)
         return guildMegaTable[gid]
-async def setFilterTime(msg,bufferTime):
-    deleteTime = time.time()+bufferTime
-    if bufferTime > 0:
-        loggedMessages[msg] = deleteTime
-    else:
-        try:
-            await msg.delete()
-        except:
-            loggedMessages[msg] = deleteTime
-    return True
-findMediaRegex = regex.compile("https?://(cdn\.discordapp\.com/attachments/|tenor\.com/view/)")
-async def filterMessage(msg,forceFilter=False): #Main filter handler, just await it with msg var to filter it
-    if exists(loggedMessages,msg): #If already queued for deletion
-        return True
-    gmt = getMegaTable(msg)
-    wordBlockList = gmt.WordBlockList
-    for i in wordBlockList:
-        bufferTime = wordBlockList[i]
-        if bufferTime == None:
-            continue
-        if msg.content.lower().find(i) != -1 or forceFilter:
-            print("[Filter] Msg Filtered:",msg.content,'|->',i)
-            return await setFilterTime(msg,bufferTime)
-        for embed in msg.embeds:
-            if embed.title and embed.title.lower().find(i) != -1:
-                return await setFilterTime(msg,bufferTime)
-            if embed.description and embed.description.lower().find(i) != -1:
-                return await setFilterTime(msg,bufferTime)
-    bufferTime = gmt.GetMediaFilter(msg.channel.id)
-    if bufferTime != None:
-        if findMediaRegex.search(msg.content.lower()):
-            return await setFilterTime(msg,bufferTime)
-        for i in msg.attachments:
-            if findMediaRegex.search(i.url.lower()):
-                return await setFilterTime(msg,bufferTime)
-        for embed in msg.embeds:
-            if embed.image:
-                return await setFilterTime(msg,bufferTime)
 async def getGuildInviteStats(guild):
     toReturn = {}
     try:
@@ -297,11 +328,11 @@ async def doTheCheck(msg,args,command,commandInfo): #Dont wanna type this 3 time
 async def on_message(msg):
     if not msg.guild or msg.author.id == client.user.id: #Only do stuff in guild, ignore messages by the bot
         if msg.guild:
-            await filterMessage(msg)
+            getMegaTable(msg).FilterMessage(msg)
         elif msg.author.id != client.user.id:
             await msg.channel.send(embed=fromdict({'title':'Not here','description':'This bot can only be used in a server, and not dms','color':colours['error']}))
         return
-    await filterMessage(msg)
+    getMegaTable(msg).FilterMessage(msg)
     if type(msg.author) == discord.User: #Webhook
         return
     args = msg.content.split(' ') #Please keep in mind the first argument is the calling command
@@ -323,7 +354,7 @@ async def on_raw_message_edit(msg): #On message edit to avoid bypassing
     except:
         pass #Dont care if this errors since it bloody will and its not an issue
     else:
-        await filterMessage(messageObj)
+        getMegaTable(messageObj).FilterMessage(messageObj)
 multList = {"s":1,"m":60,"h":3600,"d":86400}
 def strToTimeAdd(duration):
     timeMult = duration[-1].lower()
@@ -393,37 +424,22 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
         return
     try:
         toDeleteList = {}
-        loggedMessagesCache = loggedMessages #If table size changes during calculations, it errors. Thats bad
-        for i in loggedMessagesCache:
-            if not loggedMessagesCache[i]:
-                continue
-            if type(i) == discord.Message or type(i) == discord.PartialMessage:
-                if loggedMessagesCache[i] < time.time():
-                    if not exists(toDeleteList,i.channel.id):
-                        toDeleteList[i.channel.id] = []
-                    toDeleteList[i.channel.id].append(i)
-                    loggedMessages.pop(i)
-            else:
-                msgInfo = loggedMessagesCache[i]
-                if not msgInfo["t"]: #IDEK how
-                    loggedMessages.pop(i)
-                    continue
-                msgInfo["c"] = int(msgInfo["c"]) #Dont ask, its to do with how it saved, ok?
-                if msgInfo["t"] < time.time():
-                    channel = client.get_channel(msgInfo["c"])
-                    if channel:
-                        if not exists(toDeleteList,msgInfo["c"]):
-                            toDeleteList[msgInfo["c"]] = []
-                        partialMessage = discord.PartialMessage(channel=channel,id=i)
-                        if partialMessage:
-                            toDeleteList[msgInfo["c"]].append(partialMessage)
-                            loggedMessages.pop(i)
+        for guild in guildMegaTable:
+            gmt = guildMegaTable[guild]
+            for message in gmt.CachedLoggedMessages():
+                if message.Expired():
+                    messageObj = message.GetMessageObj()
+                    if messageObj:
+                        if not exists(toDeleteList,message.Channel):
+                            toDeleteList[message.Channel] = []
+                        toDeleteList[message.Channel].append(messageObj)
+                        gmt.LoggedMessages.remove(message)
         if toDeleteList != {}:
             for channel in toDeleteList:
                 try:
                     await client.get_channel(channel).delete_messages(toDeleteList[channel])
-                except Exception as exc:
-                    pass# print("[?] BulkDelete",exc)
+                except:
+                    pass
     except Exception as exc:
         print("[LoggedMessages] Exception:",exc)
 @tasks.loop(seconds=10)
@@ -655,8 +671,6 @@ async def publicVote(msg,args):
         if i: #mhm
             msgContent = msgContent + i + " "
     voteMsg = await msg.channel.send(embed=fromdict({'author':{'name':author.name+"#"+author.discriminator+' is calling a vote','icon_url':str(author.avatar_url)},'description':msgContent,'image':{'url':imageUrl},'color':colours['info']}))
-    if await filterMessage(msg):
-        await filterMessage(voteMsg,True) #Set the vote message for deletion
     try:
         await msg.delete()
     except:
@@ -712,11 +726,6 @@ for i in os.listdir('storage/settings'):
         j = json.loads(open('storage/settings/'+i).read())
     except:
         print("[JSON] Load failed for file",i)
-        continue #Failsafe
-    if i == "deletion_queue.json":
-        for channelid in j:
-            for messageid in j[channelid]:
-                loggedMessages[messageid] = {"c":channelid,"t":j[channelid][messageid]}
-    else: # Assume guild info
+    else:
         getMegaTable(j['Guild']).LoadSave(j)
 print('loaded config')
