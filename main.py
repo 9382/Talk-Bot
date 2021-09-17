@@ -14,6 +14,7 @@ import json
 import time
 import sys
 import os
+import io
 prefix = "##"
 def exists(table,value): #Wanna reduce the try except spam checking for possible values
     # "Why not use hasattr?" hasattr doesnt support numbers in dictionaries
