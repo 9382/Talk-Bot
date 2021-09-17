@@ -21,7 +21,7 @@ async def unblockNSFWTag(msg,args):
 addCommand("unblocktag",unblockNSFWTag,0,"Allow certain tags to be in NSFW commands again",{"tag":True},None,"admin")
 
 async def filterTagList(msg,tagList): #Why did i do this into a function again? idk
-    for i in nsfwBlockedTerms[msg.guild.id]:
+    for i in getMegaTable(msg).NSFWBlockList:
         if i in tagList.lower():
             return True #True means filtered
 async def getPostList(msg,sitetype,tags): ##APIs be like
