@@ -79,18 +79,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
             except:
                 print("Log failed?")
                 pass
-    def ClearUselessInfo(self):
-        for word in self.WordBlockList:
-            if self.WordBlockList[word] == None:
-                self.WordBlockList.pop(word)
-        for channel in self.ChannelClearList:
-            if self.ChannelClearList[channel] == None:
-                self.ChannelClearList.pop(channel)
-        for channel in self.MediaFilters:
-            if self.MediaFilters[channel] == None:
-                self.MediaFilters.pop(channel)
     def CreateSave(self):
-        self.ClearUselessInfo()
         return {"Guild":self.Guild,
                 "WordBlockList":self.WordBlockList,
                 "ChannelClearList":self.ChannelClearList,
@@ -416,11 +405,11 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
                     if not exists(toDeleteList,i.channel.id):
                         toDeleteList[i.channel.id] = []
                     toDeleteList[i.channel.id].append(i)
-                    loggedMessages[i] = None
+                    loggedMessages.pop(i)
             else:
                 msgInfo = loggedMessagesCache[i]
                 if not msgInfo["t"]: #IDEK how
-                    loggedMessages[i] = None
+                    loggedMessages.pop(i)
                     continue
                 msgInfo["c"] = int(msgInfo["c"]) #Dont ask, its to do with how it saved, ok?
                 if msgInfo["t"] < time.time():
@@ -431,7 +420,7 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
                         partialMessage = discord.PartialMessage(channel=channel,id=i)
                         if partialMessage:
                             toDeleteList[msgInfo["c"]].append(partialMessage)
-                            loggedMessages[i] = None
+                            loggedMessages.pop(i)
         if toDeleteList != {}:
             for channel in toDeleteList:
                 try:
@@ -584,7 +573,7 @@ async def unblockWord(msg,args):
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a word to unban','color':colours['error']}),delete_after=10)
         return
     word = args[1].lower()
-    getMegaTable(msg).WordBlockList[word] = None
+    getMegaTable(msg).WordBlockList.pop(word)
     await msg.channel.send(embed=fromdict({'title':'Success','description':f'{word} is allowed again','color':colours['success']}))
 addCommand("unblockword",unblockWord,0,"Remove a word from the filter list",{"word":True},None,"admin")
 
@@ -698,7 +687,7 @@ async def blockMedia(msg,args):
     await msg.channel.send(embed=fromdict({'title':'Success','description':'All media will be deleted after '+simplifySeconds(result),'color':colours['success']}))
 addCommand("blockmedia",blockMedia,0,"Remove all media in a channel after a certain duration",{"deletiontime":True},None,"admin")
 async def unblockMedia(msg,args):
-    getMegaTable(msg).MediaFilters[msg.channel.id] = None
+    getMegaTable(msg).MediaFilters.pop(msg.channel.id)
     await msg.channel.send(embed=fromdict({'title':'Success','description':'Media will no longer be removed','color':colours['success']}))
 addCommand("unblockmedia",unblockMedia,0,"Stop auto-filtering a channel's media",{},None,"admin")
 
