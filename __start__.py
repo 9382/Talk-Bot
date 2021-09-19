@@ -49,4 +49,4 @@ print("Rebooting...")
 if platform.startswith("win"): #win32/win64
     os.system('start __start__.py')
 else: #Assume linux - use sh
-    os.system('start start.sh')
+    os.system('./start.sh')
