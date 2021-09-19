@@ -55,7 +55,7 @@ def currentDate():
     return str(datetime.fromtimestamp(math.floor(time.time()))) #Long function list be like
 fromdict = discord.Embed.from_dict
 numRegex = regex.compile('\d+')
-findMediaRegex = regex.compile("https?://(cdn\.discordapp\.com/attachments/|tenor\.com/view/)")
+findMediaRegex = regex.compile("https?://((cdn|media)\.discordapp\.(com|net)/attachments/|tenor\.com/view/)")
 colours = {'info':0x5555DD,'error':0xFF0000,'success':0x00FF00,'warning':0xFFAA00,'plain':0xAAAAAA}
 guildMegaTable = {} # All in one
 class FilteredMessage:
