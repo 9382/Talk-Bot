@@ -89,13 +89,14 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         self.QueuedChannels = {}
         self.LoggedMessages = []
         guildMegaTable[gid] = self
-    def Log(self,content=None,embed=None):
-        if self.LogChannel and client.get_channel(self.LogChannel):
-            try:
-                asyncio.run(client.get_channel(self.LogChannel).send(content=content,embed=embed))
-            except:
-                print("Log failed?")
-                pass
+    async def Log(self,content=None,embed=None):
+        if self.LogChannel:
+            channel = client.get_channel(self.LogChannel)
+            if channel:
+                try:
+                    await channel.send(content=content,embed=embed)
+                except:
+                    pass
     def GetMediaFilter(self,channel):
         if exists(self.MediaFilters,channel):
             return self.MediaFilters[channel]
@@ -107,13 +108,10 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
             self.ChannelClearList.pop(channel)
         if exists(self.QueuedChannels,channel):
             self.QueuedChannels.pop(channel)
-    def AddToFilter(self,msg,buffer):
+    async def AddToFilter(self,msg,buffer):
         if not buffer: # Failsafe, just in case
             return
-        if type(msg) == discord.Message:
-            print("[Filter] Msg Filtered ->",msg.content)
-        else:
-            print("[Filter] Msg Filtered ->",msg)
+        print("[Filter] Msg Filtered ->",msg.content)
         if buffer <= 0:
             try:
                 asyncio.run(msg.delete())
@@ -122,30 +120,30 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 pass
         self.LoggedMessages.append(FilteredMessage(time.time()+buffer,messageObj=msg))
         return buffer
-    def FilterMessage(self,msg,forced=False): # Now guild specific, how nice :)
+    async def FilterMessage(self,msg,forced=False): # Now guild specific, how nice :)
         if exists(self.LoggedMessages,msg):
             return time.time()-self.LoggedMessages[msg]
         if type(forced) == type(0):
-            return self.AddToFilter(msg,forced)
+            return await self.AddToFilter(msg,forced)
         for word in self.WordBlockList:
             buffer = self.WordBlockList[word] # Should never be None now, hopefully
             if msg.content.lower().find(word) != -1:
-                return self.AddToFilter(msg,buffer)
+                return await self.AddToFilter(msg,buffer)
             for embed in msg.embeds:
                 if embed.title and embed.title.lower().find(word) != -1:
-                    return self.AddToFilter(msg,buffer)
+                    return await self.AddToFilter(msg,buffer)
                 if embed.description and embed.description.lower().find(word) != -1:
-                    return self.AddToFilter(msg,buffer)
+                    return await self.AddToFilter(msg,buffer)
         buffer = self.GetMediaFilter(msg.channel.id)
         if buffer != None:
             if findMediaRegex.search(msg.content.lower()):
-                return self.AddToFilter(msg,buffer)
+                return await self.AddToFilter(msg,buffer)
             for i in msg.attachments:
                 if findMediaRegex.search(i.url.lower()):
-                    return self.AddToFilter(msg,buffer)
+                    return await self.AddToFilter(msg,buffer)
             for embed in msg.embeds:
                 if embed.image:
-                    return self.AddToFilter(msg,buffer)
+                    return await self.AddToFilter(msg,buffer)
     def CachedLoggedMessages(self):
         return self.LoggedMessages
     def FormatLoggedMessages(self):
@@ -255,7 +253,7 @@ async def on_member_join(member):
         if not exists(invitesBefore,inviteId):
             invitesBefore[inviteId] = {"m":inviteInfo["m"],"u":0}
         if invitesBefore[inviteId]["u"] < inviteInfo["u"]:
-            gmt.Log(embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}> ({member}) has joined through <@{inviteInfo['m'].id}> ({inviteInfo['m']})'s invite (discord.gg/{inviteId})\nInvite is at {inviteInfo['u']} uses","color":colours["info"]}))
+            await gmt.Log(embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}> ({member}) has joined through <@{inviteInfo['m'].id}> ({inviteInfo['m']})'s invite (discord.gg/{inviteId})\nInvite is at {inviteInfo['u']} uses","color":colours["info"]}))
             break
     gmt.InviteTrack = invitesAfter
 def findVoiceClient(guildId): #Find the relevant voice client object for the specified guild. Returns None if none are found
@@ -333,11 +331,11 @@ async def doTheCheck(msg,args,command,commandInfo): #Dont wanna type this 3 time
 async def on_message(msg):
     if not msg.guild or msg.author.id == client.user.id: #Only do stuff in guild, ignore messages by the bot
         if msg.guild:
-            getMegaTable(msg).FilterMessage(msg)
+            await getMegaTable(msg).FilterMessage(msg)
         elif msg.author.id != client.user.id:
             await msg.channel.send(embed=fromdict({'title':'Not here','description':'This bot can only be used in a server, and not dms','color':colours['error']}))
         return
-    getMegaTable(msg).FilterMessage(msg)
+    await getMegaTable(msg).FilterMessage(msg)
     if type(msg.author) == discord.User: #Webhook
         return
     args = msg.content.split(' ') #Please keep in mind the first argument is the calling command
@@ -359,7 +357,7 @@ async def on_raw_message_edit(msg): #On message edit to avoid bypassing
     except:
         pass #Dont care if this errors since it bloody will and its not an issue
     else:
-        getMegaTable(messageObj).FilterMessage(messageObj)
+        await getMegaTable(messageObj).FilterMessage(messageObj)
 multList = {"s":1,"m":60,"h":3600,"d":86400}
 def strToTimeAdd(duration):
     timeMult = duration[-1].lower()
