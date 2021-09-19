@@ -230,7 +230,7 @@ async def on_ready():
     try: #Notifying of start-up
         await client.get_channel(logChannels['boot-ups']).send("Ive connected at "+currentDate())
     except:
-        pass
+        print("Failed to alert of bootup at",currentDate())
 @client.event
 async def on_guild_join(guild):
     guildMegaTable[guild.id] = GuildObject(guild.id) # Force default settings
