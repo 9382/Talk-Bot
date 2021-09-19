@@ -148,7 +148,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         LoggedMessagesSave = {}
         for message in self.CachedLoggedMessages():
             if not exists(LoggedMessagesSave,message.Channel):
-                loggedMessagesSave[message.Channel] = {}
+                LoggedMessagesSave[message.Channel] = {}
             LoggedMessagesSave[message.Channel][message.MessageId] = message.Deletion
         return LoggedMessagesSave
     def CreateSave(self):
