@@ -110,6 +110,10 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
     def AddToFilter(self,msg,buffer):
         if not buffer: # Failsafe, just in case
             return
+        if type(msg) == discord.Message:
+            print("[Filter] Msg Filtered ->",msg.content)
+        else:
+            print("[Filter] Msg Filtered ->",msg)
         if buffer <= 0:
             try:
                 asyncio.run(msg.delete())
