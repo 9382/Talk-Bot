@@ -328,53 +328,58 @@ async def connectToVC(channel,idleTimeout=60,ignorePlaying=False):
 devCommands = {} #basically testing and back-end commands
 adminCommands = {} #This will take priority over user commands should a naming conflict exist
 userCommands = {}
-def addCommand(command,function,ratelimit,description,descriptionArgs,extraInfo,group,descriptionReference=None): #function must be async and have msg,args
-    if type(command) != str: #Probably a table, probably declaring multiple aliases
-        for commandalias in command:
-            addCommand(commandalias,function,ratelimit,description,descriptionArgs,extraInfo,group,descriptionReference) #Encourages self calling but oh well who cares, shouldnt self-call more than once
-            descriptionReference = descriptionReference or commandalias
-        return
-    if descriptionReference:
-        description = "See `"+descriptionReference+"`"
-    if group == "dev": #Dev functions, no public access allowed
-        if exists(devCommands,command):
-            print("[AddCmd] Dev command '"+command+"' was declared twice")
-        devCommands[command] = {"f":function,"a":extraInfo,"d":description,"r":ratelimit,"i":descriptionArgs}
-    elif group == "admin": #Requires administrator permission or equivilant (e.g. server owner)
-        if exists(adminCommands,command):
-            print("[AddCmd] Admin command '"+command+"' was declared twice")
-        adminCommands[command] = {"f":function,"a":extraInfo,"d":description,"r":ratelimit,"i":descriptionArgs}
-    else: #Regular command available to all users
-        if exists(userCommands,command):
-            print("[AddCmd] User command '"+command+"' was declared twice")
-        userCommands[command] = {"f":function,"a":extraInfo,"d":description,"r":ratelimit,"i":descriptionArgs,'g':group} #Group is used to shorten ##cmds
-ratelimitInfo = {}
-async def doTheCheck(msg,args,command,commandInfo): #Dont wanna type this 3 times
-    if not exists(ratelimitInfo,msg.author.id): #Prevent ratelimit logic from erroring
-        ratelimitInfo[msg.author.id] = {}
-    callingCommand = prefix+command
-    if msg.content.lower().startswith(callingCommand) and (not exists(msg.content,len(callingCommand)) or msg.content[len(callingCommand)] == " " or msg.content[len(callingCommand)] == "\n"): #Find the fitting command if it exists
-        arg0 = args[0]
-        args[0] = arg0[:len(callingCommand)]
-        if arg0[len(callingCommand)+1:]:
-            args.insert(1,arg0[len(callingCommand)+1:]) #Fix the issue of ##CMD\nText missing the Text part
-        if not exists(ratelimitInfo[msg.author.id],commandInfo['f']): #Prevent ratelimit logic from erroring
-            ratelimitInfo[msg.author.id][commandInfo['f']] = {'t':0,'a':False} #Based off of the called function to prevent alias abuse
-        ratelimitVars = ratelimitInfo[msg.author.id][commandInfo['f']]
-        validPoint = ratelimitVars['t'] + commandInfo['r']
-        if validPoint > time.time(): #If lastTime + rateLimit > currentTime: Dont allow
-            if not ratelimitVars['a']: #If not already warned: Warn
-                ratelimitVars['a'] = True
-                validTime = validPoint-time.time()
-                await msg.channel.send(embed=fromdict({'title':'Slow Down','description':'That command is limited for '+str(validTime)[:4]+' more seconds','color':colours['warning']}),delete_after=validTime)
-            return True
-        ratelimitVars['t'] = time.time() #Update last time, passed rate limit check
-        ratelimitVars['a'] = False #The 'a' is just so you cant make the bot spam cooldown messages for the same command
-        if commandInfo["a"] != None:
-            await commandInfo["f"](msg,args,commandInfo["a"])
+class Command:
+    def __init__(self,cmd,function,ratelimit,description,descriptionArgs,extraArg,group,descriptionReference=None):
+        if type(cmd) == type([]): #Probably a table, probably declaring multiple aliases
+            for cmdalias in cmd:
+                Command(cmdalias,function,ratelimit,description,descriptionArgs,extraArg,group,descriptionReference) #Encourages self calling but oh well who cares, shouldnt self-call more than once
+                descriptionReference = descriptionReference or cmdalias
+            return
+        self.Name = cmd
+        self.Function = function
+        self.RateLimit = ratelimit
+        self.Description = description
+        self.DescArgs = descriptionArgs
+        self.ExtraArg = extraArg
+        self.Group = group
+        self.RateLimitList = {}
+        wantedTable = None
+        if group == "dev":
+            wantedTable = devCommands
+        elif group == "admin":
+            wantedTable = adminCommands
         else:
-            await commandInfo["f"](msg,args)
-        return True
+            wantedTable = userCommands
+        if exists(wantedTable,cmd):
+            print(f"[AddCmd] Command {cmd} was declared twice")
+        wantedTable[cmd] = self
+    async def Run(self,msg,args):
+        user = msg.author
+        if exists(self.RateLimitList,user.id):
+            validPoint = self.RateLimitList[user.id]
+            if validPoint > time.time():
+                return False,validPoint-time.time()
+        self.RateLimitList[user.id] = time.time()+self.RateLimit
+        if self.ExtraArg:
+            await self.Function(msg,args,self.ExtraArg)
+        else:
+            await self.Function(msg,args)
+        return True,0
+
+ratelimitInfo = {}
+async def doTheCheck(msg,args,commandTable): #Dont wanna type this 3 times
+    arg0 = args[0]
+    if '\n' in arg0:
+        args[0] = arg0.split('\n')[0]
+        args.insert(1,arg0.split('\n')[1])
+    for command in commandTable:
+        if prefix+command == args[0]:
+            success,result = await commandTable[command].Run(msg,args)
+            if not success:
+                await msg.channel.send(embed=fromdict({'title':'Slow Down','description':'That command is limited for '+simplifySeconds(math.floor(result))+' more seconds','color':colours['warning']}),delete_after=result)
+def addCommand(a,b,c,d,e,f,g): # Temporary till im not lazy
+    Command(a,b,c,d,e,f,g)
+
 @client.event
 async def on_message(msg):
     if not msg.guild or msg.author.id == client.user.id: #Only do stuff in guild, ignore messages by the bot
@@ -387,16 +392,14 @@ async def on_message(msg):
     if type(msg.author) == discord.User: #Webhook
         return
     args = msg.content.split(' ') #Please keep in mind the first argument is the calling command
-    if msg.author.id == 260016427900076033: #Funny commands just for me
-        for command in devCommands:
-            if await doTheCheck(msg,args,command,devCommands[command]):
-                return
+    if msg.author.id == 260016427900076033:
+        if await doTheCheck(msg,args,devCommands):
+            return
     if msg.author.guild_permissions.administrator:
-        for command in adminCommands:
-            if await doTheCheck(msg,args,command,adminCommands[command]):
-                return
+        if await doTheCheck(msg,args,adminCommands):
+            return
     for command in userCommands:
-        if await doTheCheck(msg,args,command,userCommands[command]):
+        if await doTheCheck(msg,args,userCommands):
             return
 @client.event
 async def on_raw_message_edit(msg): #On message edit to avoid bypassing
