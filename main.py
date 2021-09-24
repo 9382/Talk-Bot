@@ -359,6 +359,7 @@ class Command:
             rlInfo = self.RateLimitList[user.id]
             if rlInfo["t"] > time.time():
                 if not rlInfo["r"]:
+                    self.RateLimitList[user.id]["r"] = True
                     return False,rlInfo["t"]-time.time()
                 else:
                     return False,-1
