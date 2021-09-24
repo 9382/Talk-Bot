@@ -77,6 +77,24 @@ class FilteredMessage:
             return messageObj
     def Expired(self):
         return time.time() > self.Deletion
+class Confirmation: # For commands like panic (when it exists)
+    def __init__(self,msg,args,function):
+        self.msg = msg
+        self.args = args
+        self.Function = function
+        self.Expirey = time.time()+20
+    async def Alert(self):
+        if not self.Expired():
+            await self.msg.channel.send("Woah, are you sure? Reply (y/yes) or (n/no) - Expires in 20 seconds",delete_after=self.Expirey-time.time())
+    def Expired(self):
+        return time.time() > self.Expirey
+    async def Check(self,msg):
+        content = msg.content.lower()
+        if content == "yes" or content == "y":
+            await msg.channel.send("Alright, continuing...")
+            await self.Function(self.msg,self.args)
+        else:
+            await msg.channel.send("Alright, aborting...",delete_after=5)
 class GuildObject: #Why didnt i do this before? Python is class orientated anyways
     def __init__(self,gid):
         self.Guild = gid
@@ -88,6 +106,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         self.ChannelClearList = {}
         self.QueuedChannels = {}
         self.LoggedMessages = []
+        self.Confirmations = {}
         guildMegaTable[gid] = self
     async def Log(self,content=None,embed=None):
         if self.LogChannel:
@@ -178,6 +197,22 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                     self.LoggedMessages.append(FilteredMessage(expirey,int(message),int(channel)))
         except:
             print("[GuildObject] Invalid data:",data)
+    async def CreateConfirmation(self,msg,args,function):
+        confirmationObj = Confirmation(msg,args,function)
+        self.Confirmations[msg.author.id] = confirmationObj
+        await confirmationObj.Alert()
+        return confirmationObj
+    async def CheckConfirmation(self,msg):
+        user = msg.author
+        confirmationObj = exists(self.Confirmations,user.id) and self.Confirmations[user.id]
+        if not confirmationObj:
+            return
+        if confirmationObj.Expired():
+            self.Confirmations.pop(user.id)
+            return
+        await confirmationObj.Check(msg)
+        self.Confirmations.pop(user.id)
+        return True
 def checkMegaTable(gid):
     if not exists(guildMegaTable,gid):
         guildMegaTable[gid] = GuildObject(gid)
@@ -390,7 +425,11 @@ async def on_message(msg):
             await msg.channel.send(embed=fromdict({'title':'Not here','description':'This bot can only be used in a server, and not dms','color':colours['error']}))
         return
     await getMegaTable(msg).FilterMessage(msg)
+    gmt = getMegaTable(msg)
+    await gmt.FilterMessage(msg)
     if type(msg.author) == discord.User: #Webhook
+        return
+    if await gmt.CheckConfirmation(msg):
         return
     args = msg.content.split(' ') #Please keep in mind the first argument is the calling command
     if msg.author.id == 260016427900076033:

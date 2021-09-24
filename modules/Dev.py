@@ -71,6 +71,12 @@ async def gimmePing(msg,args):
     await message.edit(content=str(round((time.time()-startTime)*1000))+" ms")
 Command("ping",gimmePing,0,"Uses the time it takes to send a message to calculate its ping",{},None,"dev")
 
+async def testConfirmations2(msg,args):
+    await msg.channel.send("Got past confirmation")
+async def testConfirmations(msg,args):
+    print("Testing confirmations")
+    await getMegaTable(msg).CreateConfirmation(msg,args,testConfirmations2)
+Command("d -test confirmations",testConfirmations,0,"Tests the Confirmations feature",{},None,"dev")
 # This is only in here as the feature is most likely not going to exist anymore, its more a relic of a past plan
 ttsQueue = []
 handlingTTS = False
