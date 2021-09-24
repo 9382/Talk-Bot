@@ -508,39 +508,35 @@ async def forceUpdate(msg,args):
     await client.close()
 addCommand("d -update",forceUpdate,0,"Updates the bot, force saving configs",{},None,"dev")
 
-async def cmdList(msg,args): #just handles itself and its lovely
-    isAdmin = msg.author.guild_permissions.administrator
-    if not exists(args,1):
-        allGroups = ["admin"] #only runs through userCommands for groups
-        allGroupsText = "\n`admin`"
-        for command in userCommands:
-            commandGroup = userCommands[command]['g']
-            if not (commandGroup in allGroups):
-                allGroups.append(commandGroup)
-                allGroupsText += "\n`"+commandGroup+"`"
-        await msg.channel.send(embed=fromdict({'title':'Select command list','description':'Please select a command subsection from this list:'+allGroupsText,'color':colours['info']}))
-        return
-    else:
-        cmdList = (args[1] == "admin" and adminCommands) or (args[1] == "dev" and msg.author.id == 260016427900076033 and devCommands) or args[1]
-    if type(cmdList) == str: # A general command, gotta find all matching cmd groups
-        cmdList = {}
-        for command in userCommands:
-            commandInfo = userCommands[command]
-            if commandInfo['g'].lower() == args[1].lower():
-                cmdList[command] = commandInfo
-    if cmdList == {}:
-        await msg.channel.send(embed=fromdict({'title':'Invalid Group','description':'The group '+args[1]+' is not a valid group','color':colours['error']}),delete_after=30)
-        return
-    cmdMessageContent = "**Syntax**\n`<>` is a required argument, `[]` is an optional argument\n\n**Commands**"
-    for command in cmdList:
-        commandInfo = cmdList[command]
-        argMessageContent = ""
-        for argName in commandInfo['i']:
-            argRequired = commandInfo['i'][argName]
-            argMessageContent += " "+((argRequired and f"<{argName}>") or f"[{argName}]")
-        cmdMessageContent += "\n`"+command+argMessageContent+"` - "+commandInfo['d']
-    await msg.channel.send(embed=fromdict({'title':'Command List','description':cmdMessageContent,'color':colours['info']}))
-addCommand(["commands","cmds"],cmdList,1,"List all commands",{"section":False},None,"general")
+async def cmds(msg,args): # Group specific
+    cmdList = {"admin":adminCommands}
+    for command in userCommands:
+        cmdInfo = userCommands[command]
+        if not exists(cmdList,cmdInfo.Group):
+            cmdList[cmdInfo.Group] = {}
+        cmdList[cmdInfo.Group][command] = cmdInfo
+    if exists(args,1):
+        group = exists(cmdList,args[1]) and cmdList[args[1]]
+        if not group: # Stupid
+            await msg.channel.send(embed=fromdict({"title":"Invalid group","description":f"The group '{args[1]}' doesnt exist","color":colours["error"]}))
+            return
+        finalText = "**Syntax**\n`<>` is a required argument, `[]` is an optional argument\n\n**Commands**" # Copied from old version - maybe revisit
+        for command in group:
+            cmdInfo = group[command]
+            argMessageContent = ""
+            for argName in cmdInfo.DescArgs:
+                argRequired = cmdInfo.DescArgs[argName]
+                argMessageContent += " "+((argRequired and f"<{argName}>") or f"[{argName}]")
+            finalText += "\n`"+command+argMessageContent+"` - "+cmdInfo.Description
+        await msg.channel.send(embed=fromdict({"title":"Commands within "+args[1],"description":finalText,"color":colours["info"]}))
+    else: # Generalised (No group)
+        finalText = ""
+        for group in cmdList:
+            finalText += f"\n**{group}**\n"
+            for command in cmdList[group]:
+                finalText += f"`{command}` "
+        await msg.channel.send(embed=fromdict({"title":"Commands","description":finalText[1:],"color":colours["info"]})) # [1:] to avoid extra \n
+addCommand(["commands","cmds"],cmds,1,"List all commands",{"group":False},None,"general")
 
 async def setLogChannel(msg,args):
     if not exists(args,1):
