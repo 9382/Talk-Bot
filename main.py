@@ -598,16 +598,20 @@ async def clearAllInvites(msg,args):
     try:
         invites = await msg.guild.invites()
     except:
-        await msg.channel.send("Failed to get invites")
-    else:
-        for invite in invites:
-            try:
-                await invite.delete()
-            except:
-                print(":(")
-            else:
-                print(":)")
-Command("clearinvites",clearAllInvites,5,"Clears all invites in the server, deleting them",{},None,"admin")
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"Failed to get invites. Maybe try again, or check its permissions","color":colours["error"]}))
+        return
+    successRate,totalCount = 0,0
+    for invite in invites:
+        try:
+            await invite.delete()
+            successRate += 1
+        except:
+            pass
+        totalCount += 1
+    await msg.channel.send(embed=fromdict({"title":"Success","description":f"{str(successRate)} out of {str(totalCount)} invites were successfully cleared","color":colours["success"]}))
+async def clearInvitesConfirm(msg,args):
+    await getMegaTable(msg).CreateConfirmation(msg,args,clearAllInvites)
+Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},None,"admin")
 
 async def blockWord(msg,args):
     if not exists(args,2):
