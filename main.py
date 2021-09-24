@@ -531,7 +531,7 @@ async def cmds(msg,args): # Group specific
             finalText += "\n`"+command+argMessageContent+"` - "+cmdInfo.Description
         await msg.channel.send(embed=fromdict({"title":"Commands within "+args[1],"description":finalText,"color":colours["info"]}))
     else: # Generalised (No group)
-        finalText = ""
+        finalText = f"do `{args[0]} <group> to get more information on a group`"
         for group in cmdList:
             finalText += f"\n**{group}**\n"
             for command in cmdList[group]:
