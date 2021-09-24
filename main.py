@@ -557,6 +557,8 @@ async def cmds(msg,args): # Group specific
         cmdList[cmdInfo.Group][command] = cmdInfo
     if exists(args,1):
         group = exists(cmdList,args[1]) and cmdList[args[1]]
+        if msg.author.id == 260016427900076033 and args[1] == "dev":
+            group = devCommands
         if not group: # Stupid
             await msg.channel.send(embed=fromdict({"title":"Invalid group","description":f"The group '{args[1]}' doesnt exist","color":colours["error"]}))
             return
@@ -570,12 +572,12 @@ async def cmds(msg,args): # Group specific
             finalText += "\n`"+command+argMessageContent+"` - "+cmdInfo.Description
         await msg.channel.send(embed=fromdict({"title":"Commands within "+args[1],"description":finalText,"color":colours["info"]}))
     else: # Generalised (No group)
-        finalText = f"do `{args[0]} <group> to get more information on a group`"
+        finalText = f"do `{args[0]} <group>` to get more information on a group"
         for group in cmdList:
             finalText += f"\n**{group}**\n"
             for command in cmdList[group]:
                 finalText += f"`{command}` "
-        await msg.channel.send(embed=fromdict({"title":"Commands","description":finalText[1:],"color":colours["info"]})) # [1:] to avoid extra \n
+        await msg.channel.send(embed=fromdict({"title":"Commands","description":finalText,"color":colours["info"]}))
 Command(["commands","cmds"],cmds,1,"List all commands",{"group":False},None,"general")
 
 async def setLogChannel(msg,args):
