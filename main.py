@@ -398,7 +398,7 @@ async def on_message(msg):
     if msg.author.guild_permissions.administrator:
         if await doTheCheck(msg,args,adminCommands):
             return
-    await doTheCheck(msg,args,userCommands):
+    await doTheCheck(msg,args,userCommands)
 @client.event
 async def on_raw_message_edit(msg): #On message edit to avoid bypassing
     try:
@@ -571,8 +571,12 @@ async def unblockWord(msg,args):
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a word to unban','color':colours['error']}),delete_after=10)
         return
     word = args[1].lower()
-    getMegaTable(msg).WordBlockList.pop(word)
-    await msg.channel.send(embed=fromdict({'title':'Success','description':f'{word} is allowed again','color':colours['success']}))
+    try:
+        getMegaTable(msg).WordBlockList.pop(word)
+    except:
+        await msg.channel.send(embed=fromdict({'title':'Not Blocked','description':f'{word} was not blocked','color':colours['success']}))
+    else:
+        await msg.channel.send(embed=fromdict({'title':'Success','description':f'{word} is allowed again','color':colours['success']}))
 Command("unblockword",unblockWord,0,"Remove a word from the filter list",{"word":True},None,"admin")
 
 async def list_admin(msg,args): # God this looks horrible. NOTE: Patch this up at some point NOTE 2: Maybe patchable with GMT :)
