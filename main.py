@@ -356,17 +356,18 @@ class Command:
     async def Run(self,msg,args):
         user = msg.author
         if exists(self.RateLimitList,user.id):
-            validPoint = self.RateLimitList[user.id]
-            if validPoint > time.time():
-                return False,validPoint-time.time()
-        self.RateLimitList[user.id] = time.time()+self.RateLimit
+            rlInfo = self.RateLimitList[user.id]
+            if rlInfo["t"] > time.time():
+                if not rlInfo["r"]:
+                    return False,rlInfo["t"]-time.time()
+                else:
+                    return False,-1
+        self.RateLimitList[user.id] = {"t":time.time()+self.RateLimit,"r":False}
         if self.ExtraArg:
             await self.Function(msg,args,self.ExtraArg)
         else:
             await self.Function(msg,args)
         return True,0
-
-ratelimitInfo = {}
 async def doTheCheck(msg,args,commandTable): #Dont wanna type this 3 times
     arg0 = args[0]
     if '\n' in arg0:
@@ -376,10 +377,9 @@ async def doTheCheck(msg,args,commandTable): #Dont wanna type this 3 times
         if prefix+command == args[0]:
             success,result = await commandTable[command].Run(msg,args)
             if not success:
-                await msg.channel.send(embed=fromdict({'title':'Slow Down','description':'That command is limited for '+simplifySeconds(math.floor(result))+' more seconds','color':colours['warning']}),delete_after=result)
-def addCommand(a,b,c,d,e,f,g): # Temporary till im not lazy
-    Command(a,b,c,d,e,f,g)
-
+                if result != -1: # If first repeat:
+                    await msg.channel.send(embed=fromdict({'title':'Slow Down','description':'That command is limited for '+simplifySeconds(math.floor(result))+' more seconds','color':colours['warning']}),delete_after=result)
+            return True
 @client.event
 async def on_message(msg):
     if not msg.guild or msg.author.id == client.user.id: #Only do stuff in guild, ignore messages by the bot
@@ -398,9 +398,7 @@ async def on_message(msg):
     if msg.author.guild_permissions.administrator:
         if await doTheCheck(msg,args,adminCommands):
             return
-    for command in userCommands:
-        if await doTheCheck(msg,args,userCommands):
-            return
+    await doTheCheck(msg,args,userCommands):
 @client.event
 async def on_raw_message_edit(msg): #On message edit to avoid bypassing
     try:
