@@ -201,6 +201,54 @@ async def getGuildInviteStats(guild):
     for invite in invites:
         toReturn[invite.id] = {"m":invite.inviter,"u":invite.uses}
     return toReturn
+multList = {"s":1,"m":60,"h":3600,"d":86400}
+def strToTimeAdd(duration):
+    timeMult = duration[-1].lower()
+    timeAmount = duration[:-1]
+    try:
+        timeAmount = int(timeAmount)
+    except:
+        return False,"timeAmount must be an integer"
+    if timeMult in multList:
+        return True,timeAmount*multList[timeMult]
+    else:
+        return False,"Time period must be s, m, h or d"
+def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
+    if seconds <= 0:
+        return "0 seconds"
+    days = seconds//86400
+    seconds = seconds - 86400*days
+    hours = seconds//3600
+    seconds = seconds - 3600*hours
+    minutes = seconds//60
+    seconds = seconds - 60*minutes
+    returnString = ""
+    parts = 0
+    if seconds > 0:
+        returnString = str(seconds)+" second(s)"
+        parts += 1
+    if minutes > 0:
+        if parts == 0:
+            returnString = str(minutes)+" minute(s)"+returnString
+        else:
+            returnString = str(minutes)+" minute(s) and "+returnString
+        parts += 1
+    if hours > 0:
+        if parts == 0:
+            returnString = str(hours)+" hour(s)"+returnString
+        elif parts == 1:
+            returnString = str(hours)+" hour(s) and "+returnString
+        else:
+            returnString = str(hours)+" hour(s), "+returnString
+        parts += 1
+    if days > 0:
+        if parts == 0:
+            returnString = str(days)+" day(s)"+returnString
+        elif parts == 1:
+            returnString = str(days)+" day(s) and "+returnString
+        else:
+            returnString = str(days)+" day(s), "+returnString
+    return returnString
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True))
 #Note that due to the on_message handler, i cant use the regular @bot.event shit, so custom handler it is
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932} # These are different from the guild-defined LogChannel channels, these are for the bot to tell me whats wrong or ok
@@ -358,54 +406,6 @@ async def on_raw_message_edit(msg): #On message edit to avoid bypassing
         pass #Dont care if this errors since it bloody will and its not an issue
     else:
         await getMegaTable(messageObj).FilterMessage(messageObj)
-multList = {"s":1,"m":60,"h":3600,"d":86400}
-def strToTimeAdd(duration):
-    timeMult = duration[-1].lower()
-    timeAmount = duration[:-1]
-    try:
-        timeAmount = int(timeAmount)
-    except:
-        return False,"timeAmount must be an integer"
-    if timeMult in multList:
-        return True,timeAmount*multList[timeMult]
-    else:
-        return False,"Time period must be s, m, h or d"
-def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
-    if seconds <= 0:
-        return "0 seconds"
-    days = seconds//86400
-    seconds = seconds - 86400*days
-    hours = seconds//3600
-    seconds = seconds - 3600*hours
-    minutes = seconds//60
-    seconds = seconds - 60*minutes
-    returnString = ""
-    parts = 0
-    if seconds > 0:
-        returnString = str(seconds)+" second(s)"
-        parts += 1
-    if minutes > 0:
-        if parts == 0:
-            returnString = str(minutes)+" minute(s)"+returnString
-        else:
-            returnString = str(minutes)+" minute(s) and "+returnString
-        parts += 1
-    if hours > 0:
-        if parts == 0:
-            returnString = str(hours)+" hour(s)"+returnString
-        elif parts == 1:
-            returnString = str(hours)+" hour(s) and "+returnString
-        else:
-            returnString = str(hours)+" hour(s), "+returnString
-        parts += 1
-    if days > 0:
-        if parts == 0:
-            returnString = str(days)+" day(s)"+returnString
-        elif parts == 1:
-            returnString = str(days)+" day(s) and "+returnString
-        else:
-            returnString = str(days)+" day(s), "+returnString
-    return returnString
 async def cloneChannel(channelid):
     try:
         channel = client.get_channel(channelid)
