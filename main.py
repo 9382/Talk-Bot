@@ -554,6 +554,21 @@ async def setLogChannel(msg,args):
     await msg.channel.send(embed=fromdict({"title":"Success","description":"Set log channel successfully","color":colours["success"]}))
 Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided",{"channel":True},None,"admin")
 
+async def clearAllInvites(msg,args):
+    try:
+        invites = await msg.guild.invites()
+    except:
+        await msg.channel.send("Failed to get invites")
+    else:
+        for invite in invites:
+            try:
+                await invite.delete()
+            except:
+                print(":(")
+            else:
+                print(":)")
+Command("clearinvites",clearAllInvites,5,"Clears all invites in the server, deleting them",{},None,"admin")
+
 async def blockWord(msg,args):
     if not exists(args,2):
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a word to ban and its time until deletion','color':colours['error']}),delete_after=10)
