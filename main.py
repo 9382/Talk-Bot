@@ -410,7 +410,7 @@ async def doTheCheck(msg,args,commandTable): #Dont wanna type this 3 times
         args[0] = arg0.split('\n')[0]
         args.insert(1,arg0.split('\n')[1])
     for command in commandTable:
-        if prefix+command == args[0]:
+        if prefix+command == msg.content[:len(prefix+command)] and (not exists(msg.content,len(prefix+command)) or msg.content[len(prefix+command)] == " " or msg.content[len(prefix+command)] == "\n"):
             success,result = await commandTable[command].Run(msg,args)
             if not success:
                 if result != -1: # If first repeat:
@@ -424,7 +424,6 @@ async def on_message(msg):
         elif msg.author.id != client.user.id:
             await msg.channel.send(embed=fromdict({'title':'Not here','description':'This bot can only be used in a server, and not dms','color':colours['error']}))
         return
-    await getMegaTable(msg).FilterMessage(msg)
     gmt = getMegaTable(msg)
     await gmt.FilterMessage(msg)
     if type(msg.author) == discord.User: #Webhook
