@@ -7,14 +7,14 @@ async def d_exec(msg,args):
         print("[Dev] Nice custom exec, but it failed. Command:",msg.content[10:],"Exception:",exc)
     else:
         print("[Dev] Successful exec")
-addCommand("d -exec",d_exec,0,"Executes pure python code in the global spec",{"Code":True},None,"dev")
+Command("d -exec",d_exec,0,"Executes pure python code in the global spec",{"Code":True},None,"dev")
 
 async def horribleCoding(msg,args):
     a[b] # This is just designed to error
-addCommand("d -test error",horribleCoding,0,"Forces an error to test the error logging",{},None,"dev")
+Command("d -test error",horribleCoding,0,"Forces an error to test the error logging",{},None,"dev")
 async def forceOnReady(msg,args):
     await on_ready()
-addCommand("d -test onready",forceOnReady,0,"Runs the on_ready function",{},None,"dev")
+Command("d -test onready",forceOnReady,0,"Runs the on_ready function",{},None,"dev")
 
 async def presetAudioTest(msg,args):
     if not msg.author.voice:
@@ -27,7 +27,7 @@ async def presetAudioTest(msg,args):
         await msg.channel.send("Couldnt join the vc, probably cause i was busy")
         return
     vc.play(await discord.FFmpegOpusAudio.from_probe(file)) #Audio
-addCommand("presetaudio",presetAudioTest,0,"Test playing preset audio files",{"File":False},None,"dev")
+Command("presetaudio",presetAudioTest,0,"Test playing preset audio files",{"File":False},None,"dev")
 
 def createScore(n1,n2):
     return 100-((n1+n2)%100)
@@ -39,7 +39,7 @@ async def scoreTest2(msg,args):
     if not targetUser2:
         targetUser2 = random.choice(msg.guild.members)
     await msg.channel.send(embed=fromdict({'title':'Score with '+targetUser1.name+' and '+targetUser2.name,'description':str(createScore(targetUser1.id,targetUser2.id))}))
-addCommand("compare",scoreTest2,0,"Test the scoring system on user IDs",{"U1":False,"U2":False},None,"dev")
+Command("compare",scoreTest2,0,"Test the scoring system on user IDs",{"U1":False,"U2":False},None,"dev")
 
 async def circularMask(im):
     size = (im.size[0]*3,im.size[1]*3)
@@ -60,16 +60,16 @@ async def imageComp(msg,args):
     background.save(fileName)
     await msg.channel.send(targetUser.name+' in a box',file=discord.File(fileName))
     os.remove(fileName)
-addCommand("imaget",imageComp,0,"An experiment with image editing",{"User":False},None,"dev")
+Command("imaget",imageComp,0,"An experiment with image editing",{"User":False},None,"dev")
 
 async def printThis(msg,args):
     print(msg.content)
-addCommand("ddd",printThis,0,"Prints the content of the message to the console",{},None,"dev")
+Command("ddd",printThis,0,"Prints the content of the message to the console",{},None,"dev")
 async def gimmePing(msg,args):
     startTime = time.time()
     message = await msg.channel.send("<???> ms")
     await message.edit(content=str(round((time.time()-startTime)*1000))+" ms")
-addCommand("ping",gimmePing,0,"Uses the time it takes to send a message to calculate its ping",{},None,"dev")
+Command("ping",gimmePing,0,"Uses the time it takes to send a message to calculate its ping",{},None,"dev")
 
 # This is only in here as the feature is most likely not going to exist anymore, its more a relic of a past plan
 ttsQueue = []
@@ -120,4 +120,4 @@ async def speakTTS(msg,args): # This is a bit of a mess. Maybe an improve, how a
             except:
                 pass
         handlingTTS = False
-addCommand("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"dev")
+Command("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"dev")

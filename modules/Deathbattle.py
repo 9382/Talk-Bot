@@ -80,4 +80,4 @@ async def deathBattle(msg,args):
     await dbMessage.edit(content=':anger: Death Battle!',embed=fromdict(
         {'author':{'name':u1.name+' is challenging '+u2.name},'description':description,'fields':[{'name':u1.name,'value':i.u1hp,'inline':True},{'name':u2.name,'value':i.u2hp,'inline':True}],'color':colours['info']}
     ))
-addCommand("deathbattle",deathBattle,10,"Fight someone to the death!",{"@user":False},None,"dev")
+Command("deathbattle",deathBattle,10,"Fight someone to the death!",{"@user":False},None,"dev")

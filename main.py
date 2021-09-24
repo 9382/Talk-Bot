@@ -507,7 +507,7 @@ async def forceUpdate(msg,args):
     print("Save finished")
     print("Closing")
     await client.close()
-addCommand("d -update",forceUpdate,0,"Updates the bot, force saving configs",{},None,"dev")
+Command("d -update",forceUpdate,0,"Updates the bot, force saving configs",{},None,"dev")
 
 async def cmds(msg,args): # Group specific
     cmdList = {"admin":adminCommands}
@@ -537,7 +537,7 @@ async def cmds(msg,args): # Group specific
             for command in cmdList[group]:
                 finalText += f"`{command}` "
         await msg.channel.send(embed=fromdict({"title":"Commands","description":finalText[1:],"color":colours["info"]})) # [1:] to avoid extra \n
-addCommand(["commands","cmds"],cmds,1,"List all commands",{"group":False},None,"general")
+Command(["commands","cmds"],cmds,1,"List all commands",{"group":False},None,"general")
 
 async def setLogChannel(msg,args):
     if not exists(args,1):
@@ -552,7 +552,7 @@ async def setLogChannel(msg,args):
         return
     getMegaTable(msg).LogChannel = wantedChannel.id
     await msg.channel.send(embed=fromdict({"title":"Success","description":"Set log channel successfully","color":colours["success"]}))
-addCommand("setlogs",setLogChannel,3,"Set the log channel to the channel provided",{"channel":True},None,"admin")
+Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided",{"channel":True},None,"admin")
 
 async def blockWord(msg,args):
     if not exists(args,2):
@@ -565,7 +565,7 @@ async def blockWord(msg,args):
     word = args[1].lower()
     getMegaTable(msg).WordBlockList[word] = result
     await msg.channel.send(embed=fromdict({'title':'Success','description':'Any messages containing '+word+' will be deleted after '+simplifySeconds(result),'color':colours['success']}))
-addCommand("blockword",blockWord,0,"Add a word to the filter list",{"word":True,"deletion time":True},None,"admin")
+Command("blockword",blockWord,0,"Add a word to the filter list",{"word":True,"deletion time":True},None,"admin")
 async def unblockWord(msg,args):
     if not exists(args,1):
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a word to unban','color':colours['error']}),delete_after=10)
@@ -573,7 +573,7 @@ async def unblockWord(msg,args):
     word = args[1].lower()
     getMegaTable(msg).WordBlockList.pop(word)
     await msg.channel.send(embed=fromdict({'title':'Success','description':f'{word} is allowed again','color':colours['success']}))
-addCommand("unblockword",unblockWord,0,"Remove a word from the filter list",{"word":True},None,"admin")
+Command("unblockword",unblockWord,0,"Remove a word from the filter list",{"word":True},None,"admin")
 
 async def list_admin(msg,args): # God this looks horrible. NOTE: Patch this up at some point NOTE 2: Maybe patchable with GMT :)
     if len(args) < 2:
@@ -602,7 +602,7 @@ async def list_admin(msg,args): # God this looks horrible. NOTE: Patch this up a
     else:
         await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:\n`list words`\n`list channels`\n`list tags`','color':colours['info']}))
         return
-addCommand("list",list_admin,0,"View the list of settings to do with administration",{"subsection":False},None,"admin")
+Command("list",list_admin,0,"View the list of settings to do with administration",{"subsection":False},None,"admin")
 
 async def clearChannel(msg,args):
     if len(args) < 2:
@@ -625,7 +625,7 @@ async def clearChannel(msg,args):
         for t in guildChannelList:
             if channelName == t.name:
                 await cloneChannel(t.id)
-addCommand("clearchannel",clearChannel,0,"Add a channel to be cleared every so often OR clear now (no frequency)",{"channelName":True,"frequency":False},None,"admin")
+Command("clearchannel",clearChannel,0,"Add a channel to be cleared every so often OR clear now (no frequency)",{"channelName":True,"frequency":False},None,"admin")
 async def unclearChannel(msg,args):
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a channel name to stop clearing','color':colours['error']}),delete_after=30)
@@ -633,7 +633,7 @@ async def unclearChannel(msg,args):
     channelName = args[1]
     getMegaTable(msg).RemoveChannelClear(channelName)
     await msg.channel.send(embed=fromdict({'title':'Success','description':channelName+' will no longer be cleared','color':colours['success']}))
-addCommand("unclearchannel",unclearChannel,0,"Stop a channel from being auto-cleared",{"channelName":True},None,"admin")
+Command("unclearchannel",unclearChannel,0,"Stop a channel from being auto-cleared",{"channelName":True},None,"admin")
 
 async def publicVote(msg,args):
     if len(args) < 2:
@@ -669,7 +669,7 @@ async def publicVote(msg,args):
                 await voteMsg.add_reaction(i)
             except:
                 pass #User input sanitasion cause some guys gonna go [haha]
-addCommand("vote",publicVote,10,"Make a public vote about anything with an optional image",{"text":True,"imagefile":False},None,"general")
+Command("vote",publicVote,10,"Make a public vote about anything with an optional image",{"text":True,"imagefile":False},None,"general")
 
 async def blockMedia(msg,args):
     if len(args) < 2:
@@ -681,11 +681,11 @@ async def blockMedia(msg,args):
         return
     getMegaTable(msg).MediaFilters[msg.channel.id] = result
     await msg.channel.send(embed=fromdict({'title':'Success','description':'All media will be deleted after '+simplifySeconds(result),'color':colours['success']}))
-addCommand("blockmedia",blockMedia,0,"Remove all media in a channel after a certain duration",{"deletiontime":True},None,"admin")
+Command("blockmedia",blockMedia,0,"Remove all media in a channel after a certain duration",{"deletiontime":True},None,"admin")
 async def unblockMedia(msg,args):
     getMegaTable(msg).MediaFilters.pop(msg.channel.id)
     await msg.channel.send(embed=fromdict({'title':'Success','description':'Media will no longer be removed','color':colours['success']}))
-addCommand("unblockmedia",unblockMedia,0,"Stop auto-filtering a channel's media",{},None,"admin")
+Command("unblockmedia",unblockMedia,0,"Stop auto-filtering a channel's media",{},None,"admin")
 
 print('attempting import')
 ''' Load modules from the modules folder
@@ -703,7 +703,7 @@ def loadModules(origin=None):
 loadModules("Main")
 async def loadModulesAsync(msg,args):
     loadModules("User "+msg.author.name)
-addCommand("d -reload modules",loadModulesAsync,0,"Reloads all the modules",{},None,"dev")
+Command("d -reload modules",loadModulesAsync,0,"Reloads all the modules",{},None,"dev")
 
 print('done commands')
 for i in os.listdir('storage/settings'):
