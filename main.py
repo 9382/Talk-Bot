@@ -389,16 +389,16 @@ class Command:
             print(f"[AddCmd] Command {cmd} was declared twice")
         wantedTable[cmd] = self
     async def Run(self,msg,args):
-        user = msg.author
-        if exists(self.RateLimitList,user.id):
-            rlInfo = self.RateLimitList[user.id]
+        user = msg.author.id
+        if exists(self.RateLimitList,user):
+            rlInfo = self.RateLimitList[user]
             if rlInfo["t"] > time.time():
                 if not rlInfo["r"]:
-                    self.RateLimitList[user.id]["r"] = True
+                    self.RateLimitList[user]["r"] = True
                     return False,rlInfo["t"]-time.time()
                 else:
                     return False,-1
-        self.RateLimitList[user.id] = {"t":time.time()+self.RateLimit,"r":False}
+        self.RateLimitList[user] = {"t":time.time()+self.RateLimit,"r":False}
         if self.ExtraArg:
             await self.Function(msg,args,self.ExtraArg)
         else:
