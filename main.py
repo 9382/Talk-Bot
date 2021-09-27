@@ -203,15 +203,15 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         await confirmationObj.Alert()
         return confirmationObj
     async def CheckConfirmation(self,msg):
-        user = msg.author
-        confirmationObj = exists(self.Confirmations,user.id) and self.Confirmations[user.id]
+        user = msg.author.id
+        confirmationObj = exists(self.Confirmations,user) and self.Confirmations[user]
         if not confirmationObj:
             return
         if confirmationObj.Expired():
-            self.Confirmations.pop(user.id)
+            self.Confirmations.pop(user)
             return
         await confirmationObj.Check(msg)
-        self.Confirmations.pop(user.id)
+        self.Confirmations.pop(user)
         return True
 def checkMegaTable(gid):
     if not exists(guildMegaTable,gid):
