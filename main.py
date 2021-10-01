@@ -183,20 +183,21 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 "LoggedMessages":self.FormatLoggedMessages()
         } #How lovely
     def LoadSave(self,data):
-        try:
-            self.WordBlockList = data["WordBlockList"]
-            self.ChannelClearList = data["ChannelClearList"]
-            self.NSFWBlockList = data["NSFWBlockList"]
-            self.LogChannel = data["LogChannel"]
-            self.MediaFilters = data["MediaFilters"]
-            self.QueuedChannels = data["QueuedChannels"]
-            self.LoggedMessages = []
-            for channel in data["LoggedMessages"]:
-                for message in data["LoggedMessages"][channel]:
-                    expirey = data["LoggedMessages"][channel][message]
-                    self.LoggedMessages.append(FilteredMessage(expirey,int(message),int(channel)))
-        except:
-            print("[GuildObject] Invalid data:",data)
+        for catagory in data:
+            try:
+                if catagory == "LoggedMessages":
+                    self.LoggedMessages = []
+                    for channel in data["LoggedMessages"]:
+                        for message in data["LoggedMessages"][channel]:
+                            expirey = data["LoggedMessages"][channel][message]
+                            self.LoggedMessages.append(FilteredMessage(expirey,int(message),int(channel)))
+                    continue
+                if hasattr(self,catagory):
+                    setattr(self,catagory,data[catagory])
+                else:
+                    print("[GuildObject] Unknown Catagory",catagory)
+            except:
+                print("[GuildObject] Invalid catagory data",catagory,data)
     async def CreateConfirmation(self,msg,args,function):
         confirmationObj = Confirmation(msg,args,function)
         self.Confirmations[msg.author.id] = confirmationObj
