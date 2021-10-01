@@ -128,9 +128,9 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         if exists(self.QueuedChannels,channel):
             self.QueuedChannels.pop(channel)
     async def AddToFilter(self,msg,buffer):
-        if not buffer: # Failsafe, just in case
+        if buffer == None: # Failsafe, just in case
             return
-        print("[Filter] Msg Filtered ->",msg.content)
+        print("[Filter] Msg Filtered ->",msg.content,buffer)
         if buffer <= 0:
             try:
                 asyncio.run(msg.delete())
@@ -142,8 +142,8 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
     async def FilterMessage(self,msg,forced=False): # Now guild specific, how nice :)
         if exists(self.LoggedMessages,msg):
             return time.time()-self.LoggedMessages[msg]
-        if type(forced) == type(0):
-            return await self.AddToFilter(msg,forced)
+        if forced:
+            return await self.AddToFilter(msg,int(forced))
         for word in self.WordBlockList:
             buffer = self.WordBlockList[word] # Should never be None now, hopefully
             if msg.content.lower().find(word) != -1:
