@@ -105,7 +105,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         self.MediaFilters = {}
         self.ChannelClearList = {}
         self.QueuedChannels = {}
-        self.LoggedMessages = []
+        self.LoggedMessages = {}
         self.Confirmations = {}
         self.ChannelLimits = {}
         guildMegaTable[gid] = self
@@ -138,11 +138,11 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 return buffer
             except:
                 pass
-        self.LoggedMessages.append(FilteredMessage(time.time()+buffer,messageObj=msg))
+        self.LoggedMessages[msg.id] = FilteredMessage(time.time()+buffer,messageObj=msg)
         return buffer
     async def FilterMessage(self,msg,forced=False): # Now guild specific, how nice :)
-        if exists(self.LoggedMessages,msg):
-            return time.time()-self.LoggedMessages[msg]
+        if exists(self.LoggedMessages,msg.id):
+            return self.LoggedMessages[msg.id].Deletion-time.time()
         if forced:
             return await self.AddToFilter(msg,int(forced))
         for word in self.WordBlockList:
@@ -164,11 +164,11 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
             for embed in msg.embeds:
                 if embed.image:
                     return await self.AddToFilter(msg,buffer)
-    def CachedLoggedMessages(self):
-        return self.LoggedMessages
     def FormatLoggedMessages(self):
         LoggedMessagesSave = {}
-        for message in self.CachedLoggedMessages():
+        LMCache = self.LoggedMessages
+        for msgid in LMCache:
+            message = LMCache[msgid]
             if not exists(LoggedMessagesSave,message.Channel):
                 LoggedMessagesSave[message.Channel] = {}
             LoggedMessagesSave[message.Channel][message.MessageId] = message.Deletion
@@ -188,11 +188,11 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         for catagory in data:
             try:
                 if catagory == "LoggedMessages":
-                    self.LoggedMessages = []
+                    self.LoggedMessages = {}
                     for channel in data["LoggedMessages"]:
                         for message in data["LoggedMessages"][channel]:
                             expirey = data["LoggedMessages"][channel][message]
-                            self.LoggedMessages.append(FilteredMessage(expirey,int(message),int(channel)))
+                            self.LoggedMessages[int(message)] = FilteredMessage(expirey,int(message),int(channel))
                     continue
                 if hasattr(self,catagory):
                     setattr(self,catagory,data[catagory])
@@ -491,14 +491,19 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
         toDeleteList = {}
         for guild in guildMegaTable:
             gmt = guildMegaTable[guild]
-            for message in gmt.CachedLoggedMessages():
+            LMCache = gmt.LoggedMessages
+            toPop = []
+            for msgid in LMCache:
+                message = LMCache[msgid]
                 if message.Expired():
                     messageObj = message.GetMessageObj()
                     if messageObj:
                         if not exists(toDeleteList,message.Channel):
                             toDeleteList[message.Channel] = []
                         toDeleteList[message.Channel].append(messageObj)
-                        gmt.LoggedMessages.remove(message)
+                        toPop.append(message.MessageId)
+            for msgid in toPop:
+                gmt.LoggedMessages.pop(msgid) # Pop it here to avoid errors on changing sizes
         if toDeleteList != {}:
             for channel in toDeleteList:
                 try:
