@@ -107,6 +107,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         self.QueuedChannels = {}
         self.LoggedMessages = []
         self.Confirmations = {}
+        self.ChannelLimits = {}
         guildMegaTable[gid] = self
     async def Log(self,content=None,embed=None):
         if self.LogChannel:
@@ -180,6 +181,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 "LogChannel":self.LogChannel,
                 "MediaFilters":self.MediaFilters,
                 "QueuedChannels":self.QueuedChannels,
+                "ChannelLimits":self.ChannelLimits,
                 "LoggedMessages":self.FormatLoggedMessages()
         } #How lovely
     def LoadSave(self,data):
@@ -417,6 +419,19 @@ async def doTheCheck(msg,args,commandTable): #Dont wanna type this 3 times
                 if result != -1: # If first repeat:
                     await msg.channel.send(embed=fromdict({'title':'Slow Down','description':'That command is limited for '+simplifySeconds(math.floor(result))+' more seconds','color':colours['warning']}),delete_after=result)
             return True
+async def checkHistoryClear(msg):
+    gmt = getMegaTable(msg)
+    if msg.channel.id in gmt.ChannelLimits:
+        msgLimit = gmt.ChannelLimits[msg.channel.id]
+        try:
+            a = time.time() #Debug, remove
+            messageList = await msg.channel.history(limit=msgLimit+20).flatten() #msgLimit+20 to avoid clogging with too much history
+            print("Fetch time",time.time()-a) #Debug, remove
+        except:
+            print("[History] Failed to fetch")
+        else:
+            for message in messageList[msgLimit:]:
+                await gmt.FilterMessage(message,0.1) #0.1 to avoid deletion now, and queue it in the seperate task later
 @client.event
 async def on_message(msg):
     if not msg.guild or msg.author.id == client.user.id: #Only do stuff in guild, ignore messages by the bot
@@ -427,6 +442,7 @@ async def on_message(msg):
         return
     gmt = getMegaTable(msg)
     await gmt.FilterMessage(msg)
+    await checkHistoryClear(msg)
     if type(msg.author) == discord.User: #Webhook
         return
     if await gmt.CheckConfirmation(msg):
@@ -751,6 +767,25 @@ async def unblockMedia(msg,args):
     getMegaTable(msg).MediaFilters.pop(msg.channel.id)
     await msg.channel.send(embed=fromdict({'title':'Success','description':'Media will no longer be removed','color':colours['success']}))
 Command("unblockmedia",unblockMedia,0,"Stop auto-filtering a channel's media",{},None,"admin")
+
+async def controlMessageLimit(msg,args,removing):
+    gmt = getMegaTable(msg)
+    channel = msg.channel
+    if not removing:
+        msgLimit = exists(args,1) and numRegex.search(args[1]) and int(numRegex.search(args[1]).group())
+        if not msgLimit:
+            await channel.send(embed=fromdict({"title":"No Limit Specified","description":"You must specify a max number of messages before deletion","color":colours["error"]}),delete_after=10)
+            return
+        if msgLimit <= 0:
+            await channel.send(embed=fromdict({"title":"No","description":"1 or more, no less","color":colours["error"]}),delete_after=10)
+        gmt.ChannelLimits[channel.id] = msgLimit
+        await channel.send(embed=fromdict({"title":"Success","description":f"All messages after #{str(msgLimit)} will be auto-deleted","color":colours["success"]}))
+    else:
+        if exists(gmt.ChannelLimits,channel.id):
+            gmt.ChannelLimits.pop(channel.id)
+        await channel.send(embed=fromdict({"title":"Success","description":"Any existing message limit has been removed","color":colours["success"]}))
+Command("setmessagelimit",controlMessageLimit,5,"Sets a max message limit on a channel, deleting any over the limit",{"number":True},False,"admin")
+Command("removemessagelimit",controlMessageLimit,5,"Removes the max message limit on a channel",{},True,"admin")
 
 print('attempting import')
 ''' Load modules from the modules folder
