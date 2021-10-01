@@ -442,7 +442,7 @@ async def on_message(msg):
         return
     gmt = getMegaTable(msg)
     await gmt.FilterMessage(msg)
-    await checkHistoryClear(msg)
+    await checkHistoryClear(msg) # This has quite a heavy wait time (upwards of 0.5) - consider threading or a better method
     if type(msg.author) == discord.User: #Webhook
         return
     if await gmt.CheckConfirmation(msg):
@@ -467,6 +467,11 @@ async def cloneChannel(channelid):
     try:
         channel = client.get_channel(channelid)
         newchannel = await channel.clone(reason="Recreating text channel")
+        gmt = getMegaTable(channel.guild) # Move over channel settings
+        if channelid in gmt.MediaFilters:
+            gmt.MediaFilters[newchannel.id] = gmt.MediaFilters[channelid]
+        if channelid in gmt.ChannelLimits:
+            gmt.ChannelLimits[newchannel.id] = gmt.ChannelLimits[channelid]
         await channel.delete()
         newchannel.position = channel.position #Because clone doesnt include position
         await newchannel.send(embed=fromdict({'title':'Success','description':channel.name+' has been re-made and cleared','color':colours['success']}),delete_after=60)
