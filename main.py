@@ -431,7 +431,7 @@ async def checkHistoryClear(msg):
             print("[History] Failed to fetch")
         else:
             for message in messageList[msgLimit:]:
-                await gmt.FilterMessage(message,0.1) #0.1 to avoid deletion now, and queue it in the seperate task later
+                await gmt.FilterMessage(message,1) #1 to avoid deletion now, and queue it in the seperate task later
 @client.event
 async def on_message(msg):
     if not msg.guild or msg.author.id == client.user.id: #Only do stuff in guild, ignore messages by the bot
