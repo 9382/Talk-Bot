@@ -400,7 +400,7 @@ class Command:
                 else:
                     return False,-1
         self.RateLimitList[user] = {"t":time.time()+self.RateLimit,"r":False}
-        if self.ExtraArg:
+        if self.ExtraArg != None:
             await self.Function(msg,args,self.ExtraArg)
         else:
             await self.Function(msg,args)
