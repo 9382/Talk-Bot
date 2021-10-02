@@ -822,5 +822,8 @@ for i in os.listdir('storage/settings'):
     except:
         print("[JSON] Load failed for file",i)
     else:
-        getMegaTable(j['Guild']).LoadSave(j)
+        try:
+            getMegaTable(j['Guild']).LoadSave(j)
+        except:
+            print("[JSON] Guild index failed for file",i)
 print('loaded config')
