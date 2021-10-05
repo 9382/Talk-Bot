@@ -293,7 +293,10 @@ logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932} # Thes
 @client.event
 async def on_error(error,*args,**kwargs):
     if exists(args,0):
-        causingCommand = args[0].content
+        try:
+            causingCommand = args[0].content
+        except:
+            causingCommand = args[0]
     else:
         causingCommand = "<none>"
     print("[Fatal Error] Causing command:",causingCommand,"error:")
