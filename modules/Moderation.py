@@ -3,11 +3,8 @@ async def setLogChannel(msg,args):
         await msg.channel.send(embed=fromdict({"title":"No channel","description":"Please provide a channel, either by mentioning it or by putting its ID","color":colours["error"]}))
         return
     wantedChannel = numRegex.search(args[1]) and client.get_channel(int(numRegex.search(args[1]).group()))
-    if not wantedChannel:
+    if not wantedChannel or wantedChannel.guild.id != msg.guild.id:
         await msg.channel.send(embed=fromdict({"title":"Not found","description":"The channel provided either doesnt exist, or i cant access it","color":colours["error"]}))
-        return
-    if wantedChannel.guild.id != msg.guild.id:
-        await msg.channel.send(embed=fromdict({"title":"No","description":"Your log channel must be in your guild, not someone else's","color":colours["error"]}))
         return
     getMegaTable(msg).LogChannel = wantedChannel.id
     await msg.channel.send(embed=fromdict({"title":"Success","description":"Set log channel successfully","color":colours["success"]}))
