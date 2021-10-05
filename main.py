@@ -310,7 +310,7 @@ async def on_error(error,*args,**kwargs):
             print("[Fatal Error] Error Log file failed to write:",exc)
             pass
         file.close()
-        await client.get_channel(logChannels['errors']).send("Error in client\nTime: "+currentDate()+"\nCausing command: "+causingCommand,file=discord.File(errorFile))
+        await client.get_channel(logChannels['errors']).send("Error in client\nTime: "+currentDate()+"\nCausing command: "+str(causingCommand),file=discord.File(errorFile))
         os.remove(errorFile)
     except Exception as exc:
         print("[Fatal Error] Failed to log:",exc)
