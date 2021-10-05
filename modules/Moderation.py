@@ -59,17 +59,17 @@ Command("unblockword",unblockWord,0,"Remove a word from the filter list",{"word"
 
 async def clearChannel(msg,args):
     if len(args) < 2:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a channel name','color':colours['error']}),delete_after=30)
+        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a channel name','color':colours['error']}),delete_after=10)
         return
     channelName = args[1] # Cant do ID cause deleting a channel removes the ID :)
     frequency = exists(args,2) and args[2]
     if frequency:
         success,result = strToTimeAdd(frequency)
         if not success:
-            await msg.channel.send(embed=fromdict({'title':'Error','description':result,'color':colours['error']}),delete_after=30)
+            await msg.channel.send(embed=fromdict({'title':'Error','description':result,'color':colours['error']}),delete_after=10)
             return
         if result < 300:
-            await msg.channel.send(embed=fromdict({'title':'Too short','description':'The minimum frequency time is 5 minutes','color':colours['error']}),delete_after=30)
+            await msg.channel.send(embed=fromdict({'title':'Too short','description':'The minimum frequency time is 5 minutes','color':colours['error']}),delete_after=10)
             return
         getMegaTable(msg).AddChannelClear(channelName,result)
         await msg.channel.send(embed=fromdict({'title':'Success','description':channelName+' is queued to clear every '+simplifySeconds(result),'color':colours['success']}))
@@ -81,7 +81,7 @@ async def clearChannel(msg,args):
 Command("clearchannel",clearChannel,0,"Add a channel to be cleared every so often OR clear now (no frequency)",{"channelName":True,"frequency":False},None,"admin")
 async def unclearChannel(msg,args):
     if len(args) < 2:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a channel name to stop clearing','color':colours['error']}),delete_after=30)
+        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a channel name to stop clearing','color':colours['error']}),delete_after=10)
         return
     channelName = args[1]
     getMegaTable(msg).RemoveChannelClear(channelName)
@@ -94,7 +94,7 @@ async def blockMedia(msg,args):
         return
     success,result = strToTimeAdd(args[1])
     if not success:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':result,'color':colours['error']}),delete_after=30)
+        await msg.channel.send(embed=fromdict({'title':'Error','description':result,'color':colours['error']}),delete_after=10)
         return
     getMegaTable(msg).MediaFilters[msg.channel.id] = result
     await msg.channel.send(embed=fromdict({'title':'Success','description':'All media will be deleted after '+simplifySeconds(result),'color':colours['success']}))
