@@ -127,6 +127,7 @@ async def speakTTS(msg,args): # This is a bit of a mess. Maybe an improve, how a
                 pass
         handlingTTS = False
 Command("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"dev")
+
 async def testReactionListener2(msg,emoji,score):
     score += 1
     await msg.edit(content=f"This message + {str(score)}")
