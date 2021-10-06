@@ -415,8 +415,10 @@ async def doTheCheck(msg,args,commandTable): #Dont wanna type this 3 times
     if '\n' in arg0:
         args[0] = arg0.split('\n')[0]
         args.insert(1,arg0.split('\n')[1])
+    c = msg.content
     for command in commandTable:
-        if prefix+command == msg.content[:len(prefix+command)] and (not exists(msg.content,len(prefix+command)) or msg.content[len(prefix+command)] == " " or msg.content[len(prefix+command)] == "\n"):
+        cregion = len(prefix+command) #command region
+        if prefix+command == c[:cregion] and (not exists(c,cregion) or c[cregion] == " " or c[cregion] == "\n"):
             success,result = await commandTable[command].Run(msg,args)
             if not success:
                 if result != -1: # If first repeat:
