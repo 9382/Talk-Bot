@@ -642,29 +642,29 @@ async def forceUpdate(msg,args):
     await client.close()
 Command("d -update",forceUpdate,0,"Updates the bot, force saving configs",{},None,"dev")
 
-async def cmds(msg,args): # Group specific
+async def cmds(msg,args):
     cmdList = {"admin":adminCommands}
     for command in userCommands:
         cmdInfo = userCommands[command]
         if not exists(cmdList,cmdInfo.Group):
             cmdList[cmdInfo.Group] = {}
         cmdList[cmdInfo.Group][command] = cmdInfo
-    if exists(args,1):
+    if exists(args,1): #Group Specific
         group = exists(cmdList,args[1]) and cmdList[args[1]]
         if msg.author.id == 260016427900076033 and args[1] == "dev":
             group = devCommands
-        if not group: # Stupid
+        if not group:
             await msg.channel.send(embed=fromdict({"title":"Invalid group","description":f"The group '{args[1]}' doesnt exist","color":colours["error"]}))
             return
-        finalText = "**Syntax**\n`<>` is a required argument, `[]` is an optional argument\n\n**Commands**" # Copied from old version - maybe revisit
+        finalText = []
         for command in group:
             cmdInfo = group[command]
             argMessageContent = ""
             for argName in cmdInfo.DescArgs:
                 argRequired = cmdInfo.DescArgs[argName]
                 argMessageContent += " "+((argRequired and f"<{argName}>") or f"[{argName}]")
-            finalText += "\n`"+command+argMessageContent+"` - "+cmdInfo.Description
-        await msg.channel.send(embed=fromdict({"title":"Commands within "+args[1],"description":finalText,"color":colours["info"]}))
+            finalText.append("`"+command+argMessageContent+"` - "+cmdInfo.Description)
+        await createPagedEmbed(msg.author,msg.channel,"Commands within "+args[1],finalText,10,"**Syntax**\n`<>` is a required argument, `[]` is an optional argument\n\n**Commands**\n")
     else: # Generalised (No group)
         finalText = f"do `{args[0]} <group>` to get more information on a group"
         for group in cmdList:
