@@ -287,6 +287,39 @@ def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
         else:
             returnString = str(days)+" day(s), "+returnString
     return returnString
+ReactionListenList = []
+class WatchReaction: #More classes
+    def __init__(self,msg,user,emoji,function,args):
+        self.MsgId = (type(msg) == int and msg) or msg.id
+        self.UserId = (type(user) == int and user) or user.id #The user whitelisted to react to it
+        self.Emoji = emoji
+        self.Function = function
+        self.Args = args
+        self.Expirey = time.time()+60
+        ReactionListenList.append(self)
+    def Expired(self):
+        return time.time() > self.Expirey
+    async def Check(self,msg,user,emoji):
+        if self.Expired():
+            ReactionListenList.remove(self)
+        elif msg.id == self.MsgId and user.id == self.UserId:
+            self.Expirey = time.time()+60
+            if emoji == self.Emoji:
+                await self.Function(msg,self.Emoji,self.Args)
+                return True
+    def Update(self,args):
+        if self.Expired():
+            ReactionListenList.remove(self)
+            return
+        print("Updating listener",self,args)
+        self.Args = args
+        self.Expirey = time.time()+60
+        return True
+async def UpdateReactionWatch(msg,emoji,args):
+    ListenListCache = ReactionListenList
+    for listener in ListenListCache:
+        if listener.MsgId == msg.id and (emoji == "all" or emoji == listener.Emoji):
+            listener.Update(args)
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True))
 #Note that due to the on_message handler, i cant use the regular @bot.event shit, so custom handler it is
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932} # These are different from the guild-defined LogChannel channels, these are for the bot to tell me whats wrong or ok
@@ -322,6 +355,13 @@ async def on_ready():
         await client.get_channel(logChannels['boot-ups']).send("Ive connected at "+currentDate())
     except:
         print("Failed to alert of bootup at",currentDate())
+@client.event
+async def on_reaction_add(reaction,user):
+    if user.id == client.user.id: #If its me
+        return
+    ListenListCache = ReactionListenList
+    for listener in ListenListCache:
+        await listener.Check(reaction.message,user,reaction.emoji)
 @client.event
 async def on_guild_join(guild):
     guildMegaTable[guild.id] = GuildObject(guild.id) # Force default settings
