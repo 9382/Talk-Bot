@@ -137,3 +137,6 @@ async def testReactionListener(msg,args):
     await message.add_reaction("⬅️")
     WatchReaction(message,msg.author,"⬅",testReactionListener2,0)
 Command("d -test reactions",testReactionListener,0,"Tests the Reaction Listener",{},None,"dev")
+async def testPagedEmbed(msg,args): #user, channel, title, content, pagelimit
+    await createPagedEmbed(msg.author,msg.channel,msg.author.name,["A","B","C","D","E","F","G","H","I","J"],4)
+Command("d -test pagedembed",testPagedEmbed,0,"Runs the createPagedEmbed function",{},None,"dev")

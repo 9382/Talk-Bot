@@ -311,7 +311,6 @@ class WatchReaction: #More classes
         if self.Expired():
             ReactionListenList.remove(self)
             return
-        print("Updating listener",self,args)
         self.Args = args
         self.Expirey = time.time()+60
         return True
@@ -320,6 +319,29 @@ async def UpdateReactionWatch(msg,emoji,args):
     for listener in ListenListCache:
         if listener.MsgId == msg.id and (emoji == "all" or emoji == listener.Emoji):
             listener.Update(args)
+async def changePageEmbed(msg,emoji,args):
+    title,pagedContent,maxPage,page = args[0],args[1],args[2],args[3]
+    page += (emoji=="➡️" and 1) or -1
+    page = min(max(0,page),maxPage) #Limit page
+    await msg.edit(embed=fromdict({"title":title,"description":"\n".join(pagedContent[page]),"footer":{"text":f"Page {str(page+1)}/{str(maxPage+1)}"},"color":colours["info"]}))
+    await UpdateReactionWatch(msg,"all",[title,pagedContent,maxPage,page])
+async def createPagedEmbed(user,channel,title,content,pageLimit=10): #For long lists in embeds
+    pagedContent = []
+    index = 0
+    for text in content:
+        if index % pageLimit == 0:
+            pagedContent.insert(index//pageLimit,[])
+        pagedContent[index//pageLimit].append(text)
+        index += 1
+    page = 0
+    maxPage = index//pageLimit
+    if maxPage == 1:
+        await channel.send(embed=fromdict({"title":title,"description":"\n".join(pagedContent[page]),"color":colours["info"]}))
+        return
+    embed = await channel.send(embed=fromdict({"title":title,"description":"\n".join(pagedContent[page]),"footer":{"text":f"Page {str(page+1)}/{str(maxPage+1)}"},"color":colours["info"]}))
+    for e in ["⬅️","➡️"]: #No, i dont know why sublime is different for ➡️
+        await embed.add_reaction(e)
+        WatchReaction(embed,user,e,changePageEmbed,[title,pagedContent,maxPage,page])
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True))
 #Note that due to the on_message handler, i cant use the regular @bot.event shit, so custom handler it is
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932} # These are different from the guild-defined LogChannel channels, these are for the bot to tell me whats wrong or ok
