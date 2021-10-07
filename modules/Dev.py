@@ -9,13 +9,6 @@ async def d_exec(msg,args):
         print("[Dev] Successful exec")
 Command("d -exec",d_exec,0,"Executes pure python code in the global spec",{"Code":True},None,"dev")
 
-async def horribleCoding(msg,args):
-    a[b] # This is just designed to error
-Command("d -test error",horribleCoding,0,"Forces an error to test the error logging",{},None,"dev")
-async def forceOnReady(msg,args):
-    await on_ready()
-Command("d -test onready",forceOnReady,0,"Runs the on_ready function",{},None,"dev")
-
 async def presetAudioTest(msg,args):
     if not msg.author.voice:
         return
@@ -71,12 +64,6 @@ async def gimmePing(msg,args):
     await message.edit(content=str(round((time.time()-startTime)*1000))+" ms")
 Command("ping",gimmePing,0,"Uses the time it takes to send a message to calculate its ping",{},None,"dev")
 
-async def testConfirmations2(msg,args):
-    await msg.channel.send("Got past confirmation")
-async def testConfirmations(msg,args):
-    print("Testing confirmations")
-    await getMegaTable(msg).CreateConfirmation(msg,args,testConfirmations2)
-Command("d -test confirmations",testConfirmations,0,"Tests the Confirmations feature",{},None,"dev")
 # This is only in here as the feature is most likely not going to exist anymore, its more a relic of a past plan
 ttsQueue = []
 handlingTTS = False
@@ -127,16 +114,3 @@ async def speakTTS(msg,args): # This is a bit of a mess. Maybe an improve, how a
                 pass
         handlingTTS = False
 Command("tts",speakTTS,3,"Speak whatever you put into your vc as Text-To-Speech",{"text":True},None,"dev")
-
-async def testReactionListener2(msg,emoji,score):
-    score += 1
-    await msg.edit(content=f"This message + {str(score)}")
-    await UpdateReactionWatch(msg,"all",score)
-async def testReactionListener(msg,args):
-    message = await msg.channel.send("This message + 0")
-    await message.add_reaction("⬅️")
-    WatchReaction(message,msg.author,"⬅",testReactionListener2,0)
-Command("d -test reactions",testReactionListener,0,"Tests the Reaction Listener",{},None,"dev")
-async def testPagedEmbed(msg,args): #user, channel, title, content, pagelimit
-    await createPagedEmbed(msg.author,msg.channel,msg.author.name,["A","B","C","D","E","F","G","H","I","J"],4)
-Command("d -test pagedembed",testPagedEmbed,0,"Runs the createPagedEmbed function",{},None,"dev")

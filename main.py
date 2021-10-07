@@ -456,9 +456,9 @@ class Command:
         if exists(wantedTable,cmd):
             print(f"[AddCmd] Command {cmd} was declared twice")
         wantedTable[cmd] = self
-    async def Run(self,msg,args):
+    async def Run(self,msg,args,bypassRL=False):
         user = msg.author.id
-        if exists(self.RateLimitList,user):
+        if exists(self.RateLimitList,user) and not bypassRL:
             rlInfo = self.RateLimitList[user]
             if rlInfo["t"] > time.time():
                 if not rlInfo["r"]:
@@ -491,9 +491,7 @@ async def checkHistoryClear(msg):
     if msg.channel.id in gmt.ChannelLimits:
         msgLimit = gmt.ChannelLimits[msg.channel.id]
         try:
-            a = time.time() #Debug, remove
             messageList = await msg.channel.history(limit=msgLimit+20).flatten() #msgLimit+20 to avoid clogging with too much history
-            print("Fetch time",time.time()-a) #Debug, remove
         except:
             print("[History] Failed to fetch")
         else:
