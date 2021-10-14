@@ -710,12 +710,19 @@ Command("vote",publicVote,10,"Make a public vote about anything with an optional
 
 print('attempting import')
 ''' Load modules from the modules folder
-Only use this for storing commands that dont rely on other commands, as load order is random
-This is so i dont clog up the entirety of this main script with like 2k lines
-The main code can be found in modules/__main__.py '''
-from modules.__main__ import load_modules
+Only use this for storing commands, as load order is random
+This is so i dont clog up the entirety of this main script with like 2k lines '''
 def loadModules(origin=None):
-    exec_list = load_modules(origin)
+    print("Loading modules origin=",origin)
+    exec_list = []
+    for fname in os.listdir("modules"):
+        if not fname.endswith(".py"):
+            continue
+        if not os.path.isfile("modules/"+fname):
+            continue
+        if fname == "__main__.py":
+            continue
+        exec_list.append(bytes("#coding: utf-8\n","utf-8")+open("modules/"+fname,"rb").read())
     for contents in exec_list:
         try:
             exec(contents,globals())
