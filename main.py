@@ -145,7 +145,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
             return self.LoggedMessages[msg.id].Deletion-time.time()
         if forced:
             return await self.AddToFilter(msg,int(forced))
-        for word in self.WordBlockList:
+        for word in self.WordBlockList: #Word filter > Media filter
             buffer = self.WordBlockList[word] # Should never be None now, hopefully
             if msg.content.lower().find(word) != -1:
                 return await self.AddToFilter(msg,buffer)
@@ -182,8 +182,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 "MediaFilters":self.MediaFilters,
                 "QueuedChannels":self.QueuedChannels,
                 "ChannelLimits":self.ChannelLimits,
-                "LoggedMessages":self.FormatLoggedMessages()
-        } #How lovely
+                "LoggedMessages":self.FormatLoggedMessages()}
     def LoadSave(self,data):
         for catagory in data:
             try:
@@ -193,8 +192,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                         for message in data["LoggedMessages"][channel]:
                             expirey = data["LoggedMessages"][channel][message]
                             self.LoggedMessages[int(message)] = FilteredMessage(expirey,int(message),int(channel))
-                    continue
-                if hasattr(self,catagory):
+                elif hasattr(self,catagory):
                     setattr(self,catagory,data[catagory])
                 else:
                     print(f"[GuildObject {str(self.Guild)}] Unknown Catagory",catagory)
@@ -216,19 +214,17 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         await confirmationObj.Check(msg)
         self.Confirmations.pop(user)
         return True
-def checkMegaTable(gid):
-    if not exists(guildMegaTable,gid):
-        guildMegaTable[gid] = GuildObject(gid)
 def getMegaTable(obj):
     gid = None
     if type(obj) == discord.Message or type(obj) == discord.PartialMessage:
         gid = obj.guild.id
-    if type(obj) == discord.Guild:
+    elif type(obj) == discord.Guild:
         gid = obj.id
-    if type(obj) == type(0):
+    elif type(obj) == int:
         gid = obj
     if gid:
-        checkMegaTable(gid)
+        if not exists(guildMegaTable,gid):
+            guildMegaTable[gid] = GuildObject(gid)
         return guildMegaTable[gid]
 async def getGuildInviteStats(guild):
     toReturn = {}
@@ -253,39 +249,23 @@ def strToTimeAdd(duration):
         return False,"Time period must be s, m, h or d"
 def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
     if seconds <= 0:
-        return "0 seconds"
-    days = seconds//86400
-    seconds = seconds - 86400*days
-    hours = seconds//3600
-    seconds = seconds - 3600*hours
-    minutes = seconds//60
-    seconds = seconds - 60*minutes
+        return "0 seconds" #Maybe set it to "now"?
+    days,seconds = seconds//86400,seconds%86400
+    hours,seconds = seconds//3600,seconds%3600
+    minutes,seconds = seconds//60,seconds%60
     returnString = ""
-    parts = 0
+    p = 0
     if seconds > 0:
         returnString = str(seconds)+" second(s)"
-        parts += 1
+        p += 1
     if minutes > 0:
-        if parts == 0:
-            returnString = str(minutes)+" minute(s)"+returnString
-        else:
-            returnString = str(minutes)+" minute(s) and "+returnString
-        parts += 1
+        returnString = (p==0 and str(minutes)+" minute(s)") or str(minutes)+" minute(s) and "+returnString
+        p += 1
     if hours > 0:
-        if parts == 0:
-            returnString = str(hours)+" hour(s)"+returnString
-        elif parts == 1:
-            returnString = str(hours)+" hour(s) and "+returnString
-        else:
-            returnString = str(hours)+" hour(s), "+returnString
-        parts += 1
+        returnString = (p==0 and str(hours)+" hour(s)") or (p==1 and str(hours)+" hour(s) and "+returnString) or str(hours)+" hour(s), "+returnString
+        p += 1
     if days > 0:
-        if parts == 0:
-            returnString = str(days)+" day(s)"+returnString
-        elif parts == 1:
-            returnString = str(days)+" day(s) and "+returnString
-        else:
-            returnString = str(days)+" day(s), "+returnString
+        returnString = (p==0 and str(days)+" day(s)") or (p==1 and str(days)+" day(s) and "+returnString) or str(days)+" day(s), "+returnString
     return returnString
 ReactionListenList = []
 class WatchReaction: #More classes
@@ -333,17 +313,16 @@ async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText=""): 
             pagedContent.insert(index//pageLimit,[])
         pagedContent[index//pageLimit].append(text)
         index += 1
-    page = 0
     maxPage = index//pageLimit
     if maxPage == 0:
-        await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[page]),"color":colours["info"]}))
+        await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"color":colours["info"]}))
         return
-    embed = await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[page]),"footer":{"text":f"Page {str(page+1)}/{str(maxPage+1)}"},"color":colours["info"]}))
+    embed = await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"footer":{"text":f"Page 1/{str(maxPage+1)}"},"color":colours["info"]}))
     for e in ["⬅️","➡️"]: #No, i dont know why sublime is different for ➡️
         await embed.add_reaction(e)
-        WatchReaction(embed,user,e,changePageEmbed,[title,preText,pagedContent,maxPage,page])
+        WatchReaction(embed,user,e,changePageEmbed,[title,preText,pagedContent,maxPage,0])
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True))
-#Note that due to the on_message handler, i cant use the regular @bot.event shit, so custom handler it is
+#Note that due to the on_message handler, i cant use the regular @bot.command decorator, so custom handler it is
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932} # These are different from the guild-defined LogChannel channels, these are for the bot to tell me whats wrong or ok
 @client.event
 async def on_error(error,*args,**kwargs):
@@ -358,7 +337,7 @@ async def on_error(error,*args,**kwargs):
     traceback.print_exc(file=sys.stderr)
     try: #Logging
         errorFile = tempFile()
-        file = open(errorFile,"w",encoding="ANSI")
+        file = open(errorFile,"w",encoding="ANSI",newline='')
         try:
             traceback.print_exc(file=file)
         except Exception as exc:
@@ -368,7 +347,7 @@ async def on_error(error,*args,**kwargs):
         await client.get_channel(logChannels['errors']).send("Error in client\nTime: "+currentDate()+"\nCausing command: "+str(causingCommand),file=discord.File(errorFile))
         os.remove(errorFile)
     except Exception as exc:
-        print("[Fatal Error] Failed to log:",exc)
+        print("[Fatal Error] Failed to log:",currentDate(),exc)
 @client.event
 async def on_ready():
     await client.change_presence(activity=discord.Game(name='##cmds'))
@@ -489,14 +468,17 @@ async def doTheCheck(msg,args,commandTable): #Dont wanna type this 3 times
 async def checkHistoryClear(msg):
     gmt = getMegaTable(msg)
     if msg.channel.id in gmt.ChannelLimits:
-        msgLimit = gmt.ChannelLimits[msg.channel.id]
-        try:
-            messageList = await msg.channel.history(limit=msgLimit+20).flatten() #msgLimit+20 to avoid clogging with too much history
-        except:
-            print("[History] Failed to fetch")
-        else:
-            for message in messageList[msgLimit:]:
-                await gmt.FilterMessage(message,1) #1 to avoid deletion now, and queue it in the seperate task later
+        msgLimitInfo = gmt.ChannelLimits[msg.channel.id]
+        msgLimit,lastCheck = msgLimitInfo[0],msgLimitInfo[1]
+        if lastCheck + 2 > time.time(): #Limit cause history call is quite hard
+            gmt.ChannelLimits[msg.channel.id][1] = time.time()
+            try:
+                messageList = await msg.channel.history(limit=msgLimit+15).flatten() #msgLimit+15 to catch missed
+            except Exception as exc:
+                print("[History] Failed to fetch:",exc)
+            else:
+                for message in messageList[msgLimit:]:
+                    await gmt.FilterMessage(message,1) #1 to avoid deletion now, and queue it in the seperate task later
 @client.event
 async def on_message(msg):
     if not msg.guild or msg.author.id == client.user.id: #Only do stuff in guild, ignore messages by the bot
@@ -548,7 +530,7 @@ stopCycling = False
 finishedLastCycle = False
 @tasks.loop(seconds=1)
 async def constantMessageCheck(): #For message filter. Possibly in need of a re-work
-    global finishedLastCycle
+    global finishedLastCycle #Weird stop but it works
     if stopCycling:
         finishedLastCycle = True
         return
@@ -557,7 +539,6 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
         for guild in guildMegaTable:
             gmt = guildMegaTable[guild]
             LMCache = gmt.LoggedMessages
-            toPop = []
             for msgid in LMCache:
                 message = LMCache[msgid]
                 if message.Expired():
@@ -566,9 +547,7 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
                         if not exists(toDeleteList,message.Channel):
                             toDeleteList[message.Channel] = []
                         toDeleteList[message.Channel].append(messageObj)
-                        toPop.append(message.MessageId)
-            for msgid in toPop:
-                gmt.LoggedMessages.pop(msgid) # Pop it here to avoid errors on changing sizes
+                        gmt.LoggedMessages.pop(message.MessageId)
         if toDeleteList != {}:
             for channel in toDeleteList:
                 try:

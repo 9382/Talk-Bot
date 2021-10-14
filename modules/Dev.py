@@ -1,4 +1,8 @@
 # Pretty much every command under "dev" will be here
+@tasks.loop(seconds=300)
+async def heartbeat():
+    print("Alive")
+heartbeat.start()
 
 async def d_exec(msg,args):
     try:
@@ -25,12 +29,8 @@ Command("presetaudio",presetAudioTest,0,"Test playing preset audio files",{"File
 def createScore(n1,n2):
     return 100-((n1+n2)%100)
 async def scoreTest2(msg,args):
-    targetUser1 = exists(args,1) and numRegex.search(args[1]) and msg.guild.get_member(int(numRegex.search(args[1]).group()))
-    if not targetUser1:
-        targetUser1 = random.choice(msg.guild.members)
-    targetUser2 = exists(args,2) and numRegex.search(args[2]) and msg.guild.get_member(int(numRegex.search(args[2]).group()))
-    if not targetUser2:
-        targetUser2 = random.choice(msg.guild.members)
+    targetUser1 = (exists(args,1) and numRegex.search(args[1]) and msg.guild.get_member(int(numRegex.search(args[1]).group()))) or random.choice(msg.guild.members)
+    targetUser2 = (exists(args,2) and numRegex.search(args[2]) and msg.guild.get_member(int(numRegex.search(args[2]).group()))) or random.choice(msg.guild.members)
     await msg.channel.send(embed=fromdict({'title':'Score with '+targetUser1.name+' and '+targetUser2.name,'description':str(createScore(targetUser1.id,targetUser2.id))}))
 Command("compare",scoreTest2,0,"Test the scoring system on user IDs",{"U1":False,"U2":False},None,"dev")
 
