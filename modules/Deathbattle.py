@@ -54,7 +54,7 @@ async def deathBattle(msg,args):
     if not u2:
         u2 = random.choice(msg.guild.members)
     u1 = msg.author
-    dbResults = db.calculate(db.user(u1.name,u1.id),db.user(u2.name,u2.id))
+    dbResults = calculate(user(u1.name,u1.id),user(u2.name,u2.id))
     dbMessage = await msg.channel.send(':anger: Death Battle!',embed=fromdict(
         {'author':{'name':u1.name+' is challenging '+u2.name},'fields':[{'name':u1.name,'value':'100','inline':True},{'name':u2.name,'value':'100','inline':True}],'color':colours['info']}
     ))
@@ -81,3 +81,14 @@ async def deathBattle(msg,args):
         {'author':{'name':u1.name+' is challenging '+u2.name},'description':description,'fields':[{'name':u1.name,'value':i.u1hp,'inline':True},{'name':u2.name,'value':i.u2hp,'inline':True}],'color':colours['info']}
     ))
 Command("deathbattle",deathBattle,10,"Fight someone to the death!",{"@user":False},None,"dev")
+async def fastDeathBattle(msg,args):
+    u2 = exists(args,1) and numRegex.search(args[1]) and msg.guild.get_member(int(numRegex.search(args[1]).group()))
+    if not u2:
+        u2 = random.choice(msg.guild.members)
+    u1 = msg.author
+    dbResults = calculate(user(u1.name,u1.id),user(u2.name,u2.id))
+    total = ""
+    for i in dbResults['log']:
+        total += i.hitMsg+" | u1 "+i.u1hp+" u2 "+i.u2hp+"\n"
+    await msg.channel.send(total)
+Command("fastdeathbattle",fastDeathBattle,10,"Fight someone to the death??",{"@user":False},None,"dev")
