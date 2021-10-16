@@ -124,27 +124,11 @@ async def list_admin(msg,args): # God this looks horrible. NOTE: Patch this up a
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:\n`list words`\n`list channels`\n`list tags`','color':colours['info']}))
         return
-    gmt = getMegaTable(msg)
-    index = 0
-    finalMessage = ""
-    if args[1] == "words":
-        for i in gmt.WordBlockList:
-            if gmt.WordBlockList[i] != None:
-                index += 1
-                finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'" '+simplifySeconds(gmt.WordBlockList[i])
-        await msg.channel.send(embed=fromdict({'title':'Blocked Word List','description':f'List of banned words, and how long until the message gets deleted:{finalMessage}','color':colours['info']}))
-    elif args[1] == "channels":
-        for i in gmt.ChannelClearList:
-            if gmt.ChannelClearList:
-                index += 1
-                finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'" every '+simplifySeconds(gmt.ChannelClearList[i])
-        await msg.channel.send(embed=fromdict({'title':'Clear Channel List','description':f'List of channels that are set to clear every so often:{finalMessage}','color':colours['info']}))
-    elif args[1] == "tags":
-        for i in gmt.NSFWBlockList:
-            index += 1
-            finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'"'
-        await msg.channel.send(embed=fromdict({'title':'Blocked Tags List','description':f'List of tags that are blocked on the NSFW commands:{finalMessage}','color':colours['info']}))
-    else:
-        await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:\n`list words`\n`list channels`\n`list tags`','color':colours['info']}))
-        return
 Command("list",list_admin,0,"View the list of settings to do with administration",{"subsection":False},None,"admin")
+
+async def panic(msg,args):
+    # Panic here
+    pass
+async def confirmPanic(msg,args):
+    await getMegaTable(msg).CreateConfirmation(msg,args,panic)
+Command("panic",confirmPanic,60,"Locks down the server, clearing invites and locking channels. Use this sparingly",{},None,"dev")
