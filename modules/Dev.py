@@ -1,5 +1,5 @@
 # Pretty much every command under "dev" will be here
-@tasks.loop(seconds=300)
+@tasks.loop(seconds=600)
 async def heartbeat():
     print("Alive")
 heartbeat.start()
