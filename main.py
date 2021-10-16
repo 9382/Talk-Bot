@@ -620,7 +620,7 @@ async def forceUpdate(msg,args):
 Command("d -update",forceUpdate,0,"Updates the bot, force saving configs",{},None,"dev")
 
 async def cmds(msg,args):
-    cmdList = {"admin":adminCommands}
+    cmdList = {"Admin":adminCommands}
     for command in userCommands:
         cmdInfo = userCommands[command]
         if not exists(cmdList,cmdInfo.Group):
