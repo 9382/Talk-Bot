@@ -10,24 +10,41 @@ async def setLogChannel(msg,args):
     await msg.channel.send(embed=fromdict({"title":"Success","description":"Set log channel successfully","color":colours["success"]}))
 Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided",{"channel":True},None,"admin")
 
-async def clearAllInvites(msg,args):
-    try:
-        invites = await msg.guild.invites()
-    except:
-        await msg.channel.send(embed=fromdict({"title":"Error","description":"Failed to get invites. Maybe try again, or check its permissions","color":colours["error"]}))
+list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ChannelClearList","QueuedChannels","ChannelLimits"]
+async def list_func(msg,args):
+    if len(args) < 2:
+        finalString = ""
+        for item in list_validSections:
+            finalString += f"\n`{item}`"
+        await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:'+finalString,'color':colours['info']}))
         return
-    successRate,totalCount = 0,0
-    for invite in invites:
-        try:
-            await invite.delete()
-            successRate += 1
-        except:
-            pass
-        totalCount += 1
-    await msg.channel.send(embed=fromdict({"title":"Success","description":f"{str(successRate)} out of {str(totalCount)} invites were successfully cleared","color":colours["success"]}))
-async def clearInvitesConfirm(msg,args):
-    await getMegaTable(msg).CreateConfirmation(msg,args,clearAllInvites)
-Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},None,"admin")
+    section = args[1]#msg.content[7:]
+    if not section in list_validSections:
+        await msg.channel.send(embed=fromdict({'title':'Invalid','description':section+' is not a valid catagory','color':colours["error"]}))
+        return
+    parser = None
+    if section in ["WordBlockList","MediaFilters","ChannelClearList","QueuedChannels"]:
+        parser = lambda i,k,v : f"{str(i)}. `{k}` -> {simplifySeconds(v)}"
+    if section == "NSFWBlockList":
+        parser = lambda i,v : f"{str(i)}. `{v}`"
+    if section == "ChannelLimits":
+        parser = lambda i,k,v : f"{str(i)}. `{k}` -> {str(v)} Messages"
+    array = getattr(getMegaTable(msg),section)
+    finalString = []
+    index = 1
+    if type(array) == dict:
+        for k in array:
+            finalString.append(parser(index,k,array[k]))
+            index += 1
+    else:
+        for v in array:
+            finalString.append(parser(index,v))
+            index += 1
+    if finalString == []:
+        await msg.channel.send(embed=fromdict({"title":"No Content","description":"Nothing under this catagory","color":colours["warning"]}))
+    else:
+        await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString,8,(section == "QueuedChannels" and "Note: This is how long until the next refresh") or "")
+Command("list",list_func,0,"View the list of settings to do with the server's administration",{"subsection":False},None,"admin")
 
 async def blockWord(msg,args):
     if not exists(args,2):
@@ -49,7 +66,7 @@ async def unblockWord(msg,args):
     try:
         getMegaTable(msg).WordBlockList.pop(word)
     except:
-        await msg.channel.send(embed=fromdict({'title':'Not Blocked','description':f'{word} was not blocked','color':colours['success']}))
+        await msg.channel.send(embed=fromdict({'title':'Not Blocked','description':f'{word} was not blocked','color':colours['warning']}))
     else:
         await msg.channel.send(embed=fromdict({'title':'Success','description':f'{word} is allowed again','color':colours['success']}))
 Command("unblockword",unblockWord,0,"Remove a word from the filter list",{"word":True},None,"admin")
@@ -97,8 +114,12 @@ async def blockMedia(msg,args):
     await msg.channel.send(embed=fromdict({'title':'Success','description':'All media will be deleted after '+simplifySeconds(result),'color':colours['success']}))
 Command("blockmedia",blockMedia,0,"Remove all media in a channel after a certain duration",{"deletiontime":True},None,"admin")
 async def unblockMedia(msg,args):
-    getMegaTable(msg).MediaFilters.pop(msg.channel.id)
-    await msg.channel.send(embed=fromdict({'title':'Success','description':'Media will no longer be removed','color':colours['success']}))
+    try:
+        getMegaTable(msg).MediaFilters.pop(msg.channel.id)
+    except:
+        await msg.channel.send(embed=fromdict({'title':'Not Filtered','description':'This channel was not filtered','color':colours['warning']}))
+    else:
+        await msg.channel.send(embed=fromdict({'title':'Success','description':'Media will no longer be removed','color':colours['success']}))
 Command("unblockmedia",unblockMedia,0,"Stop auto-filtering a channel's media",{},None,"admin")
 
 async def controlMessageLimit(msg,args,removing):
@@ -120,31 +141,34 @@ async def controlMessageLimit(msg,args,removing):
 Command("setmessagelimit",controlMessageLimit,5,"Sets a max message limit on a channel, deleting any over the limit",{"number":True},False,"admin")
 Command("removemessagelimit",controlMessageLimit,5,"Removes the max message limit on a channel",{},True,"admin")
 
-async def list_admin(msg,args): # God this looks horrible. NOTE: Patch this up at some point NOTE 2: Maybe patchable with GMT :)
-    if len(args) < 2:
-        await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:\n`list words`\n`list channels`\n`list tags`','color':colours['info']}))
-        return
-    gmt = getMegaTable(msg)
-    index = 0
-    finalMessage = ""
-    if args[1] == "words":
-        for i in gmt.WordBlockList:
-            if gmt.WordBlockList[i] != None:
-                index += 1
-                finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'" '+simplifySeconds(gmt.WordBlockList[i])
-        await msg.channel.send(embed=fromdict({'title':'Blocked Word List','description':f'List of banned words, and how long until the message gets deleted:{finalMessage}','color':colours['info']}))
-    elif args[1] == "channels":
-        for i in gmt.ChannelClearList:
-            if gmt.ChannelClearList:
-                index += 1
-                finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'" every '+simplifySeconds(gmt.ChannelClearList[i])
-        await msg.channel.send(embed=fromdict({'title':'Clear Channel List','description':f'List of channels that are set to clear every so often:{finalMessage}','color':colours['info']}))
-    elif args[1] == "tags":
-        for i in gmt.NSFWBlockList:
-            index += 1
-            finalMessage = finalMessage+'\n#'+str(index)+' - "'+i+'"'
-        await msg.channel.send(embed=fromdict({'title':'Blocked Tags List','description':f'List of tags that are blocked on the NSFW commands:{finalMessage}','color':colours['info']}))
+async def clearAllInvites(msg,args,silent=False):
+    try:
+        invites = await msg.guild.invites()
+    except:
+        if silent:
+            return False,None
+        else:
+            await msg.channel.send(embed=fromdict({"title":"Error","description":"Failed to get invites. Maybe try again, or check the bot's permissions","color":colours["error"]}))
+            return
+    successRate,totalCount = 0,0
+    for invite in invites:
+        try:
+            await invite.delete()
+            successRate += 1
+        except:
+            pass
+        totalCount += 1
+    if silent:
+        return True,f"{str(successRate)}/{str(totalCount)}"
     else:
-        await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:\n`list words`\n`list channels`\n`list tags`','color':colours['info']}))
-        return
-Command("list",list_admin,0,"View the list of settings to do with administration",{"subsection":False},None,"admin")
+        await msg.channel.send(embed=fromdict({"title":"Success","description":f"{str(successRate)} out of {str(totalCount)} invites were successfully cleared","color":colours["success"]}))
+async def clearInvitesConfirm(msg,args):
+    await getMegaTable(msg).CreateConfirmation(msg,args,clearAllInvites)
+Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},None,"admin")
+
+async def panic(msg,args):
+    # Panic here
+    pass
+async def confirmPanic(msg,args):
+    await getMegaTable(msg).CreateConfirmation(msg,args,panic)
+Command("panic",confirmPanic,60,"Locks down the server, clearing invites and locking channels. Use this sparingly",{},None,"dev")
