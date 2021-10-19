@@ -10,7 +10,7 @@ async def setLogChannel(msg,args):
     await msg.channel.send(embed=fromdict({"title":"Success","description":"Set log channel successfully","color":colours["success"]}))
 Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided",{"channel":True},None,"admin")
 
-list_validSections = ["WordBlockList","NSFWBlockList"]
+list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ChannelClearList","QueuedChannels","ChannelLimits"]
 async def list_func(msg,args):
     if len(args) < 2:
         finalString = ""
@@ -23,11 +23,13 @@ async def list_func(msg,args):
         await msg.channel.send(embed=fromdict({'title':'Invalid','description':section+' is not a valid catagory','color':colours["error"]}))
         return
     parser = None
-    if section == "WordBlockList":
+    if section in ["WordBlockList","MediaFilters","ChannelClearList","QueuedChannels"]:
         parser = lambda i,k,v : f"{str(i)}. `{k}` -> {simplifySeconds(v)}"
     if section == "NSFWBlockList":
         parser = lambda i,v : f"{str(i)}. `{v}`"
-    array = getattr(getMegaTable(1),section)
+    if section == "ChannelLimits":
+        parser = lambda i,k,v : f"{str(i)}. `{k}` -> {str(v)} Messages"
+    array = getattr(getMegaTable(msg),section)
     finalString = []
     index = 1
     if type(array) == dict:
@@ -38,7 +40,10 @@ async def list_func(msg,args):
         for v in array:
             finalString.append(parser(index,v))
             index += 1
-    await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString)
+    if finalString == []:
+        await msg.channel.send(embed=fromdict({"title":"No Content","description":"Nothing under this catagory","color":colours["warning"]}))
+    else:
+        await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString,8,(section == "QueuedChannels" and "Note: This is how long until the next refresh") or "")
 Command("list",list_func,0,"View the list of settings to do with the server's administration",{"subsection":False},None,"admin")
 
 async def blockWord(msg,args):
