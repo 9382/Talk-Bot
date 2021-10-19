@@ -320,8 +320,8 @@ async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText=""): 
         await embed.add_reaction(e)
         WatchReaction(embed,user,e,changePageEmbed,[title,preText,pagedContent,maxPage,0])
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True))
-#Note that due to the on_message handler, i cant use the regular @bot.command decorator, so custom handler it is
-logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932} # These are different from the guild-defined LogChannel channels, these are for the bot to tell me whats wrong or ok
+#Note that due to the on_message handler, i cant use the regular @client.command decorator, so custom handler it is
+logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932} # These are different from the guild-defined LogChannel channels, these are essentially telemetry
 @client.event
 async def on_error(error,*args,**kwargs):
     if exists(args,0):
@@ -539,13 +539,12 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
             LMCache = gmt.LoggedMessages
             for msgid in LMCache:
                 message = LMCache[msgid]
-                if message.Expired():
-                    messageObj = message.GetMessageObj()
-                    if messageObj:
-                        if not exists(toDeleteList,message.Channel):
-                            toDeleteList[message.Channel] = []
-                        toDeleteList[message.Channel].append(messageObj)
-                        gmt.LoggedMessages.pop(message.MessageId)
+                messageObj = message.Expired() and message.GetMessageObj()
+                if messageObj:
+                    if not exists(toDeleteList,message.Channel):
+                        toDeleteList[message.Channel] = []
+                    toDeleteList[message.Channel].append(messageObj)
+                    gmt.LoggedMessages.pop(message.MessageId)
         if toDeleteList != {}:
             for channel in toDeleteList:
                 try:
