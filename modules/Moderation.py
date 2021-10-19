@@ -136,12 +136,6 @@ async def controlMessageLimit(msg,args,removing):
 Command("setmessagelimit",controlMessageLimit,5,"Sets a max message limit on a channel, deleting any over the limit",{"number":True},False,"admin")
 Command("removemessagelimit",controlMessageLimit,5,"Removes the max message limit on a channel",{},True,"admin")
 
-async def list_admin(msg,args): # God this looks horrible. NOTE: Patch this up at some point NOTE 2: Maybe patchable with GMT :)
-    if len(args) < 2:
-        await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:\n`list words`\n`list channels`\n`list tags`','color':colours['info']}))
-        return
-Command("list",list_admin,0,"View the list of settings to do with administration",{"subsection":False},None,"admin")
-
 async def clearAllInvites(msg,args,silent=False):
     try:
         invites = await msg.guild.invites()
