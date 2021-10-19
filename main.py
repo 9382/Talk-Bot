@@ -463,13 +463,15 @@ async def doTheCheck(msg,args,commandTable): #Dont wanna type this 3 times
                 if result != -1: # If first repeat:
                     await msg.channel.send(embed=fromdict({'title':'Slow Down','description':'That command is limited for '+simplifySeconds(math.floor(result))+' more seconds','color':colours['warning']}),delete_after=result)
             return True
+HistoryClearRatelimit = {}
 async def checkHistoryClear(msg):
     gmt = getMegaTable(msg)
-    if msg.channel.id in gmt.ChannelLimits:
-        msgLimitInfo = gmt.ChannelLimits[msg.channel.id]
-        msgLimit,lastCheck = msgLimitInfo[0],msgLimitInfo[1]
-        if lastCheck + 2 > time.time(): #Limit cause history call is quite hard
-            gmt.ChannelLimits[msg.channel.id][1] = time.time()
+    cid = str(msg.channel.id) #Dumb storage logic by JSON
+    if exists(gmt.ChannelLimits,cid):
+        msgLimit = gmt.ChannelLimits[cid]
+        lastCheck = (exists(HistoryClearRatelimit,cid) and HistoryClearRatelimit[cid]) or 0
+        if lastCheck < time.time(): #Limit cause history call is quite hard
+            HistoryClearRatelimit[cid] = time.time() + 2
             try:
                 messageList = await msg.channel.history(limit=msgLimit+15).flatten() #msgLimit+15 to catch missed
             except Exception as exc:
@@ -552,7 +554,8 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
             for channel in toDeleteList:
                 try:
                     await client.get_channel(channel).delete_messages(toDeleteList[channel])
-                except:
+                except Exception as exc:
+                    print("BD",exc)
                     pass
     except Exception as exc:
         print("[LoggedMessages] Exception:",exc)
