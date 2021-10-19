@@ -10,24 +10,36 @@ async def setLogChannel(msg,args):
     await msg.channel.send(embed=fromdict({"title":"Success","description":"Set log channel successfully","color":colours["success"]}))
 Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided",{"channel":True},None,"admin")
 
-async def clearAllInvites(msg,args):
-    try:
-        invites = await msg.guild.invites()
-    except:
-        await msg.channel.send(embed=fromdict({"title":"Error","description":"Failed to get invites. Maybe try again, or check its permissions","color":colours["error"]}))
+list_validSections = ["WordBlockList","NSFWBlockList"]
+async def list_func(msg,args):
+    if len(args) < 2:
+        finalString = ""
+        for item in list_validSections:
+            finalString += f"\n`{item}`"
+        await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:'+finalString,'color':colours['info']}))
         return
-    successRate,totalCount = 0,0
-    for invite in invites:
-        try:
-            await invite.delete()
-            successRate += 1
-        except:
-            pass
-        totalCount += 1
-    await msg.channel.send(embed=fromdict({"title":"Success","description":f"{str(successRate)} out of {str(totalCount)} invites were successfully cleared","color":colours["success"]}))
-async def clearInvitesConfirm(msg,args):
-    await getMegaTable(msg).CreateConfirmation(msg,args,clearAllInvites)
-Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},None,"admin")
+    section = args[1]#msg.content[7:]
+    if not section in list_validSections:
+        await msg.channel.send(embed=fromdict({'title':'Invalid','description':section+' is not a valid catagory','color':colours["error"]}))
+        return
+    parser = None
+    if section == "WordBlockList":
+        parser = lambda i,k,v : f"{str(i)}. `{k}` -> {simplifySeconds(v)}"
+    if section == "NSFWBlockList":
+        parser = lambda i,v : f"{str(i)}. `{v}`"
+    array = getattr(getMegaTable(1),section)
+    finalString = []
+    index = 1
+    if type(array) == dict:
+        for k in array:
+            finalString.append(parser(index,k,array[k]))
+            index += 1
+    else:
+        for v in array:
+            finalString.append(parser(index,v))
+            index += 1
+    await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString)
+Command("list",list_func,0,"View the list of settings to do with the server's administration",{"subsection":False},None,"admin")
 
 async def blockWord(msg,args):
     if not exists(args,2):
@@ -129,6 +141,31 @@ async def list_admin(msg,args): # God this looks horrible. NOTE: Patch this up a
         await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:\n`list words`\n`list channels`\n`list tags`','color':colours['info']}))
         return
 Command("list",list_admin,0,"View the list of settings to do with administration",{"subsection":False},None,"admin")
+
+async def clearAllInvites(msg,args,silent=False):
+    try:
+        invites = await msg.guild.invites()
+    except:
+        if silent:
+            return False,None
+        else:
+            await msg.channel.send(embed=fromdict({"title":"Error","description":"Failed to get invites. Maybe try again, or check the bot's permissions","color":colours["error"]}))
+            return
+    successRate,totalCount = 0,0
+    for invite in invites:
+        try:
+            await invite.delete()
+            successRate += 1
+        except:
+            pass
+        totalCount += 1
+    if silent:
+        return True,f"{str(successRate)}/{str(totalCount)}"
+    else:
+        await msg.channel.send(embed=fromdict({"title":"Success","description":f"{str(successRate)} out of {str(totalCount)} invites were successfully cleared","color":colours["success"]}))
+async def clearInvitesConfirm(msg,args):
+    await getMegaTable(msg).CreateConfirmation(msg,args,clearAllInvites)
+Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},None,"admin")
 
 async def panic(msg,args):
     # Panic here
