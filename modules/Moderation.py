@@ -49,7 +49,7 @@ async def unblockWord(msg,args):
     try:
         getMegaTable(msg).WordBlockList.pop(word)
     except:
-        await msg.channel.send(embed=fromdict({'title':'Not Blocked','description':f'{word} was not blocked','color':colours['success']}))
+        await msg.channel.send(embed=fromdict({'title':'Not Blocked','description':f'{word} was not blocked','color':colours['warning']}))
     else:
         await msg.channel.send(embed=fromdict({'title':'Success','description':f'{word} is allowed again','color':colours['success']}))
 Command("unblockword",unblockWord,0,"Remove a word from the filter list",{"word":True},None,"admin")
@@ -97,8 +97,12 @@ async def blockMedia(msg,args):
     await msg.channel.send(embed=fromdict({'title':'Success','description':'All media will be deleted after '+simplifySeconds(result),'color':colours['success']}))
 Command("blockmedia",blockMedia,0,"Remove all media in a channel after a certain duration",{"deletiontime":True},None,"admin")
 async def unblockMedia(msg,args):
-    getMegaTable(msg).MediaFilters.pop(msg.channel.id)
-    await msg.channel.send(embed=fromdict({'title':'Success','description':'Media will no longer be removed','color':colours['success']}))
+    try:
+        getMegaTable(msg).MediaFilters.pop(msg.channel.id)
+    except:
+        await msg.channel.send(embed=fromdict({'title':'Not Filtered','description':'This channel was not filtered','color':colours['warning']}))
+    else:
+        await msg.channel.send(embed=fromdict({'title':'Success','description':'Media will no longer be removed','color':colours['success']}))
 Command("unblockmedia",unblockMedia,0,"Stop auto-filtering a channel's media",{},None,"admin")
 
 async def controlMessageLimit(msg,args,removing):
