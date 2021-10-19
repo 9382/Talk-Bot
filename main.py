@@ -1,13 +1,11 @@
 from discord.ext import commands
 from discord.ext import tasks
 from datetime import datetime
-from PIL import Image,ImageDraw,ImageFont,ImageChops
 import re as regex
 import traceback
 import requests
 import asyncio
 import discord
-import pyttsx3
 import random
 import math
 import json
