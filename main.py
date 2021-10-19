@@ -526,7 +526,7 @@ async def cloneChannel(channelid):
         print("[CloneChannel] Exception:",str(exc))
 stopCycling = False
 finishedLastCycle = False
-@tasks.loop(seconds=1)
+@tasks.loop(seconds=2)
 async def constantMessageCheck(): #For message filter. Possibly in need of a re-work
     global finishedLastCycle #Weird stop but it works
     if stopCycling:
@@ -535,6 +535,7 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
     try:
         toDeleteList = {}
         for guild in guildMegaTable:
+            toPopList = []
             gmt = guildMegaTable[guild]
             LMCache = gmt.LoggedMessages
             for msgid in LMCache:
@@ -544,7 +545,9 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
                     if not exists(toDeleteList,message.Channel):
                         toDeleteList[message.Channel] = []
                     toDeleteList[message.Channel].append(messageObj)
-                    gmt.LoggedMessages.pop(message.MessageId)
+                    toPopList.append(message.MessageId)
+            for message in toPopList: #Idk why this is doing this, but it is
+                gmt.LoggedMessages.pop(message)
         if toDeleteList != {}:
             for channel in toDeleteList:
                 try:
