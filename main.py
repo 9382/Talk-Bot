@@ -14,6 +14,10 @@ import sys
 import os
 import io
 prefix = "##"
+logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932} # These are different from the guild-defined LogChannel channels, these are essentially telemetry
+colours = {'info':0x5555DD,'error':0xFF0000,'success':0x00FF00,'warning':0xFFAA00,'plain':0xAAAAAA}
+
+#Base functions
 def exists(table,value): #Wanna reduce the try except spam checking for possible values
     # "Why not use hasattr?" hasattr doesnt support numbers in dictionaries
     try:
@@ -51,10 +55,43 @@ def safeWriteToFile(filename,content,encoding="UTF-8"):
     return True
 def currentDate():
     return str(datetime.fromtimestamp(math.floor(time.time()))) #Long function list be like
+multList = {"s":1,"m":60,"h":3600,"d":86400}
+def strToTimeAdd(duration):
+    timeMult = duration[-1].lower()
+    timeAmount = duration[:-1]
+    try:
+        timeAmount = int(timeAmount)
+    except:
+        return False,"timeAmount must be an integer"
+    if timeMult in multList:
+        return True,timeAmount*multList[timeMult]
+    else:
+        return False,"Time period must be s, m, h or d"
+def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
+    if seconds <= 0:
+        return "0 seconds" #Maybe set it to "now"?
+    days,seconds = seconds//86400,seconds%86400
+    hours,seconds = seconds//3600,seconds%3600
+    minutes,seconds = seconds//60,seconds%60
+    returnString = ""
+    p = 0
+    if seconds > 0:
+        returnString = str(seconds)+" second(s)"
+        p += 1
+    if minutes > 0:
+        returnString = (p==0 and str(minutes)+" minute(s)") or str(minutes)+" minute(s) and "+returnString
+        p += 1
+    if hours > 0:
+        returnString = (p==0 and str(hours)+" hour(s)") or (p==1 and str(hours)+" hour(s) and "+returnString) or str(hours)+" hour(s), "+returnString
+        p += 1
+    if days > 0:
+        returnString = (p==0 and str(days)+" day(s)") or (p==1 and str(days)+" day(s) and "+returnString) or str(days)+" day(s), "+returnString
+    return returnString
 fromdict = discord.Embed.from_dict
 numRegex = regex.compile('\d+')
 findMediaRegex = regex.compile("https?://((cdn|media)\.discordapp\.(com|net)/attachments/|tenor\.com/view/)")
-colours = {'info':0x5555DD,'error':0xFF0000,'success':0x00FF00,'warning':0xFFAA00,'plain':0xAAAAAA}
+
+#GMT
 guildMegaTable = {} # All in one
 class FilteredMessage:
     def __init__(self,expirey,msgid=None,channelid=None,messageObj=None):
@@ -233,178 +270,8 @@ async def getGuildInviteStats(guild):
     for invite in invites:
         toReturn[invite.id] = {"m":invite.inviter,"u":invite.uses}
     return toReturn
-multList = {"s":1,"m":60,"h":3600,"d":86400}
-def strToTimeAdd(duration):
-    timeMult = duration[-1].lower()
-    timeAmount = duration[:-1]
-    try:
-        timeAmount = int(timeAmount)
-    except:
-        return False,"timeAmount must be an integer"
-    if timeMult in multList:
-        return True,timeAmount*multList[timeMult]
-    else:
-        return False,"Time period must be s, m, h or d"
-def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
-    if seconds <= 0:
-        return "0 seconds" #Maybe set it to "now"?
-    days,seconds = seconds//86400,seconds%86400
-    hours,seconds = seconds//3600,seconds%3600
-    minutes,seconds = seconds//60,seconds%60
-    returnString = ""
-    p = 0
-    if seconds > 0:
-        returnString = str(seconds)+" second(s)"
-        p += 1
-    if minutes > 0:
-        returnString = (p==0 and str(minutes)+" minute(s)") or str(minutes)+" minute(s) and "+returnString
-        p += 1
-    if hours > 0:
-        returnString = (p==0 and str(hours)+" hour(s)") or (p==1 and str(hours)+" hour(s) and "+returnString) or str(hours)+" hour(s), "+returnString
-        p += 1
-    if days > 0:
-        returnString = (p==0 and str(days)+" day(s)") or (p==1 and str(days)+" day(s) and "+returnString) or str(days)+" day(s), "+returnString
-    return returnString
-ReactionListenList = []
-class WatchReaction: #More classes
-    def __init__(self,msg,user,emoji,function,args):
-        self.MsgId = (type(msg) == int and msg) or msg.id
-        self.UserId = (type(user) == int and user) or user.id #The user whitelisted to react to it
-        self.Emoji = emoji
-        self.Function = function
-        self.Args = args
-        self.Expirey = time.time()+60
-        ReactionListenList.append(self)
-    def Expired(self):
-        return time.time() > self.Expirey
-    async def Check(self,msg,user,emoji):
-        if self.Expired():
-            ReactionListenList.remove(self)
-        elif msg.id == self.MsgId and user.id == self.UserId:
-            self.Expirey = time.time()+60
-            if emoji == self.Emoji:
-                await self.Function(msg,self.Emoji,self.Args)
-                return True
-    def Update(self,args):
-        if self.Expired():
-            ReactionListenList.remove(self)
-            return
-        self.Args = args
-        self.Expirey = time.time()+60
-        return True
-async def UpdateReactionWatch(msg,emoji,args):
-    ListenListCache = ReactionListenList
-    for listener in ListenListCache:
-        if listener.MsgId == msg.id and (emoji == "all" or emoji == listener.Emoji):
-            listener.Update(args)
-async def changePageEmbed(msg,emoji,args):
-    title,preText,pagedContent,maxPage,page = args[0],args[1],args[2],args[3],args[4]
-    page += (emoji=="➡️" and 1) or -1
-    page = min(max(0,page),maxPage) #Limit page
-    await msg.edit(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[page]),"footer":{"text":f"Page {str(page+1)}/{str(maxPage+1)}"},"color":colours["info"]}))
-    await UpdateReactionWatch(msg,"all",[title,preText,pagedContent,maxPage,page])
-async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText=""): #For long lists in embeds
-    pagedContent = []
-    index = 0
-    for text in content:
-        if index % pageLimit == 0:
-            pagedContent.insert(index//pageLimit,[])
-        pagedContent[index//pageLimit].append(text)
-        index += 1
-    maxPage = index//pageLimit
-    if maxPage == 0:
-        await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"color":colours["info"]}))
-        return
-    embed = await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"footer":{"text":f"Page 1/{str(maxPage+1)}"},"color":colours["info"]}))
-    for e in ["⬅️","➡️"]: #No, i dont know why sublime is different for ➡️
-        await embed.add_reaction(e)
-        WatchReaction(embed,user,e,changePageEmbed,[title,preText,pagedContent,maxPage,0])
-client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True))
-#Note that due to the on_message handler, i cant use the regular @client.command decorator, so custom handler it is
-logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932} # These are different from the guild-defined LogChannel channels, these are essentially telemetry
-@client.event
-async def on_error(error,*args,**kwargs):
-    if exists(args,0):
-        try:
-            causingCommand = args[0].content
-        except:
-            causingCommand = args[0]
-    else:
-        causingCommand = "<none>"
-    print("[Fatal Error] Causing command:",causingCommand,"error:")
-    traceback.print_exc(file=sys.stderr)
-    try: #Logging
-        errorFile = tempFile()
-        file = open(errorFile,"w",encoding="ANSI",newline='')
-        try:
-            traceback.print_exc(file=file)
-        except Exception as exc:
-            print("[Fatal Error] Error Log file failed to write:",exc)
-            pass
-        file.close()
-        await client.get_channel(logChannels['errors']).send("Error in client\nTime: "+currentDate()+"\nCausing command: "+str(causingCommand),file=discord.File(errorFile))
-        os.remove(errorFile)
-    except Exception as exc:
-        print("[Fatal Error] Failed to log:",currentDate(),exc)
-@client.event
-async def on_ready():
-    await client.change_presence(activity=discord.Game(name='##cmds'))
-    print('connected v'+discord.__version__)
-    try: #Notifying of start-up
-        await client.get_channel(logChannels['boot-ups']).send("Ive connected at "+currentDate())
-    except:
-        print("Failed to alert of bootup at",currentDate())
-@client.event
-async def on_reaction_add(reaction,user):
-    if user.id == client.user.id: #If its me
-        return
-    ListenListCache = ReactionListenList
-    for listener in ListenListCache:
-        await listener.Check(reaction.message,user,reaction.emoji)
-@client.event
-async def on_guild_join(guild):
-    guildMegaTable[guild.id] = GuildObject(guild.id) # Force default settings
-    getMegaTable(guild).InviteTrack = await getGuildInviteStats(guild)
-@client.event
-async def on_member_join(member):
-    guild = member.guild
-    gmt = getMegaTable(guild)
-    if not gmt.InviteTrack:
-        gmt.InviteTrack = await getGuildInviteStats(guild)
-        return
-    invitesBefore = gmt.InviteTrack
-    invitesAfter = await getGuildInviteStats(guild)
-    if not invitesAfter:
-        return
-    for inviteId in invitesAfter:
-        inviteInfo = invitesAfter[inviteId]
-        if not exists(invitesBefore,inviteId):
-            invitesBefore[inviteId] = {"m":inviteInfo["m"],"u":0}
-        if invitesBefore[inviteId]["u"] < inviteInfo["u"]:
-            await gmt.Log(embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}> ({member}) has joined through <@{inviteInfo['m'].id}> ({inviteInfo['m']})'s invite (discord.gg/{inviteId})\nInvite is at {inviteInfo['u']} uses","color":colours["info"]}))
-            break
-    gmt.InviteTrack = invitesAfter
-def findVoiceClient(guildId): #Find the relevant voice client object for the specified guild. Returns None if none are found
-    for voiceObj in client.voice_clients:
-        if voiceObj.guild.id == guildId:
-            return voiceObj
-VCList = {}
-async def connectToVC(channel,idleTimeout=60,ignorePlaying=False):
-    vc = findVoiceClient(channel.guild.id)
-    if vc:
-        if vc.is_playing():
-            if not ignorePlaying:
-                return
-            else:
-                vc.stop()
-        await vc.move_to(channel)
-    else:
-        vc = await channel.connect()
-    if not exists(VCList,vc):
-        VCList[vc] = {}
-    VCList[vc]["idleTimeout"] = idleTimeout
-    VCList[vc]["lastActiveTime"] = time.time()
-    return vc
+
+#Commands
 devCommands = {} #basically testing and back-end commands
 adminCommands = {} #This will take priority over user commands should a naming conflict exist
 userCommands = {}
@@ -479,6 +346,137 @@ async def checkHistoryClear(msg):
             else:
                 for message in messageList[msgLimit:]:
                     await gmt.FilterMessage(message,1) #1 to avoid deletion now, and queue it in the seperate task later
+
+#Reaction listening
+ReactionListenList = []
+class WatchReaction: #More classes
+    def __init__(self,msg,user,emoji,function,args):
+        self.MsgId = (type(msg) == int and msg) or msg.id
+        self.UserId = (type(user) == int and user) or user.id #The user whitelisted to react to it
+        self.Emoji = emoji
+        self.Function = function
+        self.Args = args
+        self.Expirey = time.time()+60
+        ReactionListenList.append(self)
+    def Expired(self):
+        return time.time() > self.Expirey
+    async def Check(self,msg,user,emoji):
+        if self.Expired():
+            ReactionListenList.remove(self)
+        elif msg.id == self.MsgId and user.id == self.UserId:
+            self.Expirey = time.time()+60
+            if emoji == self.Emoji:
+                await self.Function(msg,self.Emoji,self.Args)
+                return True
+    def Update(self,args):
+        if self.Expired():
+            ReactionListenList.remove(self)
+            return
+        self.Args = args
+        self.Expirey = time.time()+60
+        return True
+async def UpdateReactionWatch(msg,emoji,args):
+    ListenListCache = ReactionListenList
+    for listener in ListenListCache:
+        if listener.MsgId == msg.id and (emoji == "all" or emoji == listener.Emoji):
+            listener.Update(args)
+async def changePageEmbed(msg,emoji,args):
+    title,preText,pagedContent,maxPage,page = args[0],args[1],args[2],args[3],args[4]
+    page += (emoji=="➡️" and 1) or -1
+    page = min(max(0,page),maxPage) #Limit page
+    await msg.edit(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[page]),"footer":{"text":f"Page {str(page+1)}/{str(maxPage+1)}"},"color":colours["info"]}))
+    await UpdateReactionWatch(msg,"all",[title,preText,pagedContent,maxPage,page])
+async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText=""): #For long lists in embeds
+    pagedContent = []
+    index = 0
+    for text in content:
+        if index % pageLimit == 0:
+            pagedContent.insert(index//pageLimit,[])
+        pagedContent[index//pageLimit].append(text)
+        index += 1
+    maxPage = index//pageLimit
+    if maxPage == 0:
+        await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"color":colours["info"]}))
+        return
+    embed = await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"footer":{"text":f"Page 1/{str(maxPage+1)}"},"color":colours["info"]}))
+    for e in ["⬅️","➡️"]: #No, i dont know why sublime is different for ➡️
+        await embed.add_reaction(e)
+        WatchReaction(embed,user,e,changePageEmbed,[title,preText,pagedContent,maxPage,0])
+
+#Random functions
+async def cloneChannel(channelid):
+    try:
+        channel = client.get_channel(channelid)
+        newchannel = await channel.clone(reason="Recreating text channel")
+        gmt = getMegaTable(channel.guild) # Move over channel settings
+        if channelid in gmt.MediaFilters:
+            gmt.MediaFilters[newchannel.id] = gmt.MediaFilters[channelid]
+        if channelid in gmt.ChannelLimits:
+            gmt.ChannelLimits[newchannel.id] = gmt.ChannelLimits[channelid]
+        await channel.delete()
+        newchannel.position = channel.position #Because clone doesnt include position
+        await newchannel.send(embed=fromdict({'title':'Success','description':channel.name+' has been re-made and cleared','color':colours['success']}),delete_after=60)
+        print("[CloneChannel] Successfully cloned channel",channel.name)
+        return newchannel
+    except Exception as exc:
+        print("[CloneChannel] Exception:",str(exc))
+def findVoiceClient(guildId): #Find the relevant voice client object for the specified guild. Returns None if none are found
+    for voiceObj in client.voice_clients:
+        if voiceObj.guild.id == guildId:
+            return voiceObj
+VCList = {}
+async def connectToVC(channel,idleTimeout=60,ignorePlaying=False):
+    vc = findVoiceClient(channel.guild.id)
+    if vc:
+        if vc.is_playing():
+            if not ignorePlaying:
+                return
+            else:
+                vc.stop()
+        await vc.move_to(channel)
+    else:
+        vc = await channel.connect()
+    if not exists(VCList,vc):
+        VCList[vc] = {}
+    VCList[vc]["idleTimeout"] = idleTimeout
+    VCList[vc]["lastActiveTime"] = time.time()
+    return vc
+
+#Client
+client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True))
+#Note that due to the on_message handler, i cant use the regular @client.command decorator, so custom handler it is
+@client.event
+async def on_error(error,*args,**kwargs):
+    if exists(args,0):
+        try:
+            causingCommand = args[0].content
+        except:
+            causingCommand = args[0]
+    else:
+        causingCommand = "<none>"
+    print("[Fatal Error] Causing command:",causingCommand,"error:")
+    traceback.print_exc(file=sys.stderr)
+    try: #Logging
+        errorFile = tempFile()
+        file = open(errorFile,"w",encoding="ANSI",newline='')
+        try:
+            traceback.print_exc(file=file)
+        except Exception as exc:
+            print("[Fatal Error] Error Log file failed to write:",exc)
+            pass
+        file.close()
+        await client.get_channel(logChannels['errors']).send("Error in client\nTime: "+currentDate()+"\nCausing command: "+str(causingCommand),file=discord.File(errorFile))
+        os.remove(errorFile)
+    except Exception as exc:
+        print("[Fatal Error] Failed to log:",currentDate(),exc)
+@client.event
+async def on_ready():
+    await client.change_presence(activity=discord.Game(name='##cmds'))
+    print('connected v'+discord.__version__)
+    try: #Notifying of start-up
+        await client.get_channel(logChannels['boot-ups']).send("Ive connected at "+currentDate())
+    except:
+        print("Failed to alert of bootup at",currentDate())
 @client.event
 async def on_message(msg):
     if not msg.guild or msg.author.id == client.user.id: #Only do stuff in guild, ignore messages by the bot
@@ -510,22 +508,38 @@ async def on_raw_message_edit(msg): #On message edit to avoid bypassing
         pass #Dont care if this errors since it bloody will and its not an issue
     else:
         await getMegaTable(messageObj).FilterMessage(messageObj)
-async def cloneChannel(channelid):
-    try:
-        channel = client.get_channel(channelid)
-        newchannel = await channel.clone(reason="Recreating text channel")
-        gmt = getMegaTable(channel.guild) # Move over channel settings
-        if channelid in gmt.MediaFilters:
-            gmt.MediaFilters[newchannel.id] = gmt.MediaFilters[channelid]
-        if channelid in gmt.ChannelLimits:
-            gmt.ChannelLimits[newchannel.id] = gmt.ChannelLimits[channelid]
-        await channel.delete()
-        newchannel.position = channel.position #Because clone doesnt include position
-        await newchannel.send(embed=fromdict({'title':'Success','description':channel.name+' has been re-made and cleared','color':colours['success']}),delete_after=60)
-        print("[CloneChannel] Successfully cloned channel",channel.name)
-        return newchannel
-    except Exception as exc:
-        print("[CloneChannel] Exception:",str(exc))
+@client.event
+async def on_reaction_add(reaction,user):
+    if user.id == client.user.id: #If its me
+        return
+    ListenListCache = ReactionListenList
+    for listener in ListenListCache:
+        await listener.Check(reaction.message,user,reaction.emoji)
+@client.event
+async def on_guild_join(guild):
+    guildMegaTable[guild.id] = GuildObject(guild.id) # Force default settings
+    getMegaTable(guild).InviteTrack = await getGuildInviteStats(guild)
+@client.event
+async def on_member_join(member):
+    guild = member.guild
+    gmt = getMegaTable(guild)
+    if not gmt.InviteTrack:
+        gmt.InviteTrack = await getGuildInviteStats(guild)
+        return
+    invitesBefore = gmt.InviteTrack
+    invitesAfter = await getGuildInviteStats(guild)
+    if not invitesAfter:
+        return
+    for inviteId in invitesAfter:
+        inviteInfo = invitesAfter[inviteId]
+        if not exists(invitesBefore,inviteId):
+            invitesBefore[inviteId] = {"m":inviteInfo["m"],"u":0}
+        if invitesBefore[inviteId]["u"] < inviteInfo["u"]:
+            await gmt.Log(embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}> ({member}) has joined through <@{inviteInfo['m'].id}> ({inviteInfo['m']})'s invite (discord.gg/{inviteId})\nInvite is at {inviteInfo['u']} uses","color":colours["info"]}))
+            break
+    gmt.InviteTrack = invitesAfter
+
+#Tasks
 stopCycling = False
 finishedLastCycle = False
 @tasks.loop(seconds=2)
@@ -559,6 +573,7 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
                     pass
     except Exception as exc:
         print("[LoggedMessages] Exception:",exc)
+constantMessageCheck.start()
 @tasks.loop(seconds=10)
 async def constantChannelCheck(): #For queued channel clearing
     try:
@@ -574,6 +589,7 @@ async def constantChannelCheck(): #For queued channel clearing
                     await cloneChannel(channel.id)
     except Exception as exc:
         print("[!] ChannelClear Exception:",exc)
+constantChannelCheck.start()
 @tasks.loop(seconds=90)
 async def updateConfigFiles(): #So i dont have pre-coded values
     try:
@@ -582,6 +598,7 @@ async def updateConfigFiles(): #So i dont have pre-coded values
     except Exception as exc:
         print("[!] UpdateConfig Exception:",exc)
         await asyncio.sleep(1)
+updateConfigFiles.start()
 @tasks.loop(seconds=2)
 async def VCCheck():
     try:
@@ -592,18 +609,16 @@ async def VCCheck():
                 await vc.disconnect()
     except Exception as exc:
         print("[! VCCheck Exception:",exc)
+VCCheck.start()
 @tasks.loop(seconds=5)
 async def keepGuildInviteUpdated():
     for guild in client.guilds:
         gmt = getMegaTable(guild)
         if not gmt.InviteTrack:
             gmt.InviteTrack = await getGuildInviteStats(guild)
-constantMessageCheck.start()
-constantChannelCheck.start()
-updateConfigFiles.start()
-VCCheck.start()
 keepGuildInviteUpdated.start()
 
+#User Commands
 async def forceUpdate(msg,args):
     global stopCycling
     print("Client was force-exited via forceUpdate()",time.time())
@@ -621,7 +636,6 @@ async def forceUpdate(msg,args):
     print("Closing")
     await client.close()
 Command("d -update",forceUpdate,0,"Updates the bot, force saving configs",{},None,"dev")
-
 async def cmds(msg,args):
     cmdList = {"Admin":adminCommands}
     for command in userCommands:
@@ -653,7 +667,6 @@ async def cmds(msg,args):
                 finalText += f"`{command}` "
         await msg.channel.send(embed=fromdict({"title":"Commands","description":finalText,"color":colours["info"]}))
 Command(["commands","cmds"],cmds,1,"List all commands",{"group":False},None,"general")
-
 async def publicVote(msg,args):
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You gotta include the thing to vote on','color':colours['error']}),delete_after=30)
@@ -690,6 +703,7 @@ async def publicVote(msg,args):
                 pass #User input sanitasion cause some guys gonna go [haha]
 Command("vote",publicVote,10,"Make a public vote about anything with an optional image",{"text":True,"imagefile":False},None,"general")
 
+#Module importing
 print('attempting import')
 ''' Load modules from the modules folder
 Only use this for storing commands, as load order is random
@@ -715,6 +729,7 @@ async def loadModulesAsync(msg,args):
     loadModules("User "+msg.author.name)
 Command("d -reload modules",loadModulesAsync,0,"Reloads all the modules",{},None,"dev")
 
+#Finish off - load configs
 print('done commands')
 for i in os.listdir('storage/settings'):
     try:
