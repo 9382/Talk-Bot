@@ -12,7 +12,6 @@ import json
 import time
 import sys
 import os
-import io
 prefix = "##"
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932} # These are different from the guild-defined LogChannel channels, these are essentially telemetry
 colours = {'info':0x5555DD,'error':0xFF0000,'success':0x00FF00,'warning':0xFFAA00,'plain':0xAAAAAA}

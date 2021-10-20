@@ -43,6 +43,7 @@ async def circularMask(im):
     im.putalpha(mask)
 async def imageComp(msg,args):
     from PIL import Image,ImageDraw,ImageFont,ImageChops
+    import io
     targetUser = random.choice(msg.guild.members)
     background = Image.open('storage/assets/imageTest.png') #Image.new("RGBA",size,0) for plain backgronds
     imageFile = Image.open(io.BytesIO(requests.get(targetUser.avatar_url_as(static_format="png",size=256)).content)) #What a mess
