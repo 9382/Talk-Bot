@@ -47,3 +47,41 @@ async def testAll(msg,args):
     print("Test-All final score",score)
 Command("d -test all",testAll,0,"Runs all 'd -test' commands and returns the success score",{},None,"dev")
 AddCommand = None
+
+#Custom classes to match the discord handler
+#These are just for testing offline or without actual messages
+class FakeGuildPermissions:
+    def __init__(self,admin):
+        self.administrator = admin
+class FakeChannel:
+    def __init__(self,guild):
+        self.id = random.randint(1,9)
+        self.guild = guild
+    async def send(self,content=None,embed=None,delete_after=None):
+        print("Attempted to channel send\n",content,embed,delete_after)
+        if embed:
+            print("Embed title:",embed.title,"\nEmbed description:",embed.description)
+        return FakeMessage(content,embed,self.guild.id)
+    async def delete_messages(self,messages):
+        print("Requested to BD",messages)
+class FakeAuthor:
+    def __init__(self,guild):
+        self.id = random.randint(10,99)
+        self.guild = guild
+        self.name = "Author"
+        self.discriminator = "1234"
+        self.guild_permissions = FakeGuildPermissions(True)
+class FakeGuild:
+    def __init__(self,gid):
+        self.id = gid
+class FakeMessage:
+    def __init__(self,content=None,embed=None,gid=None):
+        gid = gid or random.randint(100,999)
+        self.id = random.randint(1000,9999)
+        self.content = content
+        self.guild = FakeGuild(gid)
+        self.author = FakeAuthor(self.guild)
+        self.channel = FakeChannel(self.guild)
+        self.embeds = (embed and [embed]) or []
+    async def delete(self):
+        print("Tried to delete message",self.id)

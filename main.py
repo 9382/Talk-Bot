@@ -252,16 +252,21 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         return True
 def getMegaTable(obj):
     gid = None
-    if type(obj) == discord.Message or type(obj) == discord.PartialMessage:
+    t = type(obj)
+    if t == discord.Message or t == discord.PartialMessage:
         gid = obj.guild.id
-    elif type(obj) == discord.Guild:
+    elif t == discord.Guild:
         gid = obj.id
-    elif type(obj) == int:
+    elif t == int:
         gid = obj
+    elif hasattr(obj,"id"): #FakeXYZ
+        gid = obj.guild.id
     if gid:
         if not exists(guildMegaTable,gid):
             guildMegaTable[gid] = GuildObject(gid)
         return guildMegaTable[gid]
+    else:
+        print("[GMT] No GID found in",obj)
 async def getGuildInviteStats(guild):
     toReturn = {}
     try:
@@ -746,3 +751,14 @@ for i in os.listdir('storage/settings'):
         except:
             print("[JSON] Guild index failed for file",i)
 print("loaded config")
+
+#On-boot tests
+print("Doing final tests")
+asyncio.run(on_message(FakeMessage("##blockword testing 1s",gid=-1))) #Should work - user is admin
+asyncio.run(on_message(FakeMessage("##list WordBlockList",gid=-1))) #Should work
+asyncio.run(on_message(FakeMessage("##d -exec crash()"))) #Shouldnt fire - user is not dev
+asyncio.run(on_message(FakeMessage("Talking and testing",gid=-1))) #Should be filtered
+asyncio.run(asyncio.sleep(1))
+asyncio.run(constantMessageCheck()) #Should try delete
+print(getMegaTable(-1).ProtectedMessages) #Should have 1 item
+print("Finished tests")
