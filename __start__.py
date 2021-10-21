@@ -4,7 +4,7 @@ from time import sleep
 import asyncio
 import os
 auth = dotenv_values()['BOTAUTH']
-print("Starting...")
+print("Starting...",os.getcwd())
 try:
     from main import client
 except Exception as exc:

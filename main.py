@@ -142,6 +142,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         self.LoggedMessages = {}
         self.Confirmations = {}
         self.ChannelLimits = {}
+        self.ProtectedMessages = []
         guildMegaTable[gid] = self
     async def Log(self,content=None,embed=None):
         if self.LogChannel:
@@ -149,6 +150,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
             if channel:
                 try:
                     await channel.send(content=content,embed=embed)
+                    return True
                 except:
                     pass
     def GetMediaFilter(self,channel):
@@ -168,7 +170,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         print("[Filter] Msg Filtered ->",msg.content,buffer)
         if buffer <= 0:
             try:
-                asyncio.run(msg.delete())
+                await msg.delete()
                 return buffer
             except:
                 pass
@@ -216,6 +218,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 "MediaFilters":self.MediaFilters,
                 "QueuedChannels":self.QueuedChannels,
                 "ChannelLimits":self.ChannelLimits,
+                "ProtectedMessages":self.ProtectedMessages,
                 "LoggedMessages":self.FormatLoggedMessages()}
     def LoadSave(self,data):
         for catagory in data:
@@ -223,9 +226,8 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 if catagory == "LoggedMessages":
                     self.LoggedMessages = {}
                     for channel in data["LoggedMessages"]:
-                        for message in data["LoggedMessages"][channel]:
-                            expirey = data["LoggedMessages"][channel][message]
-                            self.LoggedMessages[int(message)] = FilteredMessage(expirey,int(message),int(channel))
+                        for message in data["LoggedMessages"][channel]: #d["l"][c][m] == expirey
+                            self.LoggedMessages[int(message)] = FilteredMessage(data["LoggedMessages"][channel][message],int(message),int(channel))
                 elif hasattr(self,catagory):
                     setattr(self,catagory,data[catagory])
                 else:
@@ -395,12 +397,12 @@ async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText=""): 
         index += 1
     maxPage = index//pageLimit
     if maxPage == 0:
-        await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"color":colours["info"]}))
-        return
+        return await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"color":colours["info"]}))
     embed = await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"footer":{"text":f"Page 1/{str(maxPage+1)}"},"color":colours["info"]}))
     for e in ["⬅️","➡️"]: #No, i dont know why sublime is different for ➡️
         await embed.add_reaction(e)
         WatchReaction(embed,user,e,changePageEmbed,[title,preText,pagedContent,maxPage,0])
+    return embed
 
 #Random functions
 async def cloneChannel(channelid):
@@ -554,13 +556,16 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
             gmt = guildMegaTable[guild]
             LMCache = gmt.LoggedMessages
             for msgid in LMCache:
+                if msgid in gmt.ProtectedMessages:
+                    toPopList.append(msgid)
+                    continue
                 message = LMCache[msgid]
                 messageObj = message.Expired() and message.GetMessageObj()
                 if messageObj:
                     if not exists(toDeleteList,message.Channel):
                         toDeleteList[message.Channel] = []
                     toDeleteList[message.Channel].append(messageObj)
-                    toPopList.append(message.MessageId)
+                    toPopList.append(msgid)
             for message in toPopList: #Idk why this is doing this, but it is
                 gmt.LoggedMessages.pop(message)
         if toDeleteList != {}:
@@ -729,7 +734,7 @@ async def loadModulesAsync(msg,args):
 Command("d -reload modules",loadModulesAsync,0,"Reloads all the modules",{},None,"dev")
 
 #Finish off - load configs
-print('done commands')
+print("done commands")
 for i in os.listdir('storage/settings'):
     try:
         j = json.loads(open('storage/settings/'+i).read())
@@ -740,4 +745,4 @@ for i in os.listdir('storage/settings'):
             getMegaTable(j['Guild']).LoadSave(j)
         except:
             print("[JSON] Guild index failed for file",i)
-print('loaded config')
+print("loaded config")

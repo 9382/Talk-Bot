@@ -10,7 +10,7 @@ async def setLogChannel(msg,args):
     await msg.channel.send(embed=fromdict({"title":"Success","description":"Set log channel successfully","color":colours["success"]}))
 Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided",{"channel":True},None,"admin")
 
-list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ChannelClearList","QueuedChannels","ChannelLimits"]
+list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ProtectedMessages","ChannelClearList","QueuedChannels","ChannelLimits"]
 async def list_func(msg,args):
     if len(args) < 2:
         finalString = ""
@@ -18,14 +18,14 @@ async def list_func(msg,args):
             finalString += f"\n`{item}`"
         await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:'+finalString,'color':colours['info']}))
         return
-    section = args[1]#msg.content[7:]
+    section = args[1]
     if not section in list_validSections:
         await msg.channel.send(embed=fromdict({'title':'Invalid','description':section+' is not a valid catagory','color':colours["error"]}))
         return
     parser = None
     if section in ["WordBlockList","MediaFilters","ChannelClearList","QueuedChannels"]:
         parser = lambda i,k,v : f"{str(i)}. `{k}` -> {simplifySeconds(v)}"
-    if section == "NSFWBlockList":
+    if section in ["NSFWBlockList","ProtectedMessages"]:
         parser = lambda i,v : f"{str(i)}. `{v}`"
     if section == "ChannelLimits":
         parser = lambda i,k,v : f"{str(i)}. `{k}` -> {str(v)} Messages"
@@ -41,10 +41,41 @@ async def list_func(msg,args):
             finalString.append(parser(index,v))
             index += 1
     if finalString == []:
-        await msg.channel.send(embed=fromdict({"title":"No Content","description":"Nothing under this catagory","color":colours["warning"]}))
+        await msg.channel.send(embed=fromdict({"title":"No Content","description":"Nothing under this catagory","color":colours["warning"]}),delete_after=15)
     else:
-        await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString,8,(section == "QueuedChannels" and "Note: This is how long until the next refresh") or "")
+        getMegaTable(msg).ProtectedMessages.append((await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString,8,(section=="QueuedChannels" and "(This is how long until the next cycle)") or "")).id)
 Command("list",list_func,0,"View the list of settings to do with the server's administration",{"subsection":False},None,"admin")
+
+async def protectMessage(msg,args): #Prevents a message from being filtered
+    msgid = exists(args,1) and args[1]
+    if not msgid:
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"You must provide the message ID to protect","color":colours["error"]}),delete_after=10)
+        return
+    try:
+        msgid = int(msgid)//1
+    except:
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"message ID must be a number","color":colours["error"]}),delete_after=10)
+    else:
+        getMegaTable(msg).ProtectedMessages.append(msgid)
+        await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is now protected","color":colours["success"]}))
+Command("protect",protectMessage,2,"Prevents a message from being filtered",{"messageId":True},None,"admin")
+async def unprotectMessage(msg,args):
+    msgid = exists(args,1) and args[1]
+    if not msgid:
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"You must provide the message ID to protect","color":colours["error"]}),delete_after=10)
+        return
+    try:
+        msgid = int(msgid)//1
+    except:
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"message ID must be a number","color":colours["error"]}),delete_after=10)
+        else:
+            try:
+                getMegaTable(msg).ProtectedMessages.pop(msgid)
+            except:
+                await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is now protected","color":colours["success"]}))
+            else:
+                await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is now protected","color":colours["success"]}))
+Command("unprotect",unprotectMessage,2,"Removes a message ID from the protected list",{"messageId":True},None,"admin")
 
 async def blockWord(msg,args):
     if not exists(args,2):
