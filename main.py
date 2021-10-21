@@ -485,7 +485,7 @@ async def on_ready():
         print("Failed to alert of bootup at",currentDate())
 @client.event
 async def on_message(msg):
-    if not msg.guild or msg.author.id == client.user.id: #Only do stuff in guild, ignore messages by the bot
+    if not msg.guild or (client.user and msg.author.id == client.user.id): #Only do stuff in guild, ignore messages by the bot
         if msg.guild:
             await getMegaTable(msg).FilterMessage(msg)
         elif msg.author.id != client.user.id:

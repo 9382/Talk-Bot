@@ -68,13 +68,13 @@ async def unprotectMessage(msg,args):
         msgid = int(msgid)//1
     except:
         await msg.channel.send(embed=fromdict({"title":"Error","description":"message ID must be a number","color":colours["error"]}),delete_after=10)
+    else:
+        try:
+            getMegaTable(msg).ProtectedMessages.pop(msgid)
+        except:
+            await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is now protected","color":colours["success"]}))
         else:
-            try:
-                getMegaTable(msg).ProtectedMessages.pop(msgid)
-            except:
-                await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is now protected","color":colours["success"]}))
-            else:
-                await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is now protected","color":colours["success"]}))
+            await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is now protected","color":colours["success"]}))
 Command("unprotect",unprotectMessage,2,"Removes a message ID from the protected list",{"messageId":True},None,"admin")
 
 async def blockWord(msg,args):
