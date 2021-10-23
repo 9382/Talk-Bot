@@ -3,3 +3,4 @@ __pycache__/
 update/
 storage/temp/
 storage/settings/
+storage/logs/

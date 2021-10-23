@@ -28,18 +28,27 @@ def tempFile(extension="txt"):
     name = "storage/temp/"+str(time.time())+"."+extension
     open(name,"x")
     return name
+def currentDate():
+    return str(datetime.fromtimestamp(time.time()//1)) #Long function list be like
+def log(content):
+    print(f"[Log {currentDate()[11:]}]",content)
+    try:
+        open("storage/logs/"+currentDate()[:10]+".log","a").write(f"[{currentDate()[11:]}] "+content+"\n")
+    except Exception as exc:
+        print("[Log] Failed to log!",exc)
+log("Starting main - the time is "+str(time.time())+" or "+currentDate())
 def safeWriteToFile(filename,content,encoding="UTF-8"):
     backup = None
     if os.path.isfile(filename):
         try:
             backup = open(filename,"rb").read()
         except:
-            print("[Safe Write] Failed to open",filename,"- Probably access issues")
+            log("[SafeWrite] Failed to open "+filename+" - Probably access issues")
             return
     try:
         file = open(filename,"w",encoding=encoding)
     except:
-        print("[Safe Write] Failed to open",filename,"- Probably access issues")
+        log("[SafeWrite] Failed to open "+filename+" - Probably access issues")
         return
     try:
         file.write(content)
@@ -47,13 +56,12 @@ def safeWriteToFile(filename,content,encoding="UTF-8"):
         file.close()
         if backup:
             open(filename,"wb").write(backup)
-            print("[Safe Write] Failed to write to",filename,":",exc)
+            log("[SafeWrite] Failed to write to "+filename+": "+str(exc))
         else:
-            print("[Safe Write] Failed to write to",filename,"with no backup available:",exc)
+            log("[SafeWrite] Failed to write to "+filename+" with no backup available: "+str(exc))
         return
+    log("[SafeWrite] Successfully wrote to "+filename)
     return True
-def currentDate():
-    return str(datetime.fromtimestamp(math.floor(time.time()))) #Long function list be like
 multList = {"s":1,"m":60,"h":3600,"d":86400}
 def strToTimeAdd(duration):
     timeMult = duration[-1].lower()
@@ -231,9 +239,9 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 elif hasattr(self,catagory):
                     setattr(self,catagory,data[catagory])
                 else:
-                    print(f"[GuildObject {str(self.Guild)}] Unknown Catagory",catagory)
+                    log(f"[GuildObject {str(self.Guild)}] Unknown Catagory",catagory)
             except:
-                print(f"[GuildObject {str(self.Guild)}] Invalid catagory data",catagory)
+                log(f"[GuildObject {str(self.Guild)}] Invalid catagory data",catagory)
     async def CreateConfirmation(self,msg,args,function):
         confirmationObj = Confirmation(msg,args,function)
         self.Confirmations[msg.author.id] = confirmationObj
@@ -266,7 +274,7 @@ def getMegaTable(obj):
             guildMegaTable[gid] = GuildObject(gid)
         return guildMegaTable[gid]
     else:
-        print("[GMT] No GID found in",obj)
+        log("[GMT] No GID found in "+str(obj))
 async def getGuildInviteStats(guild):
     toReturn = {}
     try:
@@ -290,7 +298,7 @@ async def checkHistoryClear(msg): #I cant think of a good spot to "insert" this,
             try:
                 messageList = await msg.channel.history(limit=msgLimit+15).flatten() #msgLimit+15 to catch missed
             except Exception as exc:
-                print("[History] Failed to fetch:",exc)
+                log("[History] Failed to fetch: "+str(exc))
             else:
                 for message in messageList[msgLimit:]:
                     await gmt.FilterMessage(message,1) #1 to avoid deletion now, and queue it in the seperate task later
@@ -428,7 +436,7 @@ async def cloneChannel(channelid):
         print("[CloneChannel] Successfully cloned channel",channel.name)
         return newchannel
     except Exception as exc:
-        print("[CloneChannel] Exception:",str(exc))
+        log("[CloneChannel] Exception: "+str(exc))
 def findVoiceClient(guildId): #Find the relevant voice client object for the specified guild. Returns None if none are found
     for voiceObj in client.voice_clients:
         if voiceObj.guild.id == guildId:
@@ -463,7 +471,7 @@ async def on_error(error,*args,**kwargs):
             causingCommand = args[0]
     else:
         causingCommand = "<none>"
-    print("[Fatal Error] Causing command:",causingCommand,"error:")
+    log("[Fatal Error] Causing command: "+str(causingCommand)+"\nError:")
     traceback.print_exc(file=sys.stderr)
     try: #Logging
         errorFile = tempFile()
@@ -471,21 +479,21 @@ async def on_error(error,*args,**kwargs):
         try:
             traceback.print_exc(file=file)
         except Exception as exc:
-            print("[Fatal Error] Error Log file failed to write:",exc)
+            log("[Fatal Error] Error Log file failed to write: "+str(exc))
             pass
         file.close()
         await client.get_channel(logChannels['errors']).send("Error in client\nTime: "+currentDate()+"\nCausing command: "+str(causingCommand),file=discord.File(errorFile))
         os.remove(errorFile)
     except Exception as exc:
-        print("[Fatal Error] Failed to log:",currentDate(),exc)
+        log("[Fatal Error] Failed to log:",currentDate(),exc)
 @client.event
 async def on_ready():
     await client.change_presence(activity=discord.Game(name='##cmds'))
-    print('connected v'+discord.__version__)
+    log('connected v'+discord.__version__)
     try: #Notifying of start-up
         await client.get_channel(logChannels['boot-ups']).send("Ive connected at "+currentDate())
     except:
-        print("Failed to alert of bootup at",currentDate())
+        log("Failed to alert of bootup at "+currentDate())
 @client.event
 async def on_message(msg):
     if not msg.guild or (client.user and msg.author.id == client.user.id): #Only do stuff in guild, ignore messages by the bot
@@ -582,10 +590,9 @@ async def constantMessageCheck(): #For message filter. Possibly in need of a re-
                 try:
                     await client.get_channel(channel).delete_messages(toDeleteList[channel])
                 except Exception as exc:
-                    print("BD",exc)
-                    pass
+                    log("BulkDelete Exception - "+str(exc))
     except Exception as exc:
-        print("[LoggedMessages] Exception:",exc)
+        log("[!] LoggedMessages Exception: "+str(exc))
 constantMessageCheck.start()
 @tasks.loop(seconds=10)
 async def constantChannelCheck(): #For queued channel clearing
@@ -601,7 +608,7 @@ async def constantChannelCheck(): #For queued channel clearing
                     gmt.QueuedChannels[channel.name] = time.time()+gmt.ChannelClearList[channel.name]
                     await cloneChannel(channel.id)
     except Exception as exc:
-        print("[!] ChannelClear Exception:",exc)
+        log("[!] ChannelClear Exception: "+str(exc))
 constantChannelCheck.start()
 @tasks.loop(seconds=90)
 async def updateConfigFiles(): #So i dont have pre-coded values
@@ -609,8 +616,7 @@ async def updateConfigFiles(): #So i dont have pre-coded values
         for guild in client.guilds:
             safeWriteToFile("storage/settings/"+str(guild.id)+".json",json.dumps(getMegaTable(guild).CreateSave()))
     except Exception as exc:
-        print("[!] UpdateConfig Exception:",exc)
-        await asyncio.sleep(1)
+        log("[!] UpdateConfig Exception: "+str(exc))
 updateConfigFiles.start()
 @tasks.loop(seconds=2)
 async def VCCheck():
@@ -621,7 +627,7 @@ async def VCCheck():
             elif time.time()-VCList[vc]["idleTimeout"] > VCList[vc]["lastActiveTime"]:
                 await vc.disconnect()
     except Exception as exc:
-        print("[! VCCheck Exception:",exc)
+        log("[!] VCCheck Exception: "+str(exc))
 VCCheck.start()
 @tasks.loop(seconds=5)
 async def keepGuildInviteUpdated():
@@ -634,8 +640,8 @@ keepGuildInviteUpdated.start()
 #User Commands
 async def forceUpdate(msg,args):
     global stopCycling
-    print("Client was force-exited via forceUpdate()",time.time())
-    print("Hanging until messageCheck has finished its cycle or 20s, whatever is shorter")
+    log("Client was force-exited via forceUpdate() "+str(ime.time()))
+    log("Hanging until messageCheck has finished its cycle or 20s, whatever is shorter")
     stopCycling = True
     sleepTime = 0
     while True:
@@ -643,10 +649,9 @@ async def forceUpdate(msg,args):
             break
         sleepTime+=1
         await asyncio.sleep(1)
-    print("Invoking save - sleep time:",sleepTime)
+    log("Invoking save - sleep time: "+str(sleepTime))
     await updateConfigFiles()
-    print("Save finished")
-    print("Closing")
+    log("Save finished, closing")
     await client.close()
 Command("d -update",forceUpdate,0,"Updates the bot, force saving configs",{},None,"dev")
 async def cmds(msg,args):
@@ -720,12 +725,12 @@ async def publicVote(msg,args):
 Command("vote",publicVote,10,"Make a public vote about anything with an optional image",{"text":True,"imagefile":False},None,"General")
 
 #Module importing
-print('attempting import')
+log('attempting import')
 ''' Load modules from the modules folder
 Only use this for storing commands, as load order is random
 This is so i dont clog up the entirety of this main script with like 2k lines '''
 def loadModules(origin=None):
-    print("Loading modules origin=",origin)
+    log("Loading modules origin = "+origin)
     exec_list = []
     for fname in os.listdir("modules"):
         if not fname.endswith(".py"):
@@ -739,28 +744,28 @@ def loadModules(origin=None):
         try:
             exec(contents,globals())
         except Exception as exc:
-            print("[Modules] Module import error ->",exc)
-loadModules("Main")
+            log("[Modules] Module import error -> "+str(exc))
+loadModules("bootup")
 async def loadModulesAsync(msg,args):
     loadModules("User "+msg.author.name)
 Command("d -reload modules",loadModulesAsync,0,"Reloads all the modules",{},None,"dev")
 
 #Finish off - load configs
-print("done commands")
+log("done commands")
 for i in os.listdir('storage/settings'):
     try:
         j = json.loads(open('storage/settings/'+i).read())
     except:
-        print("[JSON] Load failed for file",i)
+        log("[JSON] Load failed for file "+i)
     else:
         try:
             getMegaTable(j['Guild']).LoadSave(j)
         except:
-            print("[JSON] Guild index failed for file",i)
-print("loaded config")
+            log("[JSON] Guild index failed for file "+i)
+log("loaded config")
 
 #On-boot tests
-print("Doing final tests")
+log("Doing final tests")
 asyncio.run(on_message(FakeMessage("##blockword testing 1s",gid=-1))) #Should work - user is admin
 asyncio.run(on_message(FakeMessage("##list WordBlockList",gid=-1))) #Should work
 asyncio.run(on_message(FakeMessage("##d -exec crash()"))) #Shouldnt fire - user is not dev
@@ -768,4 +773,4 @@ asyncio.run(on_message(FakeMessage("Talking and testing",gid=-1))) #Should be fi
 asyncio.run(asyncio.sleep(1))
 asyncio.run(constantMessageCheck()) #Should try delete
 print(getMegaTable(-1).ProtectedMessages) #Should have 1 item
-print("Finished tests")
+log("Finished tests")

@@ -1,7 +1,7 @@
 # Pretty much every command under "dev" will be here
 @tasks.loop(seconds=600)
 async def heartbeat():
-    print("Alive")
+    log(f"Alive ({currentDate()[11:]})")
 heartbeat.start()
 
 async def d_exec(msg,args):
