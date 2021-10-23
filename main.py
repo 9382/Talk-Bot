@@ -278,6 +278,22 @@ async def getGuildInviteStats(guild):
     return toReturn
 
 #Commands
+HistoryClearRatelimit = {}
+async def checkHistoryClear(msg): #I cant think of a good spot to "insert" this, but i need it for Command
+    gmt = getMegaTable(msg)
+    cid = str(msg.channel.id) #Dumb storage logic by JSON
+    if exists(gmt.ChannelLimits,cid):
+        msgLimit = gmt.ChannelLimits[cid]
+        lastCheck = (exists(HistoryClearRatelimit,cid) and HistoryClearRatelimit[cid]) or 0
+        if lastCheck < time.time(): #Limit cause history call is quite hard
+            HistoryClearRatelimit[cid] = time.time() + 2
+            try:
+                messageList = await msg.channel.history(limit=msgLimit+15).flatten() #msgLimit+15 to catch missed
+            except Exception as exc:
+                print("[History] Failed to fetch:",exc)
+            else:
+                for message in messageList[msgLimit:]:
+                    await gmt.FilterMessage(message,1) #1 to avoid deletion now, and queue it in the seperate task later
 devCommands = {} #basically testing and back-end commands
 adminCommands = {} #This will take priority over user commands should a naming conflict exist
 userCommands = {}
@@ -321,6 +337,7 @@ class Command:
             await self.Function(msg,args,self.ExtraArg)
         else:
             await self.Function(msg,args)
+        await checkHistoryClear(msg)
         return True,0
 async def doTheCheck(msg,args,commandTable): #Dont wanna type this 3 times
     arg0 = args[0]
@@ -336,22 +353,6 @@ async def doTheCheck(msg,args,commandTable): #Dont wanna type this 3 times
                 if result != -1: # If first repeat:
                     await msg.channel.send(embed=fromdict({'title':'Slow Down','description':'That command is limited for '+simplifySeconds(math.floor(result))+' more seconds','color':colours['warning']}),delete_after=result)
             return True
-HistoryClearRatelimit = {}
-async def checkHistoryClear(msg):
-    gmt = getMegaTable(msg)
-    cid = str(msg.channel.id) #Dumb storage logic by JSON
-    if exists(gmt.ChannelLimits,cid):
-        msgLimit = gmt.ChannelLimits[cid]
-        lastCheck = (exists(HistoryClearRatelimit,cid) and HistoryClearRatelimit[cid]) or 0
-        if lastCheck < time.time(): #Limit cause history call is quite hard
-            HistoryClearRatelimit[cid] = time.time() + 2
-            try:
-                messageList = await msg.channel.history(limit=msgLimit+15).flatten() #msgLimit+15 to catch missed
-            except Exception as exc:
-                print("[History] Failed to fetch:",exc)
-            else:
-                for message in messageList[msgLimit:]:
-                    await gmt.FilterMessage(message,1) #1 to avoid deletion now, and queue it in the seperate task later
 
 #Reaction listening
 ReactionListenList = []
@@ -493,7 +494,6 @@ async def on_message(msg):
         return
     gmt = getMegaTable(msg)
     await gmt.FilterMessage(msg)
-    await checkHistoryClear(msg) # This has quite a heavy wait time (upwards of 0.5) - consider threading or a better method
     if type(msg.author) == discord.User: #Webhook
         return
     if await gmt.CheckConfirmation(msg):
