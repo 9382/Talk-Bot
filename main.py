@@ -505,7 +505,9 @@ async def on_message(msg):
     if msg.author.guild_permissions.administrator:
         if await doTheCheck(msg,args,adminCommands):
             return
-    await doTheCheck(msg,args,userCommands)
+    if await doTheCheck(msg,args,userCommands):
+        return
+    await checkHistoryClear(msg) #Since its fired after a command, add a backup here
 @client.event
 async def on_raw_message_edit(msg): #On message edit to avoid bypassing
     try:
