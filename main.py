@@ -610,7 +610,7 @@ async def constantChannelCheck(): #For queued channel clearing
     except Exception as exc:
         log("[!] ChannelClear Exception: "+str(exc))
 constantChannelCheck.start()
-@tasks.loop(seconds=90)
+@tasks.loop(seconds=150)
 async def updateConfigFiles(): #So i dont have pre-coded values
     try:
         for guild in client.guilds:
