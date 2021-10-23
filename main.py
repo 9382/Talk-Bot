@@ -655,7 +655,10 @@ async def cmds(msg,args):
             cmdList[cmdInfo.Group] = {}
         cmdList[cmdInfo.Group][command] = cmdInfo
     if exists(args,1): #Group Specific
-        group = exists(cmdList,args[1]) and cmdList[args[1]]
+        group = None
+        for catagory in cmdList:
+            if args[1].lower() == catagory.lower():
+                group = cmdList[catagory]
         if msg.author.id == 260016427900076033 and args[1] == "dev":
             group = devCommands
         if not group:
@@ -677,7 +680,7 @@ async def cmds(msg,args):
             for command in cmdList[group]:
                 finalText += f"`{command}` "
         await msg.channel.send(embed=fromdict({"title":"Commands","description":finalText,"color":colours["info"]}))
-Command(["commands","cmds"],cmds,1,"List all commands",{"group":False},None,"general")
+Command(["commands","cmds"],cmds,1,"List all commands",{"group":False},None,"General")
 async def publicVote(msg,args):
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({'title':'Error','description':'You gotta include the thing to vote on','color':colours['error']}),delete_after=30)
@@ -712,7 +715,7 @@ async def publicVote(msg,args):
                 await voteMsg.add_reaction(i)
             except:
                 pass #User input sanitasion cause some guys gonna go [haha]
-Command("vote",publicVote,10,"Make a public vote about anything with an optional image",{"text":True,"imagefile":False},None,"general")
+Command("vote",publicVote,10,"Make a public vote about anything with an optional image",{"text":True,"imagefile":False},None,"General")
 
 #Module importing
 print('attempting import')
