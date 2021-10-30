@@ -765,12 +765,15 @@ for i in os.listdir('storage/settings'):
 log("loaded config")
 
 #On-boot tests
-log("Doing final tests")
-asyncio.run(on_message(FakeMessage("##blockword testing 1s",gid=-1))) #Should work - user is admin
-asyncio.run(on_message(FakeMessage("##list WordBlockList",gid=-1))) #Should work
-asyncio.run(on_message(FakeMessage("##d -exec crash()"))) #Shouldnt fire - user is not dev
-asyncio.run(on_message(FakeMessage("Talking and testing",gid=-1))) #Should be filtered
-asyncio.run(asyncio.sleep(1))
-asyncio.run(constantMessageCheck()) #Should try delete
-print(getMegaTable(-1).ProtectedMessages) #Should have 1 item
-log("Finished tests")
+if exists(globals(),"FakeMessage"):
+    log("Doing final tests")
+    asyncio.run(on_message(FakeMessage("##blockword testing 1s",gid=-1))) #Should work - user is admin
+    asyncio.run(on_message(FakeMessage("##list WordBlockList",gid=-1))) #Should work
+    asyncio.run(on_message(FakeMessage("##d -exec crash()"))) #Shouldnt fire - user is not dev
+    asyncio.run(on_message(FakeMessage("Talking and testing",gid=-1))) #Should be filtered
+    asyncio.run(asyncio.sleep(1))
+    asyncio.run(constantMessageCheck()) #Should try delete
+    print(getMegaTable(-1).ProtectedMessages) #Should have 1 item
+    log("Finished tests")
+else:
+    log("No tests module found, skipping final tests")
