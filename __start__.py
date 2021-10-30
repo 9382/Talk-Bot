@@ -6,46 +6,54 @@ import os
 auth = dotenv_values()['BOTAUTH']
 print("Starting...",os.getcwd())
 try:
-    from main import client
+    from main import client,log
 except Exception as exc:
     print("[!] Import error for client:",exc)
+    def log(content):
+        print("[__start__ no-log]",content)
     sleep(3)
 else:
-    print("main imported successfully - running...")
+    _log = log
+    def log(content):
+        log("[__start__] "+content)
+    log("main imported successfully - running...")
     try:
         client.run(auth)
     except Exception as exc:
-        print("[!] client.run exited:",exc)
-print("Checking for updates for client...")
+        log("[!] client.run exited: "+str(exc))
+log("Checking for updates for client...")
 for i in os.listdir('update'): #What a mess
-    print("[Updater]",i)
+    log("[Updater] "+i)
     if i == "__start__.py":
-        print("Please update this file manually instead of through auto-update. Trust me, you dont want that headache")
+        log("Please update __start__ manually instead of through auto-update. Trust me, you dont want that headache")
         continue
     trueName = i.replace("^","/")
     if trueName != i:
-        print("Sub-folder detected:",i.split("^"))
+        log("Sub-folder detected:",i.split("^"))
     newFile = open('update/'+i,newline='').read()
-    print("Got update file",i)
+    backup = None
     if os.path.isfile(i):
         backup = open(trueName,newline='').read()
-        print("Created backup incase of disaster")
     else:
-        print("No backup can be made")
+        log("No backup can be made for "+trueName)
     oldFile = open(trueName,"w",newline='')
     try:
         oldFile.write(newFile)
-        print("Successfully written update for",trueName)
+        log("Successfully written update for "+trueName)
     except Exception as exc:
         if backup:
-            oldFile.write(backup)
-            print("[!] Update for",trueName,"failed (Backup written):",exc)
+            try:
+                oldFile.write(backup)
+            except:
+                log(f"[!] Update for {trueName} failed (Backup failed): "+str(exc))
+            else:
+                log(f"[!] Update for {trueName} failed (Backup written): "+str(exc))
         else:
-            print("[!] Update for",trueName,"failed (No backup):",exc)
+            log(f"[!] Update for {trueName} failed (No backup): "+str(exc))
     else:
         os.remove('update/'+i)
     oldFile.close()
-print("Rebooting...")
+log("Rebooting...")
 if platform.startswith("win"): #win32/win64
     os.system('start __start__.py')
 else: #Assume linux - use sh
