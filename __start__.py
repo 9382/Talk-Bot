@@ -15,7 +15,7 @@ except Exception as exc:
 else:
     _log = log
     def log(content):
-        log("[__start__] "+content)
+        _log("[__start__] "+content)
     log("main imported successfully - running...")
     try:
         client.run(auth)
