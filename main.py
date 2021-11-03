@@ -13,6 +13,7 @@ import time
 import sys
 import os
 prefix = "##"
+DevID = 260016427900076033
 logChannels = {'errors':872153712347467776,'boot-ups':872208035093839932} # These are different from the guild-defined LogChannel channels, these are essentially telemetry
 colours = {'info':0x5555DD,'error':0xFF0000,'success':0x00FF00,'warning':0xFFAA00,'plain':0xAAAAAA}
 
@@ -509,7 +510,7 @@ async def on_message(msg):
     if await gmt.CheckConfirmation(msg):
         return
     args = msg.content.split(' ') #Please keep in mind the first argument is the calling command
-    if msg.author.id == 260016427900076033:
+    if msg.author.id == DevID:
         if await doTheCheck(msg,args,devCommands):
             return
     if msg.author.guild_permissions.administrator:
