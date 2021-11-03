@@ -65,23 +65,35 @@ class FakeChannel:
     async def delete_messages(self,messages):
         print("Requested to BD",messages)
 class FakeAuthor:
-    def __init__(self,guild):
-        self.id = random.randint(10,99)
+    def __init__(self,guild,id,admin):
+        self.id = id or random.randint(10,99)
         self.guild = guild
         self.name = "Author"
         self.discriminator = "1234"
-        self.guild_permissions = FakeGuildPermissions(True)
+        self.guild_permissions = FakeGuildPermissions(admin)
 class FakeGuild:
     def __init__(self,gid):
         self.id = gid
 class FakeMessage:
-    def __init__(self,content=None,embed=None,gid=None):
+    def __init__(self,content=None,embed=None,gid=None,uid=None):
         gid = gid or random.randint(100,999)
         self.id = random.randint(1000,9999)
         self.content = content
         self.guild = FakeGuild(gid)
-        self.author = FakeAuthor(self.guild)
+        self.author = FakeAuthor(self.guild,uid,True)
         self.channel = FakeChannel(self.guild)
         self.embeds = (embed and [embed]) or []
     async def delete(self):
-        print("Tried to delete message",self.id)
+        print("Tried to delete message",self.id,self.content)
+
+async def AdvancedTest(msg,args):
+    print("Trying advanced test")
+    fm = FakeMessage
+    await on_message(fm("##blockword testing 1s",gid=-1)) #Should work - user is admin
+    await on_message(fm("##list WordBlockList",gid=-1)) #Should work
+    await on_message(fm("##d -exec crash()")) #Shouldnt work - user is not dev
+    await on_message(fm("Talking and testing",gid=-1)) #Should be filtered
+    await asyncio.sleep(1)
+    await constantMessageCheck() #Should try delete
+    print(getMegaTable(-1).ProtectedMessages) #Should have 1 item
+Command("d -test advanced",AdvancedTest,10,"Runs a \"Simulated\" experience of the bot, using FakeMessage",{},None,"dev")
