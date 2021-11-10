@@ -58,7 +58,8 @@ async def imageComp(msg,args):
 Command("imaget",imageComp,0,"An experiment with image editing",{"User":False},None,"dev")
 
 async def printThis(msg,args):
-    print(msg.content)
+    print("Content",msg.content)
+    print("Reference",msg.reference)
 Command("ddd",printThis,0,"Prints the content of the message to the console",{},None,"dev")
 async def gimmePing(msg,args):
     startTime = time.time()
