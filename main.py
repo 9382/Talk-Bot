@@ -160,7 +160,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 try:
                     await channel.send(content=content,embed=embed)
                     return True
-                except:
+                except: #Consider a better approach than silent fail
                     pass
     def GetMediaFilter(self,channel):
         if exists(self.MediaFilters,channel):
