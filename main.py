@@ -476,7 +476,7 @@ async def on_error(error,*args,**kwargs):
     traceback.print_exc(file=sys.stderr)
     try: #Logging
         errorFile = tempFile()
-        file = open(errorFile,"w",encoding="ANSI",newline='')
+        file = open(errorFile,"w",encoding="UTF-8",newline='') #Linux doesnt support ansi?
         try:
             traceback.print_exc(file=file)
         except Exception as exc:
@@ -486,7 +486,7 @@ async def on_error(error,*args,**kwargs):
         await client.get_channel(logChannels['errors']).send("Error in client\nTime: "+currentDate()+"\nCausing command: "+str(causingCommand),file=discord.File(errorFile))
         os.remove(errorFile)
     except Exception as exc:
-        log("[Fatal Error] Failed to log:",currentDate(),exc)
+        log("[Fatal Error] Failed to log: "+currentDate()+str(exc))
 @client.event
 async def on_ready():
     await client.change_presence(activity=discord.Game(name='##cmds'))
