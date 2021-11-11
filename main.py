@@ -61,7 +61,7 @@ def safeWriteToFile(filename,content,encoding="UTF-8"):
         else:
             log("[SafeWrite] Failed to write to "+filename+" with no backup available: "+str(exc))
         return
-    log("[SafeWrite] Successfully wrote to "+filename)
+    print("[SafeWrite] Successfully wrote to "+filename)
     return True
 multList = {"s":1,"m":60,"h":3600,"d":86400}
 def strToTimeAdd(duration):
