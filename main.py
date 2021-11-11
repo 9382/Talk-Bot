@@ -641,7 +641,7 @@ keepGuildInviteUpdated.start()
 #User Commands
 async def forceUpdate(msg,args):
     global stopCycling
-    log("Client was force-exited via forceUpdate() "+str(ime.time()))
+    log("Client was force-exited via forceUpdate() "+str(time.time()))
     log("Hanging until messageCheck has finished its cycle or 20s, whatever is shorter")
     stopCycling = True
     sleepTime = 0
