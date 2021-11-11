@@ -29,7 +29,7 @@ for i in os.listdir('update'): #What a mess
         continue
     trueName = i.replace("^","/")
     if trueName != i:
-        log("Sub-folder detected:",i.split("^"))
+        log("Sub-folder detected: "+str(i.split("^")))
     newFile = open('update/'+i,newline='').read()
     backup = None
     if os.path.isfile(i):
