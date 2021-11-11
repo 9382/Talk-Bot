@@ -10,6 +10,18 @@ async def setLogChannel(msg,args):
     await msg.channel.send(embed=fromdict({"title":"Success","description":"Set log channel successfully","color":colours["success"]}))
 Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided",{"channel":True},None,"admin")
 
+async def prune(msg,args):
+    purgeAmount = exists(args,1) and numRegex.search(args[1]) and numRegex.search(args[1]).group()
+    if purgeAmount:
+        try:
+            await msg.channel.delete_messages(await msg.channel.history(limit=int(purgeAmount)+1).flatten()) #+1 due to command message
+            await msg.channel.send(embed=fromdict({'title':'Success','description':purgeAmount+' messages have been cleared','color':colours["success"]}))
+        except:
+            await msg.channel.send(embed=fromdict({'title':'Error','description':'The bot failed to prune the messages. Check its permissions, or try again','color':colours["error"]}))
+    else:
+        await msg.channel.send(embed=fromdict({'title':'Error','description':'Purge amount must be an integer','color':colours["error"]}))
+Command("prune",prune,10,"Prunes a set amount of messages in the channel",{"messages":True},None,"admin")
+
 list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ProtectedMessages","ChannelClearList","QueuedChannels","ChannelLimits"]
 async def list_func(msg,args):
     if len(args) < 2:
