@@ -13,6 +13,17 @@ async def d_exec(msg,args):
         print("[Dev] Successful exec")
 Command("d -exec",d_exec,0,"Executes pure python code in the global spec",{"Code":True},None,"dev")
 
+async def sendLogFile(msg,args):
+    try:
+        await msg.channel.send("Successfully sent file",file=discord.File("storage/logs/"+str(args[3])+".log"))
+    except:
+        await msg.channel.send("No such log file "+str(exists(args,3) and args[3]))
+Command("d -dump log",sendLogFile,0,"Sends the log file specified if it exists",{"Log":True},None,"dev")
+
+async def currentDateAsync(msg,args):
+    await msg.channel.send(currentDate())
+Command("cdate",currentDateAsync,0,"Sends the current date and time as a message",{},None,"dev")
+
 async def presetAudioTest(msg,args):
     if not msg.author.voice:
         return
