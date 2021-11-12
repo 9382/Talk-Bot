@@ -80,13 +80,13 @@ async def unprotectMessage(msg,args):
         msgid = int(msgid)//1
     except:
         await msg.channel.send(embed=fromdict({"title":"Error","description":"message ID must be a number","color":colours["error"]}),delete_after=10)
+        return
+    try:
+        getMegaTable(msg).ProtectedMessages.pop(msgid)
+    except:
+        await msg.channel.send(embed=fromdict({"title":"Error","description":str(msgid)+" was never protected","color":colours["error"]}))
     else:
-        try:
-            getMegaTable(msg).ProtectedMessages.pop(msgid)
-        except:
-            await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is now protected","color":colours["success"]}))
-        else:
-            await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is now protected","color":colours["success"]}))
+        await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is no longer protected","color":colours["success"]}))
 Command("unprotect",unprotectMessage,2,"Removes a message ID from the protected list",{"messageId":True},None,"admin")
 
 async def blockWord(msg,args):
@@ -184,7 +184,7 @@ async def controlMessageLimit(msg,args,removing):
 Command("setmessagelimit",controlMessageLimit,5,"Sets a max message limit on a channel, deleting any over the limit",{"number":True},False,"admin")
 Command("removemessagelimit",controlMessageLimit,5,"Removes the max message limit on a channel",{},True,"admin")
 
-async def clearAllInvites(msg,args,silent=False):
+async def clearAllInvites(msg,args,silent):
     try:
         invites = await msg.guild.invites()
     except:
@@ -207,11 +207,13 @@ async def clearAllInvites(msg,args,silent=False):
         await msg.channel.send(embed=fromdict({"title":"Success","description":f"{str(successRate)} out of {str(totalCount)} invites were successfully cleared","color":colours["success"]}))
 async def clearInvitesConfirm(msg,args):
     await getMegaTable(msg).CreateConfirmation(msg,args,clearAllInvites)
-Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},None,"admin")
+Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},False,"admin")
 
 async def panic(msg,args):
-    # Panic here
-    pass
+    finalString = ""
+    success,result = await clearAllInvites(msg,args,True)
+    finalString += "Invite clear: "+(success and "Sucessfully cleared "+result+" invites\n") or "Failed\n"
+    await msg.channel.send(embed=fromdict({"title":"Panic results:","description":finalString,"color":colours["info"]}))
 async def confirmPanic(msg,args):
     await getMegaTable(msg).CreateConfirmation(msg,args,panic)
 Command("panic",confirmPanic,60,"Locks down the server, clearing invites and locking channels. Use this sparingly",{},None,"dev")
