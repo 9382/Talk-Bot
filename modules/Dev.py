@@ -15,14 +15,19 @@ Command("d -exec",d_exec,0,"Executes pure python code in the global spec",{"Code
 
 async def sendLogFile(msg,args):
     try:
-        await msg.channel.send("Successfully sent file",file=discord.File("storage/logs/"+str(args[3])+".log"))
+        await msg.channel.send("Successfully sent file",file=discord.File("storage/logs/"+str(args[1])+".log"))
     except:
-        await msg.channel.send("No such log file "+str(exists(args,3) and args[3]))
-Command("d -dump log",sendLogFile,0,"Sends the log file specified if it exists",{"Log":True},None,"dev")
+        await msg.channel.send("No such log file "+str(exists(args,1) and args[1]))
+Command("sendlog",sendLogFile,0,"Sends the log file specified if it exists",{"Log":True},None,"dev")
 
 async def currentDateAsync(msg,args):
     await msg.channel.send(currentDate())
 Command("cdate",currentDateAsync,0,"Sends the current date and time as a message",{},None,"dev")
+async def whatIsUpTime(msg,args):
+    currentUpTime = simplifySeconds(time.time()//1-uptime)
+    log(currentUpTime)
+    await msg.channel.send(currentUpTime)
+Command("uptime",whatIsUpTime,0,"Sends and logs the bot's uptime since the last on_ready",{},None,"dev")
 
 async def presetAudioTest(msg,args):
     if not msg.author.voice:
@@ -79,6 +84,7 @@ async def gimmePing(msg,args):
 Command("ping",gimmePing,0,"Uses the time it takes to send a message to calculate its ping",{},None,"dev")
 
 # This is only in here as the feature is most likely not going to exist anymore, its more a relic of a past plan
+# Dont bother doing any work on this, as it'll eventually get removed fully
 ttsQueue = []
 handlingTTS = False
 async def speakTTS(msg,args): # This is a bit of a mess. Maybe an improve, how about that?

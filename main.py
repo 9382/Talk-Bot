@@ -487,10 +487,12 @@ async def on_error(error,*args,**kwargs):
         os.remove(errorFile)
     except Exception as exc:
         log("[Fatal Error] Failed to log: "+currentDate()+str(exc))
+uptime = 0
 @client.event
 async def on_ready():
     await client.change_presence(activity=discord.Game(name='##cmds'))
     log('connected v'+discord.__version__)
+    uptime = time.time()//1
     try: #Notifying of start-up
         await client.get_channel(logChannels['boot-ups']).send("Ive connected at "+currentDate())
     except:
