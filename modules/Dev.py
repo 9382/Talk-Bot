@@ -24,7 +24,7 @@ async def currentDateAsync(msg,args):
     await msg.channel.send(currentDate())
 Command("cdate",currentDateAsync,0,"Sends the current date and time as a message",{},None,"dev")
 async def whatIsUpTime(msg,args):
-    currentUpTime = simplifySeconds(time.time()//1-uptime)
+    currentUpTime = "Uptime: "+simplifySeconds(time.time()//1-uptime)
     log(currentUpTime)
     await msg.channel.send(currentUpTime)
 Command("uptime",whatIsUpTime,0,"Sends and logs the bot's uptime since the last on_ready",{},None,"dev")

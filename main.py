@@ -490,6 +490,7 @@ async def on_error(error,*args,**kwargs):
 uptime = 0
 @client.event
 async def on_ready():
+    global uptime
     await client.change_presence(activity=discord.Game(name='##cmds'))
     log('connected v'+discord.__version__)
     uptime = time.time()//1
