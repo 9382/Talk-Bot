@@ -45,7 +45,7 @@ Command("presetaudio",presetAudioTest,0,"Test playing preset audio files",{"File
 def createScore(n1,n2):
     return 100-((n1+n2)%100)
 async def scoreTest2(msg,args):
-    targetUser1 = (exists(args,1) and numRegex.search(args[1]) and msg.guild.get_member(int(numRegex.search(args[1]).group()))) or random.choice(msg.guild.members)
+    targetUser1 = (exists(args,1) and numRegex.search(args[1]) and msg.guild.get_member(int(numRegex.search(args[1]).group()))) or random.choice(msg.guild.members) #long
     targetUser2 = (exists(args,2) and numRegex.search(args[2]) and msg.guild.get_member(int(numRegex.search(args[2]).group()))) or random.choice(msg.guild.members)
     await msg.channel.send(embed=fromdict({'title':'Score with '+targetUser1.name+' and '+targetUser2.name,'description':str(createScore(targetUser1.id,targetUser2.id))}))
 Command("compare",scoreTest2,0,"Test the scoring system on user IDs",{"U1":False,"U2":False},None,"dev")
@@ -57,7 +57,7 @@ async def circularMask(im):
     d.ellipse((0,0)+size,fill=255)
     mask = mask.resize(im.size,Image.ANTIALIAS)
     im.putalpha(mask)
-async def imageComp(msg,args):
+async def imageComp(msg,args): #Just a POC, not used meaningfully
     from PIL import Image,ImageDraw,ImageFont,ImageChops
     import io
     targetUser = random.choice(msg.guild.members)
@@ -73,17 +73,13 @@ async def imageComp(msg,args):
     os.remove(fileName)
 Command("imaget",imageComp,0,"An experiment with image editing",{"User":False},None,"dev")
 
-async def printThis(msg,args):
-    print("Content",msg.content)
-    print("Reference",msg.reference)
-Command("ddd",printThis,0,"Prints the content of the message to the console",{},None,"dev")
-async def gimmePing(msg,args):
+async def getPing(msg,args):
     startTime = time.time()
     message = await msg.channel.send("<???> ms")
     await message.edit(content=str(round((time.time()-startTime)*1000))+" ms")
-Command("ping",gimmePing,0,"Uses the time it takes to send a message to calculate its ping",{},None,"dev")
+Command("ping",getPing,0,"Uses the time it takes to send a message to calculate its ping",{},None,"dev")
 
-# This is only in here as the feature is most likely not going to exist anymore, its more a relic of a past plan
+# This is only in here as the feature is most likely not going to exist anymore
 # Dont bother doing any work on this, as it'll eventually get removed fully
 ttsQueue = []
 handlingTTS = False
