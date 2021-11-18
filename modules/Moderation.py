@@ -184,7 +184,7 @@ async def controlMessageLimit(msg,args,removing):
 Command("setmessagelimit",controlMessageLimit,5,"Sets a max message limit on a channel, deleting any over the limit",{"number":True},False,"admin")
 Command("removemessagelimit",controlMessageLimit,5,"Removes the max message limit on a channel",{},True,"admin")
 
-async def clearAllInvites(msg,args,silent):
+async def clearAllInvites(msg,args,silent=False):
     try:
         invites = await msg.guild.invites()
     except:
@@ -207,7 +207,7 @@ async def clearAllInvites(msg,args,silent):
         await msg.channel.send(embed=fromdict({"title":"Success","description":f"{str(successRate)} out of {str(totalCount)} invites were successfully cleared","color":colours["success"]}))
 async def clearInvitesConfirm(msg,args):
     await getMegaTable(msg).CreateConfirmation(msg,args,clearAllInvites)
-Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},False,"admin")
+Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},None,"admin")
 
 async def panic(msg,args):
     finalString = ""
