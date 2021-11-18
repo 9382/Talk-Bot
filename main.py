@@ -19,7 +19,6 @@ colours = {'info':0x5555DD,'error':0xFF0000,'success':0x00FF00,'warning':0xFFAA0
 
 #Base functions
 def exists(table,value): #Wanna reduce the try except spam checking for possible values
-    # "Why not use hasattr?" hasattr doesnt support numbers in dictionaries
     try:
         table[value]
         return True
@@ -297,12 +296,10 @@ async def checkHistoryClear(msg): #I cant think of a good spot to "insert" this,
         if lastCheck < time.time(): #Limit cause history call is quite hard
             HistoryClearRatelimit[cid] = time.time() + 2
             try:
-                messageList = await msg.channel.history(limit=msgLimit+15).flatten() #msgLimit+15 to catch missed
+                channelHistory = await msg.channel.history(limit=msgLimit+15).flatten()
+                await msg.channel.delete_messages(channelHistory[msgLimit:])
             except Exception as exc:
-                log("[History] Failed to fetch: "+str(exc))
-            else:
-                for message in messageList[msgLimit:]:
-                    await gmt.FilterMessage(message,1) #1 to avoid deletion now, and queue it in the seperate task later
+                print("[History] Failed to do:",msg.guild.id,exc)
 devCommands = {} #basically testing and back-end commands
 adminCommands = {} #This will take priority over user commands should a naming conflict exist
 userCommands = {}
