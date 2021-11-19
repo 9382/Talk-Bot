@@ -239,9 +239,9 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 elif hasattr(self,catagory):
                     setattr(self,catagory,data[catagory])
                 else:
-                    log(f"[GuildObject {str(self.Guild)}] Unknown Catagory",catagory)
+                    log(f"[GuildObject {str(self.Guild)}] Unknown Catagory {catagory}")
             except:
-                log(f"[GuildObject {str(self.Guild)}] Invalid catagory data",catagory)
+                log(f"[GuildObject {str(self.Guild)}] Invalid catagory data {catagory}")
     async def CreateConfirmation(self,msg,args,function):
         confirmationObj = Confirmation(msg,args,function)
         self.Confirmations[msg.author.id] = confirmationObj
