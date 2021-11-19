@@ -11,15 +11,15 @@ async def setLogChannel(msg,args):
 Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided",{"channel":True},None,"admin")
 
 async def prune(msg,args):
-    purgeAmount = exists(args,1) and numRegex.search(args[1]) and numRegex.search(args[1]).group()
-    if purgeAmount:
+    pruneAmount = exists(args,1) and numRegex.search(args[1]) and numRegex.search(args[1]).group()
+    if pruneAmount:
         try:
-            await msg.channel.delete_messages(await msg.channel.history(limit=int(purgeAmount)+1).flatten()) #+1 due to command message
-            await msg.channel.send(embed=fromdict({'title':'Success','description':purgeAmount+' messages have been cleared','color':colours["success"]}))
+            await msg.channel.delete_messages(await msg.channel.history(limit=int(pruneAmount)+1).flatten()) #+1 due to command message
+            await msg.channel.send(embed=fromdict({"title":"Success","description":pruneAmount+" messages have been cleared","color":colours["success"]}))
         except:
-            await msg.channel.send(embed=fromdict({'title':'Error','description':'The bot failed to prune the messages. Check its permissions, or try again','color':colours["error"]}))
+            await msg.channel.send(embed=fromdict({"title":"Error","description":"The bot failed to prune the messages. Check its permissions, or try again","color":colours["error"]}))
     else:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':'Purge amount must be an integer','color':colours["error"]}))
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"Prune amount must be an integer","color":colours["error"]}))
 Command("prune",prune,10,"Prunes a set amount of messages in the channel",{"messages":True},None,"admin")
 
 list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ProtectedMessages","ChannelClearList","QueuedChannels","ChannelLimits"]
@@ -28,11 +28,11 @@ async def list_func(msg,args):
         finalString = ""
         for item in list_validSections:
             finalString += f"\n`{item}`"
-        await msg.channel.send(embed=fromdict({'title':'Settings List','description':'To get a list of what you are looking for, please use one of the following sub-commands:'+finalString,'color':colours['info']}))
+        await msg.channel.send(embed=fromdict({"title":"Settings List","description":"To get a list of what you are looking for, please use one of the following sub-commands:"+finalString,"color":colours["info"]}))
         return
     section = args[1]
     if not section in list_validSections:
-        await msg.channel.send(embed=fromdict({'title':'Invalid','description':section+' is not a valid catagory','color':colours["error"]}))
+        await msg.channel.send(embed=fromdict({"title":"Invalid","description":section+" is not a valid catagory","color":colours["error"]}))
         return
     parser = None
     if section in ["WordBlockList","MediaFilters","ChannelClearList","QueuedChannels"]:
@@ -70,7 +70,7 @@ async def protectMessage(msg,args): #Prevents a message from being filtered
     else:
         getMegaTable(msg).ProtectedMessages.append(msgid)
         await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is now protected","color":colours["success"]}))
-Command("protect",protectMessage,2,"Prevents a message from being filtered",{"messageId":True},None,"admin")
+Command("protect",protectMessage,2,"Prevents a message from being filtered",{"messageid":True},None,"admin")
 async def unprotectMessage(msg,args):
     msgid = exists(args,1) and args[1]
     if not msgid:
@@ -87,49 +87,49 @@ async def unprotectMessage(msg,args):
         await msg.channel.send(embed=fromdict({"title":"Error","description":str(msgid)+" was never protected","color":colours["error"]}))
     else:
         await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is no longer protected","color":colours["success"]}))
-Command("unprotect",unprotectMessage,2,"Removes a message ID from the protected list",{"messageId":True},None,"admin")
+Command("unprotect",unprotectMessage,2,"Removes a message ID from the protected list",{"messageid":True},None,"admin")
 
 async def blockWord(msg,args):
     if not exists(args,2):
-        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a word to ban and its time until deletion','color':colours['error']}),delete_after=10)
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"You must include a word to ban and its time until deletion","color":colours["error"]}),delete_after=10)
         return
     success,result = strToTimeAdd(args[2])
     if not success:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':result,'color':colours['error']}),delete_after=10)
+        await msg.channel.send(embed=fromdict({"title":"Error","description":result,"color":colours["error"]}),delete_after=10)
         return
     word = args[1].lower()
     getMegaTable(msg).WordBlockList[word] = result
-    await msg.channel.send(embed=fromdict({'title':'Success','description':'Any messages containing '+word+' will be deleted after '+simplifySeconds(result),'color':colours['success']}))
+    await msg.channel.send(embed=fromdict({"title":"Success","description":f"Any messages containing {word} will be deleted after {simplifySeconds(result)}","color":colours["success"]}))
 Command("blockword",blockWord,0,"Add a word to the filter list",{"word":True,"deletion time":True},None,"admin")
 async def unblockWord(msg,args):
     if not exists(args,1):
-        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a word to unban','color':colours['error']}),delete_after=10)
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"You must include a word to unban","color":colours["error"]}),delete_after=10)
         return
     word = args[1].lower()
     try:
         getMegaTable(msg).WordBlockList.pop(word)
     except:
-        await msg.channel.send(embed=fromdict({'title':'Not Blocked','description':f'{word} was not blocked','color':colours['warning']}))
+        await msg.channel.send(embed=fromdict({"title":"Not Blocked","description":f"{word} was not blocked","color":colours["warning"]}))
     else:
-        await msg.channel.send(embed=fromdict({'title':'Success','description':f'{word} is allowed again','color':colours['success']}))
+        await msg.channel.send(embed=fromdict({"title":"Success","description":f"{word} is allowed again","color":colours["success"]}))
 Command("unblockword",unblockWord,0,"Remove a word from the filter list",{"word":True},None,"admin")
 
 async def clearChannel(msg,args):
     if len(args) < 2:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a channel name','color':colours['error']}),delete_after=10)
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"You must include a channel name","color":colours["error"]}),delete_after=10)
         return
     channelName = args[1] # Cant do ID cause deleting a channel removes the ID :)
     frequency = exists(args,2) and args[2]
     if frequency:
         success,result = strToTimeAdd(frequency)
         if not success:
-            await msg.channel.send(embed=fromdict({'title':'Error','description':result,'color':colours['error']}),delete_after=10)
+            await msg.channel.send(embed=fromdict({"title":"Error","description":result,"color":colours["error"]}),delete_after=10)
             return
         if result < 300:
-            await msg.channel.send(embed=fromdict({'title':'Too short','description':'The minimum frequency time is 5 minutes','color':colours['error']}),delete_after=10)
+            await msg.channel.send(embed=fromdict({"title":"Too short","description":"The minimum frequency time is 5 minutes","color":colours["error"]}),delete_after=10)
             return
         getMegaTable(msg).AddChannelClear(channelName,result)
-        await msg.channel.send(embed=fromdict({'title':'Success','description':channelName+' is queued to clear every '+simplifySeconds(result),'color':colours['success']}))
+        await msg.channel.send(embed=fromdict({"title":"Success","description":f"{channelName} is queued to clear every {simplifySeconds(result)}","color":colours["success"]}))
     else:
         guildChannelList = msg.guild.text_channels
         for t in guildChannelList:
@@ -138,31 +138,31 @@ async def clearChannel(msg,args):
 Command("clearchannel",clearChannel,0,"Add a channel to be cleared every so often OR clear now (no frequency)",{"channelName":True,"frequency":False},None,"admin")
 async def unclearChannel(msg,args):
     if len(args) < 2:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include a channel name to stop clearing','color':colours['error']}),delete_after=10)
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"You must include a channel name to stop clearing","color":colours["error"]}),delete_after=10)
         return
     channelName = args[1]
     getMegaTable(msg).RemoveChannelClear(channelName)
-    await msg.channel.send(embed=fromdict({'title':'Success','description':channelName+' will no longer be cleared','color':colours['success']}))
+    await msg.channel.send(embed=fromdict({"title":"Success","description":channelName+" will no longer be cleared","color":colours["success"]}))
 Command("unclearchannel",unclearChannel,0,"Stop a channel from being auto-cleared",{"channelName":True},None,"admin")
 
 async def blockMedia(msg,args):
     if len(args) < 2:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':'You must include the time until deletion','color':colours['error']}),delete_after=10)
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"You must include the time until deletion","color":colours["error"]}),delete_after=10)
         return
     success,result = strToTimeAdd(args[1])
     if not success:
-        await msg.channel.send(embed=fromdict({'title':'Error','description':result,'color':colours['error']}),delete_after=10)
+        await msg.channel.send(embed=fromdict({"title":"Error","description":result,"color":colours["error"]}),delete_after=10)
         return
     getMegaTable(msg).MediaFilters[msg.channel.id] = result
-    await msg.channel.send(embed=fromdict({'title':'Success','description':'All media will be deleted after '+simplifySeconds(result),'color':colours['success']}))
+    await msg.channel.send(embed=fromdict({"title":"Success","description":"All media will be deleted after "+simplifySeconds(result),"color":colours["success"]}))
 Command("blockmedia",blockMedia,0,"Remove all media in a channel after a certain duration",{"deletiontime":True},None,"admin")
 async def unblockMedia(msg,args):
     try:
         getMegaTable(msg).MediaFilters.pop(msg.channel.id)
     except:
-        await msg.channel.send(embed=fromdict({'title':'Not Filtered','description':'This channel was not filtered','color':colours['warning']}))
+        await msg.channel.send(embed=fromdict({"title":"Not Filtered","description":"This channel was not filtered","color":colours["warning"]}))
     else:
-        await msg.channel.send(embed=fromdict({'title':'Success','description':'Media will no longer be removed','color':colours['success']}))
+        await msg.channel.send(embed=fromdict({"title":"Success","description":"Media will no longer be removed","color":colours["success"]}))
 Command("unblockmedia",unblockMedia,0,"Stop auto-filtering a channel's media",{},None,"admin")
 
 async def controlMessageLimit(msg,args,removing):

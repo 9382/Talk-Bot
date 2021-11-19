@@ -1,5 +1,5 @@
 # The deathbattle module and command
-import random
+# Unused, old, consider removing
 class dbAttack:
     def __init__(self,hitMsg,dmgMin,dmgMax):
         self.hitMsg = hitMsg
@@ -48,7 +48,7 @@ def calculate(u1,u2):
         victim.damage(damage)
         log.append(dbLog(u1,u2,attack.format(attacker,victim,damage)))
         attacker,victim = (attacker == u1 and (u2,u1)) or (u1,u2)
-    return {'u1':u1,'u2':u2,'winner':(u1.alive and u1) or u2,'log':log}
+    return {"u1":u1,"u2":u2,"winner":(u1.alive and u1) or u2,"log":log}
 async def deathBattle(msg,args):
     u2 = exists(args,1) and numRegex.search(args[1]) and msg.guild.get_member(int(numRegex.search(args[1]).group()))
     if not u2:
@@ -56,7 +56,7 @@ async def deathBattle(msg,args):
     u1 = msg.author
     dbResults = calculate(user(u1.name,u1.id),user(u2.name,u2.id))
     dbMessage = await msg.channel.send(':anger: Death Battle!',embed=fromdict(
-        {'author':{'name':u1.name+' is challenging '+u2.name},'fields':[{'name':u1.name,'value':'100','inline':True},{'name':u2.name,'value':'100','inline':True}],'color':colours['info']}
+        {"author":{"name":u1.name+" is challenging "+u2.name},"fields":[{"name":u1.name,"value":"100","inline":True},{"name":u2.name,"value":"100","inline":True}],"color":colours["info"]}
     ))
     previousAttacks = [None]*2
     await asyncio.sleep(2)
@@ -67,7 +67,7 @@ async def deathBattle(msg,args):
                 description += h+"\n"
         description += i.hitMsg
         await dbMessage.edit(content=':anger: Death Battle!',embed=fromdict(
-            {'author':{'name':u1.name+' is challenging '+u2.name},'description':description,'fields':[{'name':u1.name,'value':i.u1hp,'inline':True},{'name':u2.name,'value':i.u2hp,'inline':True}],'color':colours['info']}
+            {"author":{"name":u1.name+" is challenging "+u2.name},"description":description,"fields":[{"name":u1.name,"value":i.u1hp,"inline":True},{"name":u2.name,"value":i.u2hp,"inline":True}],"color":colours["info"]}
         ))
         previousAttacks.pop(0)
         previousAttacks.append(i.hitMsg)
@@ -78,7 +78,7 @@ async def deathBattle(msg,args):
             description += h+"\n"
     description += "__**"+dbResults['winner'].name+"**__ won the fight!"
     await dbMessage.edit(content=':anger: Death Battle!',embed=fromdict(
-        {'author':{'name':u1.name+' is challenging '+u2.name},'description':description,'fields':[{'name':u1.name,'value':i.u1hp,'inline':True},{'name':u2.name,'value':i.u2hp,'inline':True}],'color':colours['info']}
+        {"author":{"name":u1.name+" is challenging "+u2.name},"description":description,"fields":[{"name":u1.name,"value":i.u1hp,"inline":True},{"name":u2.name,"value":i.u2hp,"inline":True}],"color":colours["info"]}
     ))
 Command("deathbattle",deathBattle,10,"Fight someone to the death!",{"@user":False},None,"dev")
 async def fastDeathBattle(msg,args):
@@ -89,6 +89,6 @@ async def fastDeathBattle(msg,args):
     dbResults = calculate(user(u1.name,u1.id),user(u2.name,u2.id))
     total = ""
     for i in dbResults['log']:
-        total += i.hitMsg+" | u1 "+i.u1hp+" u2 "+i.u2hp+"\n"
+        total += f"{i.hitMsg} | u1 {i.u1hp} u2 {i.u2hp}\n"
     await msg.channel.send(total)
 Command("fastdeathbattle",fastDeathBattle,10,"Fight someone to the death??",{"@user":False},None,"dev")
