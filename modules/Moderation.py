@@ -58,6 +58,26 @@ async def list_func(msg,args):
         getMegaTable(msg).ProtectedMessages.append((await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString,8,(section=="QueuedChannels" and "(This is how long until the next cycle)") or "")).id)
 Command("list",list_func,0,"View the list of settings to do with the server's administration",{"subsection":False},None,"admin")
 
+async def refilter(msg,args):
+    imNotDead = await msg.channel.send(embed=fromdict({"Title":"Trying...","description":"Trying to refilter all messages. Give me a moment...","color":colours["info"]}))
+    try:
+        messageList = await msg.channel.history(limit=None,after=datetime.fromtimestamp(time.time()//1-864000)).flatten() #All messages within 10 days (864000)
+    except:
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"Bot failed to fetch channel history","color":colours["error"]}),delete_after=10)
+        await imNotDead.delete()
+        return
+    gmt = getMegaTable(msg)
+    stats = {"Filt":0,"PreFilt":0}
+    for message in messageList:
+        if exists(gmt.LoggedMessages,message.id):
+            stats["PreFilt"] += 1
+            continue
+        if await gmt.FilterMessage(message):
+            stats["Filt"] += 1
+    await imNotDead.delete()
+    await msg.channel.send(embed=fromdict({"title":"Success","description":f"Successfully checked {len(messageList)} messages.\n{stats['Filt']} were filtered, and {stats['PreFilt']} were already filtered","color":colours["success"]}))
+Command("refilter",refilter,300,"Re-Filter's all messages of a chat within the last 10 days",{},None,"admin")
+
 async def protectMessage(msg,args): #Prevents a message from being filtered
     msgid = exists(args,1) and args[1]
     if not msgid:

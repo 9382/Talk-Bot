@@ -209,6 +209,7 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
             for embed in msg.embeds:
                 if embed.image:
                     return await self.AddToFilter(msg,buffer)
+        return False
     def FormatLoggedMessages(self):
         LoggedMessagesSave = {}
         LMCache = self.LoggedMessages
