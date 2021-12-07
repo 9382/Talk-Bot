@@ -1,4 +1,5 @@
 # Anything with NSFW gets chucked here
+import requests
 
 async def blockNSFWTag(msg,args):
     if len(args) < 2:

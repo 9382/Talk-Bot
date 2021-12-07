@@ -3,7 +3,6 @@ from discord.ext import tasks
 from datetime import datetime
 import re as regex
 import traceback
-import requests
 import asyncio
 import discord
 import random
