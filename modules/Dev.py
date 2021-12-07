@@ -9,9 +9,21 @@ async def d_exec(msg,args):
         exec(msg.content[10:],globals())
     except Exception as exc:
         print("[Dev] Nice custom exec, but it failed. Command:",msg.content[10:],"Exception:",exc)
+        await msg.channel.send(":-1:")
     else:
         print("[Dev] Successful exec")
+        await msg.channel.send(":+1:")
 Command("d -exec",d_exec,0,"Executes pure python code in the global spec",{"code":True},None,"dev")
+async def d_execa(msg,args):
+    try:
+        await globals()[args[2]]()
+    except Exception as exc:
+        print("[Dev] Nice custom async exec, but it failed. Command:",msg.content[10:],"Exception:",exc)
+        await msg.channel.send(":-1: "+str(exc))
+    else:
+        print("[Dev] Successful async exec")
+        await msg.channel.send(":+1:")
+Command("d -execa",d_execa,0,"Executes the given function from globals asynchronously",{"function":True},None,"dev")
 
 async def sendLogFile(msg,args):
     try:
