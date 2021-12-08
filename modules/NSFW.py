@@ -91,20 +91,17 @@ async def getPostList(msg,sitetype,tags):
                 anyMessageFiltered = True
     if len(returnContent) == 0:
         if anyMessageFiltered:
-            await msg.channel.send(embed=fromdict({"title":"Post Blocked","description":"The recieved post contained one or more blocked tags","color":colours["error"]})) #No
+            await msg.channel.send(embed=fromdict({"title":"Post Blocked","description":"The recieved post contained one or more blocked tags","color":colours["error"]}),delete_after=15) #No
         else:
-            await msg.channel.send(embed=fromdict({"title":"No Posts","description":"No posts were found under your requested tags","color":colours["error"]})) #Consider adding delete_after
+            await msg.channel.send(embed=fromdict({"title":"No Posts","description":"No posts were found under your requested tags","color":colours["error"]}),delete_after=15)
         return
     return returnContent
 async def nsfwScrape(msg,args,sitetype): #I spent hours on this and idk if i should be happy about it
     if not msg.channel.is_nsfw():
         await msg.channel.send(embed=fromdict({"title":"Disallowed","description":"You can only use NSFW commands in channels marked as NSFW","color":colours["error"]}),delete_after=10)
         return
-    tags = ""
-    for i in args[1:]: #Avoid calling command
-        tags = tags+i+"+" #A trailing + is fine
     try:
-        postList = await getPostList(msg,sitetype,tags) #HTTP Requests, therefore try: it
+        postList = await getPostList(msg,sitetype,"+".join(args[1:])) #HTTP Requests, therefore try: it
     except Exception as exc:
         log(f"[NSFW] {sitetype} GetPosts Exception: "+str(exc))
         await msg.channel.send(embed=fromdict({"title":"Unexpected Error","description":"Something unexpected went wrong, hopefully it wont happen again","color":colours["error"]}),delete_after=10)

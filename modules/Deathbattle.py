@@ -8,7 +8,7 @@ class dbAttack:
     def __str__(self):
         return self.hitMsg
     def format(self,attacker,victim,damage):
-        return self.hitMsg.format(attacker="__**"+str(attacker)+"**__",victim="__**"+str(victim)+"**__",damage="__**"+str(damage)+" dmg**__")
+        return self.hitMsg.format(attacker=f"__**{attacker}**__",victim=f"__**{victim}**__",damage=f"__**{damage} dmg**__")
     def hit(self):
         return random.randint(self.dmgMin,self.dmgMax)
 class user:

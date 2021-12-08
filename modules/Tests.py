@@ -1,13 +1,11 @@
 #Seperate script to improve ##cmds ordering and for convenience
 TestCommandList = []
 def AddCommand(a,b,c,d,e,f):
-    cmdObject = Command(a,b,c,d,e,f,"dev")
-    if a != "d -test onerror":
-        TestCommandList.append(cmdObject)
+    TestCommandList.append(Command(a,b,c,d,e,f,"dev"))
 
-async def horribleCoding(msg,args):
-    [] # This is just designed to error
-AddCommand("d -test error",horribleCoding,0,"Forces an error to test the error logging",{},None)
+async def forceOnError(msg,args):
+    await on_error(msg)
+AddCommand("d -test onerror",forceOnError,0,"Forces an error to test the error logging",{},None)
 async def forceOnReady(msg,args):
     await on_ready()
 AddCommand("d -test onready",forceOnReady,0,"Runs the on_ready function",{},None)
@@ -19,12 +17,12 @@ async def testConfirmations(msg,args):
 AddCommand("d -test confirmations",testConfirmations,0,"Tests the Confirmations feature",{},None)
 async def testReactionListener2(msg,emoji,score):
     score += 1
-    await msg.edit(content=f"This message + {str(score)}")
+    await msg.edit(content=f"This message + {score}")
     await UpdateReactionWatch(msg,"all",score)
 async def testReactionListener(msg,args):
     message = await msg.channel.send("This message + 0")
     await message.add_reaction("⬅️")
-    WatchReaction(message,msg.author,"⬅",testReactionListener2,0)
+    WatchReaction(message,msg.author,"⬅️",testReactionListener2,0)
 AddCommand("d -test reactions",testReactionListener,0,"Tests the Reaction Listener",{},None)
 async def testPagedEmbed(msg,args): #user, channel, title, content, pagelimit
     await createPagedEmbed(msg.author,msg.channel,msg.author.name,["A","B","C","D","E","F","G","H","I","J"],4)
@@ -41,9 +39,9 @@ async def testAll(msg,args):
             else:
                 print("Failed run of",command.Name)
         except Exception as exc:
-            print("Critical fail run of",command.Name,":",exc)
+            print(f"Critical fail run of {command.Name}: {exc}")
         score[0] += 1
-    await msg.channel.send(f"All tests finished: Final score {str(score[1])} out of {str(score[0])}")
+    await msg.channel.send(f"All tests finished: Final score {score[1]} out of {score[0]}")
     print("Test-All final score",score)
 Command("d -test all",testAll,0,"Runs all 'd -test' commands and returns the success score",{},None,"dev")
 AddCommand = None
@@ -86,7 +84,7 @@ class FakeMessage:
     async def delete(self):
         print("Tried to delete message",self.id,self.content)
 
-async def AdvancedTest(msg,args):
+async def AdvancedTest(msg,args): #Possibly OTT
     print("Trying advanced test")
     fm = FakeMessage
     await on_message(fm("##blockword testing 1s",gid=-1)) #Should work - user is admin

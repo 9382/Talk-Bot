@@ -36,11 +36,11 @@ async def list_func(msg,args):
         return
     parser = None
     if section in ["WordBlockList","MediaFilters","ChannelClearList","QueuedChannels"]:
-        parser = lambda i,k,v : f"{str(i)}. `{k}` -> {simplifySeconds(v)}"
+        parser = lambda i,k,v : f"{i}. `{k}` -> {simplifySeconds(v)}"
     if section in ["NSFWBlockList","ProtectedMessages"]:
-        parser = lambda i,v : f"{str(i)}. `{v}`"
+        parser = lambda i,v : f"{i}. `{v}`"
     if section == "ChannelLimits":
-        parser = lambda i,k,v : f"{str(i)}. `{k}` -> {str(v)} Messages"
+        parser = lambda i,k,v : f"{i}. `{k}` -> {v} Messages"
     array = getattr(getMegaTable(msg),section)
     finalString = []
     index = 1
@@ -55,7 +55,7 @@ async def list_func(msg,args):
     if finalString == []:
         await msg.channel.send(embed=fromdict({"title":"No Content","description":"Nothing under this catagory","color":colours["warning"]}),delete_after=15)
     else:
-        getMegaTable(msg).ProtectedMessages.append((await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString,8,(section=="QueuedChannels" and "(This is how long until the next cycle)") or "")).id)
+        getMegaTable(msg).ProtectedMessages.append((await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString,8,(section=="QueuedChannels" and "(How long until the next cycle)") or "")).id)
 Command("list",list_func,0,"View the list of settings to do with the server's administration",{"subsection":False},None,"admin")
 
 async def refilter(msg,args):
@@ -84,7 +84,7 @@ async def protectMessage(msg,args): #Prevents a message from being filtered
         await msg.channel.send(embed=fromdict({"title":"Error","description":"You must provide the message ID to protect","color":colours["error"]}),delete_after=10)
         return
     try:
-        msgid = int(msgid)//1
+        msgid = int(msgid)
     except:
         await msg.channel.send(embed=fromdict({"title":"Error","description":"message ID must be a number","color":colours["error"]}),delete_after=10)
     else:
@@ -196,7 +196,7 @@ async def controlMessageLimit(msg,args,removing):
         if msgLimit <= 0:
             await channel.send(embed=fromdict({"title":"No","description":"1 or more, no less","color":colours["error"]}),delete_after=10)
         gmt.ChannelLimits[str(channel.id)] = msgLimit #JSON Logic
-        await channel.send(embed=fromdict({"title":"Success","description":f"All messages after #{str(msgLimit)} will be auto-deleted","color":colours["success"]}))
+        await channel.send(embed=fromdict({"title":"Success","description":f"All messages after #{msgLimit} will be auto-deleted","color":colours["success"]}))
     else:
         if exists(gmt.ChannelLimits,channel.id):
             gmt.ChannelLimits.pop(channel.id)
@@ -224,15 +224,15 @@ async def clearAllInvites(msg,args,silent=False):
     if silent:
         return True,f"{str(successRate)}/{str(totalCount)}"
     else:
-        await msg.channel.send(embed=fromdict({"title":"Success","description":f"{str(successRate)} out of {str(totalCount)} invites were successfully cleared","color":colours["success"]}))
+        await msg.channel.send(embed=fromdict({"title":"Success","description":f"{successRate} out of {totalCount} invites were successfully cleared","color":colours["success"]}))
 async def clearInvitesConfirm(msg,args):
     await getMegaTable(msg).CreateConfirmation(msg,args,clearAllInvites)
 Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},None,"admin")
 
-async def panic(msg,args):
+async def panic(msg,args): #Unfinished!
     finalString = ""
     success,result = await clearAllInvites(msg,args,True)
-    finalString += "Invite clear: "+(success and "Sucessfully cleared "+result+" invites\n") or "Failed\n"
+    finalString += "Invite clear: "+(success and f"Sucessfully cleared {result} invites\n") or "Failed\n"
     await msg.channel.send(embed=fromdict({"title":"Panic results:","description":finalString,"color":colours["info"]}))
 async def confirmPanic(msg,args):
     await getMegaTable(msg).CreateConfirmation(msg,args,panic)

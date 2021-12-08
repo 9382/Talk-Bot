@@ -18,7 +18,7 @@ async def d_execa(msg,args):
     try:
         await globals()[args[2]]()
     except Exception as exc:
-        print("[Dev] Nice custom async exec, but it failed. Command:",msg.content[10:],"Exception:",exc)
+        print("[Dev] Nice custom async exec, but it failed. Command:",args[2],"Exception:",exc)
         await msg.channel.send(":-1: "+str(exc))
     else:
         print("[Dev] Successful async exec")
@@ -31,6 +31,12 @@ async def sendLogFile(msg,args):
     except:
         await msg.channel.send("No such log file "+str(exists(args,1) and args[1]))
 Command("sendlog",sendLogFile,0,"Sends the log file specified if it exists",{"log":True},None,"dev")
+
+async def getPing(msg,args):
+    startTime = time.time()
+    message = await msg.channel.send("<???> ms")
+    await message.edit(content=str(round((time.time()-startTime)*1000))+" ms")
+Command("ping",getPing,0,"Uses the time it takes to send a message to calculate its ping",{},None,"dev")
 
 async def currentDateAsync(msg,args):
     await msg.channel.send(currentDate())
@@ -46,7 +52,7 @@ async def presetAudioTest(msg,args):
         return
     if not exists(args,1):
         args.insert(1,"sigma")
-    file = "storage/temp/"+args[1]+".mp3"
+    file = f"storage/temp/{args[1]}.mp3"
     vc = await connectToVC(msg.author.voice.channel,idleTimeout=1,ignorePlaying=True) #Join
     if not vc:
         await msg.channel.send("Couldnt join the vc, probably cause i was busy")
@@ -86,9 +92,3 @@ async def imageComp(msg,args): #Just a POC, not used meaningfully
     await msg.channel.send(targetUser.name+" in a box",file=discord.File(fileName))
     os.remove(fileName)
 Command("imaget",imageComp,0,"An experiment with image editing",{"user":False},None,"dev")
-
-async def getPing(msg,args):
-    startTime = time.time()
-    message = await msg.channel.send("<???> ms")
-    await message.edit(content=str(round((time.time()-startTime)*1000))+" ms")
-Command("ping",getPing,0,"Uses the time it takes to send a message to calculate its ping",{},None,"dev")
