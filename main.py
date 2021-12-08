@@ -17,14 +17,14 @@ logChannels = {"errors":872153712347467776,"boot-ups":872208035093839932} # Thes
 colours = {"info":0x5555DD,"error":0xFF0000,"success":0x00FF00,"warning":0xFFAA00,"plain":0xAAAAAA}
 
 #Base functions
-def exists(table,value): #Wanna reduce the try except spam checking for possible values
+def exists(table,value):
     try:
         table[value]
         return True
     except:
         return False
 def tempFile(extension="txt"):
-    name = f"storage/temp/{str(time.time())}.{extension}"
+    name = f"storage/temp/{time.time()}.{extension}"
     open(name,"x")
     return name
 def currentDate():
@@ -36,8 +36,10 @@ def log(content):
         return True
     except Exception as exc:
         print("[Log] Failed to log!",currentDate(),exc)
-log(f"Starting main - the time is {str(time.time())} or {currentDate()}")
+log(f"Starting main - the time is {time.time()} or {currentDate()}")
 def safeWriteToFile(filename,content,encoding="UTF-8"):
+    #Change design, this is too safe
+    #Just make it auto create folder path if its missing or somethin
     backup = None
     if os.path.isfile(filename):
         try:
@@ -56,9 +58,9 @@ def safeWriteToFile(filename,content,encoding="UTF-8"):
         file.close()
         if backup:
             open(filename,"wb").write(backup)
-            log(f"[SafeWrite] Failed to write to {filename}: "+str(exc))
+            log(f"[SafeWrite] Failed to write to {filename}: {exc}")
         else:
-            log(f"[SafeWrite] Failed to write to {filename} with no backup available: "+str(exc))
+            log(f"[SafeWrite] Failed to write to {filename} with no backup available: {exc}")
         return False
     print("[SafeWrite] Successfully wrote to "+filename)
     return True
@@ -96,11 +98,12 @@ def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
     return returnString
 fromdict = discord.Embed.from_dict
 numRegex = regex.compile("\d+")
-findMediaRegex = regex.compile("https?://((cdn|media)\.discordapp\.(com|net)/attachments/|tenor\.com/view/)")
+findMediaRegex = regex.compile("https?://((cdn|media)\.discordapp\.(com|net)/attachments/|tenor\.com/view/)") #See FilterMessage
 
 #GMT
-guildMegaTable = {} # All in one
+guildMegaTable = {}
 class FilteredMessage:
+    #Object used to represent a filtered message
     def __init__(self,expirey,msgid=None,channelid=None,messageObj=None):
         if messageObj:
             msgid = messageObj.id
@@ -119,7 +122,8 @@ class FilteredMessage:
             return messageObj
     def Expired(self):
         return time.time() > self.Deletion
-class Confirmation: # For commands like panic (when it exists)
+class Confirmation:
+    #Asks the user to confirm their action. See GuildObject for use
     def __init__(self,msg,args,function):
         self.msg = msg
         self.args = args
@@ -127,7 +131,7 @@ class Confirmation: # For commands like panic (when it exists)
         self.Expirey = time.time()+20
     async def Alert(self):
         if not self.Expired():
-            await self.msg.channel.send("Woah, are you sure? Reply (y/yes) or (n/no) - Expires in 20 seconds",delete_after=self.Expirey-time.time())
+            await self.msg.channel.send("Hey, are you sure? Reply (y/yes) or (n/no) - Expires in 20 seconds",delete_after=self.Expirey-time.time())
     def Expired(self):
         return time.time() > self.Expirey
     async def Check(self,msg):
@@ -137,7 +141,8 @@ class Confirmation: # For commands like panic (when it exists)
             await self.Function(self.msg,self.args)
         else:
             await msg.channel.send("Alright, aborting...",delete_after=5)
-class GuildObject: #Why didnt i do this before? Python is class orientated anyways
+class GuildObject:
+    #The main object used to reference a guild and its settings
     def __init__(self,gid):
         self.Guild = gid
         self.WordBlockList = {}
@@ -151,30 +156,31 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
         self.Confirmations = {}
         self.ChannelLimits = {}
         self.ProtectedMessages = []
+        if exists(guildMegaTable,gid):
+            log(f"[GMT] Guild {gid} was declared twice")
         guildMegaTable[gid] = self
     async def Log(self,content=None,embed=None):
+        #Logs content to a server's set log channel
         if self.LogChannel:
             channel = client.get_channel(self.LogChannel)
             if channel:
-                try:
-                    await channel.send(content=content,embed=embed)
-                    return True
-                except: #Consider a better approach than silent fail
-                    pass
+                await channel.send(content=content,embed=embed)
+                return True
     def GetMediaFilter(self,channel):
         if exists(self.MediaFilters,channel):
             return self.MediaFilters[channel]
-    def AddChannelClear(self,channel,cycle): # Why in a function? Cause its easier to handle QueuedChannels this way
+    def AddChannelClear(self,channel,cycle):
+        #This helps handle QueuedChannels
         self.ChannelClearList[channel] = cycle
         self.QueuedChannels[channel] = time.time()+cycle
-    def RemoveChannelClear(self,channel): # Read above
+    def RemoveChannelClear(self,channel):
+        #Read above
         if exists(self.ChannelClearList,channel):
             self.ChannelClearList.pop(channel)
         if exists(self.QueuedChannels,channel):
             self.QueuedChannels.pop(channel)
-    async def AddToFilter(self,msg,buffer):
-        if buffer == None: # Failsafe, just in case
-            return
+    async def AddToFilter(self,msg,buffer): 
+        #Helper of FilterMessage
         print("[Filter] Msg Filtered ->",buffer,msg.content)
         if buffer <= 0:
             try:
@@ -184,13 +190,14 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 pass
         self.LoggedMessages[msg.id] = FilteredMessage(time.time()+buffer,messageObj=msg)
         return buffer
-    async def FilterMessage(self,msg,forced=False): # Now guild specific, how nice :)
+    async def FilterMessage(self,msg,forced=False):
+        #Filters a message based on the guild's settings
         if exists(self.LoggedMessages,msg.id):
             return self.LoggedMessages[msg.id].Deletion-time.time()
         if forced:
             return await self.AddToFilter(msg,int(forced))
         for word in self.WordBlockList: #Word filter > Media filter
-            buffer = self.WordBlockList[word] # Should never be None now, hopefully
+            buffer = self.WordBlockList[word]
             if msg.content.lower().find(word) != -1:
                 return await self.AddToFilter(msg,buffer)
             for embed in msg.embeds:
@@ -210,15 +217,15 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                     return await self.AddToFilter(msg,buffer)
         return False
     def FormatLoggedMessages(self):
+        #For saving LoggedMessages
         LoggedMessagesSave = {}
-        LMCache = self.LoggedMessages
-        for msgid in LMCache:
-            message = LMCache[msgid]
+        for msgid,message in list(self.LoggedMessages.items()):
             if not exists(LoggedMessagesSave,message.Channel):
                 LoggedMessagesSave[message.Channel] = {}
             LoggedMessagesSave[message.Channel][message.MessageId] = message.Deletion
         return LoggedMessagesSave
     def CreateSave(self):
+        #Creates a dictionary with the guild's settings
         return {"Guild":self.Guild,
                 "WordBlockList":self.WordBlockList,
                 "ChannelClearList":self.ChannelClearList,
@@ -229,26 +236,29 @@ class GuildObject: #Why didnt i do this before? Python is class orientated anywa
                 "ChannelLimits":self.ChannelLimits,
                 "ProtectedMessages":self.ProtectedMessages,
                 "LoggedMessages":self.FormatLoggedMessages()}
-    def LoadSave(self,data):
-        for catagory in data:
+    def LoadSave(self,settings):
+        #Loads a dictionary as the guild's settings
+        for catagory,data in settings.items():
             try:
                 if catagory == "LoggedMessages":
                     self.LoggedMessages = {}
-                    for channel in data["LoggedMessages"]:
-                        for message in data["LoggedMessages"][channel]: #d["l"][c][m] == expirey
-                            self.LoggedMessages[int(message)] = FilteredMessage(data["LoggedMessages"][channel][message],int(message),int(channel))
+                    for channel,messages in data.items():
+                        for message,expirey in messages.items():
+                            self.LoggedMessages[message] = FilteredMessage(expirey,int(message),int(channel))
                 elif hasattr(self,catagory):
-                    setattr(self,catagory,data[catagory])
+                    setattr(self,catagory,data)
                 else:
-                    log(f"[GuildObject {str(self.Guild)}] Unknown Catagory {catagory}")
+                    log(f"[GuildObject {self.Guild}] Unknown catagory {catagory}")
             except:
-                log(f"[GuildObject {str(self.Guild)}] Invalid catagory data {catagory}")
+                log(f"[GuildObject {self.Guild}] Invalid catagory data {catagory}")
     async def CreateConfirmation(self,msg,args,function):
+        #Creates a yes/no confirmation for the user
         confirmationObj = Confirmation(msg,args,function)
         self.Confirmations[msg.author.id] = confirmationObj
         await confirmationObj.Alert()
         return confirmationObj
     async def CheckConfirmation(self,msg):
+        #Checks for any active confirmations for the user
         user = msg.author.id
         confirmationObj = exists(self.Confirmations,user) and self.Confirmations[user]
         if not confirmationObj:
@@ -264,12 +274,10 @@ def getMegaTable(obj):
     t = type(obj)
     if t == discord.Message or t == discord.PartialMessage:
         gid = obj.guild.id
-    elif t == discord.Guild:
-        gid = obj.id
     elif t == int:
         gid = obj
-    elif hasattr(obj,"id"): #FakeXYZ
-        gid = obj.guild.id
+    elif hasattr(obj,"id"): #Guild or FakeXYZ
+        gid = obj.id
     if gid:
         if not exists(guildMegaTable,gid):
             guildMegaTable[gid] = GuildObject(gid)
@@ -277,18 +285,19 @@ def getMegaTable(obj):
     else:
         log("[GMT] No GID found in "+str(obj))
 async def getGuildInviteStats(guild):
-    toReturn = {}
     try:
         invites = await guild.invites()
     except:
         return
+    toReturn = {}
     for invite in invites:
         toReturn[invite.id] = {"m":invite.inviter,"u":invite.uses}
     return toReturn
 
 #Commands
 HistoryClearRatelimit = {}
-async def checkHistoryClear(msg): #I cant think of a good spot to "insert" this, but i need it for Command
+async def checkHistoryClear(msg):
+    #Checks for and removes messages beyond the message count limit
     gmt = getMegaTable(msg)
     cid = str(msg.channel.id) #Dumb storage logic by JSON
     if exists(gmt.ChannelLimits,cid):
@@ -305,11 +314,12 @@ devCommands = {} #basically testing and back-end commands
 adminCommands = {} #This will take priority over user commands should a naming conflict exist
 userCommands = {}
 class Command:
-    def __init__(self,cmd,function,ratelimit,description,descriptionArgs,extraArg,group,descriptionReference=None):
-        if type(cmd) == type([]): #Probably a table, probably declaring multiple aliases
+    def __init__(self,cmd,function,ratelimit,description,descriptionArgs,extraArg,group):
+        #Defines and sets up a command
+        if type(cmd) == list: #Declaring multiple aliases
             for cmdalias in cmd:
-                Command(cmdalias,function,ratelimit,description,descriptionArgs,extraArg,group,descriptionReference) #Encourages self calling but oh well who cares, shouldnt self-call more than once
-                descriptionReference = descriptionReference or cmdalias
+                Command(cmdalias,function,ratelimit,description,descriptionArgs,extraArg,group) #Feels a lil clunky?
+                description = cmd[0]
             return
         self.Name = cmd
         self.Function = function
@@ -326,10 +336,11 @@ class Command:
             wantedTable = adminCommands
         else:
             wantedTable = userCommands
-        if exists(wantedTable,cmd):
+        if exists(wantedTable,cmd): #Only warns, still replaces
             print(f"[AddCmd] Command {cmd} was declared twice")
         wantedTable[cmd] = self
     async def Run(self,msg,args,bypassRL=False):
+        #Runs a command, first doing a ratelimit check
         user = msg.author.id
         if exists(self.RateLimitList,user) and not bypassRL:
             rlInfo = self.RateLimitList[user]
@@ -346,31 +357,34 @@ class Command:
             await self.Function(msg,args)
         await checkHistoryClear(msg)
         return True,0
-async def doTheCheck(msg,args,commandTable): #Dont wanna type this 3 times
+async def doTheCheck(msg,args,commandTable):
+    #Checks a command table against a message, and looks for a match
     arg0 = args[0]
     if "\n" in arg0:
         args[0] = arg0.split("\n")[0]
         args.insert(1,arg0.split("\n")[1])
     c = msg.content
     for command in commandTable:
-        cregion = len(prefix+command) #command region
+        cregion = len(prefix+command) #cregion = command region
         if prefix+command == c[:cregion] and (not exists(c,cregion) or c[cregion] == " " or c[cregion] == "\n"):
             success,result = await commandTable[command].Run(msg,args)
-            if not success:
-                if result != -1: # If first repeat:
-                    await msg.channel.send(embed=fromdict({"title":"Slow Down","description":f"That command is limited for {simplifySeconds(math.floor(result))} more seconds","color":colours["warning"]}),delete_after=result)
+            if not success and result > 0:
+                await msg.channel.send(embed=fromdict({"title":"Slow Down","description":f"That command is limited for {simplifySeconds(result//1)} more seconds","color":colours["warning"]}),delete_after=result)
             return True
 
 #Reaction listening
+#Note that reactions will not continue to be listened to when the bot updates/refreshes
+#Consider adding a save into GMT for certain things (E.g. reaction roles)
 ReactionListenList = []
-class WatchReaction: #More classes
+class WatchReaction:
+    #Creates a listener for a message and its reactions
     def __init__(self,msg,user,emoji,function,args):
         self.MsgId = (type(msg) == int and msg) or msg.id
         self.UserId = (type(user) == int and user) or user.id #The user whitelisted to react to it
         self.Emoji = emoji
         self.Function = function
         self.Args = args
-        self.Expirey = time.time()+60
+        self.Expirey = time.time()+60 #If unused, it becomes unwatched
         ReactionListenList.append(self)
     def Expired(self):
         return time.time() > self.Expirey
@@ -395,12 +409,14 @@ async def UpdateReactionWatch(msg,emoji,args):
         if listener.MsgId == msg.id and (emoji == "all" or emoji == listener.Emoji):
             listener.Update(args)
 async def changePageEmbed(msg,emoji,args):
+    #Helper of createPagedEmbed
     title,preText,pagedContent,maxPage,page = args[0],args[1],args[2],args[3],args[4]
     page += (emoji=="➡️" and 1) or -1
     page = min(max(0,page),maxPage) #Limit page
-    await msg.edit(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[page]),"footer":{"text":f"Page {str(page+1)}/{str(maxPage+1)}"},"color":colours["info"]}))
+    await msg.edit(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[page]),"footer":{"text":f"Page {page+1}/{maxPage+1}"},"color":colours["info"]}))
     await UpdateReactionWatch(msg,"all",[title,preText,pagedContent,maxPage,page])
-async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText=""): #For long lists in embeds
+async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText=""):
+    #Automatically creates an embed with multiple pages when data is too large to display
     pagedContent = []
     index = 0
     for text in content:
@@ -411,14 +427,15 @@ async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText=""): 
     maxPage = index//pageLimit
     if maxPage == 0:
         return await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"color":colours["info"]}))
-    embed = await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"footer":{"text":f"Page 1/{str(maxPage+1)}"},"color":colours["info"]}))
-    for e in ["⬅️","➡️"]: #No, i dont know why sublime is different for ➡️
+    embed = await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"footer":{"text":f"Page 1/{maxPage+1}"},"color":colours["info"]}))
+    for e in ["⬅️","➡️"]:
         await embed.add_reaction(e)
         WatchReaction(embed,user,e,changePageEmbed,[title,preText,pagedContent,maxPage,0])
     return embed
 
 #Random functions
 async def cloneChannel(channelid):
+    #Clones a channel, essentially clearing it. The channel retains all bot-set and regular settings
     try:
         channel = client.get_channel(channelid)
         newchannel = await channel.clone(reason="Recreating text channel")
@@ -435,13 +452,16 @@ async def cloneChannel(channelid):
         print("[CloneChannel] Successfully cloned channel",channel.name)
         return newchannel
     except Exception as exc:
-        log("[CloneChannel] Exception: "+str(exc))
-def findVoiceClient(guildId): #Find the relevant voice client object for the specified guild. Returns None if none are found
+        log("[CloneChannel] Exception: "+str(exc)) #Maybe unrequired?
+#The voice functions below could be removable, as the bot doesnt have any VC functions right now
+def findVoiceClient(guildId):
+    #Returns any existing voice client object for the guild
     for voiceObj in client.voice_clients:
         if voiceObj.guild.id == guildId:
             return voiceObj
 VCList = {} #Unmaintained and possibly broken
 async def connectToVC(channel,idleTimeout=60,ignorePlaying=False):
+    #This randomly broke itself after some time - channel.connect is hanging? I cant fix this
     vc = findVoiceClient(channel.guild.id)
     if vc:
         if vc.is_playing():
@@ -460,9 +480,9 @@ async def connectToVC(channel,idleTimeout=60,ignorePlaying=False):
 
 #Client
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True))
-#Note that due to the on_message handler, i cant use the regular @client.command decorator, so custom handler it is
 @client.event
 async def on_error(error,*args,**kwargs):
+    #Error handler
     if exists(args,0):
         try:
             causingCommand = args[0].content
@@ -484,7 +504,7 @@ async def on_error(error,*args,**kwargs):
         await client.get_channel(logChannels["errors"]).send(f"Error in client\nTime: {currentDate()}\nCausing command: {causingCommand}",file=discord.File(errorFile))
         os.remove(errorFile)
     except Exception as exc:
-        log(f"[Fatal Error] Failed to log error: {currentDate()} {str(exc)}")
+        log(f"[Fatal Error] Failed to log error: {currentDate()} {exc}")
 uptime = 0
 @client.event
 async def on_ready():
@@ -498,6 +518,7 @@ async def on_ready():
         log("Failed to alert of bootup at "+currentDate())
 @client.event
 async def on_message(msg):
+    #Everything trails off from here
     if not msg.guild or (client.user and msg.author.id == client.user.id): #Only do stuff in guild, ignore messages by the bot
         if msg.guild:
             await getMegaTable(msg).FilterMessage(msg)
@@ -510,7 +531,7 @@ async def on_message(msg):
         return
     if await gmt.CheckConfirmation(msg): #Confirmations arent commands, simple as that
         return await checkHistoryClear(msg)
-    args = msg.content.split(" ") #Please keep in mind the first argument is the calling command
+    args = msg.content.split(" ") #Please keep in mind the first argument (normally) is the calling command
     if msg.author.id == DevID:
         if await doTheCheck(msg,args,devCommands):
             return
@@ -519,9 +540,10 @@ async def on_message(msg):
             return
     if await doTheCheck(msg,args,userCommands):
         return
-    await checkHistoryClear(msg) #Since its fired after a command, add a backup check here
+    await checkHistoryClear(msg) #Since its fired after a command, add a check here
 @client.event
-async def on_raw_message_edit(msg): #On message edit to avoid bypassing
+async def on_raw_message_edit(msg):
+    #On message edit to avoid filter bypassing
     try:
         messageObj = await discord.PartialMessage(channel=client.get_channel(int(msg.data["channel_id"])),id=int(msg.data["id"])).fetch()
     except:
@@ -541,6 +563,7 @@ async def on_guild_join(guild):
     getMegaTable(guild).InviteTrack = await getGuildInviteStats(guild) #Does this even work?
 @client.event
 async def on_member_join(member):
+    #Checks the invites against the invite tracker, and logs any change
     guild = member.guild
     gmt = getMegaTable(guild)
     if not gmt.InviteTrack:
@@ -563,41 +586,36 @@ async def on_member_join(member):
 stopCycling = False
 finishedLastCycle = False
 @tasks.loop(seconds=2)
-async def constantMessageCheck(): #For message filter. Possibly in need of a re-work
+async def constantMessageCheck():
+    #Runs through all the GMTs and deletes any filtered messages past their due time
     global finishedLastCycle #Weird stop but it works
     if stopCycling:
         finishedLastCycle = True
         return
     try:
         toDeleteList = {}
-        for guild in guildMegaTable:
-            toPopList = []
-            gmt = guildMegaTable[guild]
-            LMCache = gmt.LoggedMessages
-            for msgid in LMCache:
+        for guild,gmt in guildMegaTable.items():
+            for msgid,message in list(gmt.LoggedMessages.items()):
                 if msgid in gmt.ProtectedMessages:
-                    toPopList.append(msgid)
+                    gmt.LoggedMessages.pop(msgid)
                     continue
-                message = LMCache[msgid]
                 messageObj = message.Expired() and message.GetMessageObj()
                 if messageObj:
                     if not exists(toDeleteList,message.Channel):
                         toDeleteList[message.Channel] = []
                     toDeleteList[message.Channel].append(messageObj)
-                    toPopList.append(msgid)
-            for message in toPopList: #Idk why this is doing this, but it is
-                gmt.LoggedMessages.pop(message)
-        if toDeleteList != {}:
-            for channel in toDeleteList:
-                try:
-                    await client.get_channel(channel).delete_messages(toDeleteList[channel])
-                except Exception as exc:
-                    log("BulkDelete Exception - "+str(exc))
+                    gmt.LoggedMessages.pop(msgid)
+        for channel,msglist in toDeleteList.items():
+            try:
+                await client.get_channel(channel).delete_messages(msglist)
+            except Exception as exc:
+                log(f"BulkDelete Exception C={channel} #ML={len(msglist)} - {exc}")
     except Exception as exc:
         log("[!] LoggedMessages Exception: "+str(exc))
 constantMessageCheck.start()
 @tasks.loop(seconds=10)
-async def constantChannelCheck(): #For queued channel clearing
+async def constantChannelCheck():
+    #Checks and clears channels set to auto-clear after some time
     try:
         for guild in client.guilds:
             gmt = getMegaTable(guild)
@@ -613,15 +631,17 @@ async def constantChannelCheck(): #For queued channel clearing
         log("[!] ChannelClear Exception: "+str(exc))
 constantChannelCheck.start()
 @tasks.loop(seconds=150)
-async def updateConfigFiles(): #So i dont have pre-coded values
+async def updateConfigFiles():
+    #Runs through all the GMTs and updates them
     try:
         for guild in client.guilds:
-            safeWriteToFile(f"storage/settings/{str(guild.id)}.json",json.dumps(getMegaTable(guild).CreateSave()))
+            safeWriteToFile(f"storage/settings/{guild.id}.json",json.dumps(getMegaTable(guild).CreateSave()))
     except Exception as exc:
         log("[!] UpdateConfig Exception: "+str(exc))
 updateConfigFiles.start()
 @tasks.loop(seconds=2)
-async def VCCheck(): #Auto disconnect
+async def VCCheck():
+    #Auto disconnects from a VC after inactivity
     try:
         for vc in VCList:
             if vc.is_playing():
@@ -633,6 +653,7 @@ async def VCCheck(): #Auto disconnect
 VCCheck.start()
 @tasks.loop(seconds=15)
 async def keepGuildInviteUpdated():
+    #Keeps the guild invite tracking updated if there is none
     for guild in client.guilds:
         gmt = getMegaTable(guild)
         if not gmt.InviteTrack:
@@ -640,7 +661,8 @@ async def keepGuildInviteUpdated():
 keepGuildInviteUpdated.start()
 
 #User Commands
-async def forceUpdate(msg,args): #(Safely) close the bot down for updating
+async def forceUpdate(msg,args):
+    #(Safely) close the bot down for updating
     global stopCycling
     log("Client was force-exited via forceUpdate() "+str(time.time()))
     log("Hanging until messageCheck has finished its cycle or 20s, whatever is shorter")
@@ -658,8 +680,7 @@ async def forceUpdate(msg,args): #(Safely) close the bot down for updating
 Command("d -update",forceUpdate,0,"Updates the bot, force saving configs",{},None,"dev")
 async def cmds(msg,args):
     cmdList = {"Admin":adminCommands}
-    for command in userCommands:
-        cmdInfo = userCommands[command]
+    for command,cmdInfo in userCommands.items():
         if not exists(cmdList,cmdInfo.Group):
             cmdList[cmdInfo.Group] = {}
         cmdList[cmdInfo.Group][command] = cmdInfo
@@ -668,25 +689,23 @@ async def cmds(msg,args):
         for catagory in cmdList:
             if args[1].lower() == catagory.lower():
                 group = cmdList[catagory]
-        if msg.author.id == 260016427900076033 and args[1] == "dev":
+        if msg.author.id == 260016427900076033 and args[1].lower() == "dev":
             group = devCommands
         if not group:
             await msg.channel.send(embed=fromdict({"title":"Invalid group","description":f"The group '{args[1]}' doesnt exist","color":colours["error"]}))
             return
         finalText = []
-        for command in group:
-            cmdInfo = group[command]
+        for command,cmdInfo in group.items():
             argMessageContent = ""
-            for argName in cmdInfo.DescArgs:
-                argRequired = cmdInfo.DescArgs[argName]
-                argMessageContent += " "+((argRequired and f"<{argName}>") or f"[{argName}]")
-            finalText.append("`"+command+argMessageContent+"` - "+cmdInfo.Description)
+            for argName,argRequired in cmdInfo.DescArgs.items():
+                argMessageContent += (argRequired and f"<{argName}>") or f"[{argName}]"
+            finalText.append(f"`{command} {argMessageContent}` - {cmdInfo.Description}")
         await createPagedEmbed(msg.author,msg.channel,"Commands within "+args[1],finalText,10,"**Syntax**\n`<>` is a required argument, `[]` is an optional argument\n\n**Commands**\n")
     else: # Generalised (No group)
         finalText = f"do `{args[0]} <group>` to get more information on a group"
-        for group in cmdList:
+        for group,commands in cmdList.items():
             finalText += f"\n**{group}**\n"
-            for command in cmdList[group]:
+            for command in commands:
                 finalText += f"`{command}` "
         await msg.channel.send(embed=fromdict({"title":"Commands","description":finalText,"color":colours["info"]}))
 Command(["commands","cmds"],cmds,1,"List all commands",{"group":False},None,"General")
@@ -699,22 +718,13 @@ async def publicVote(msg,args):
     author = msg.author
     wantedReactions = []
     findWantedReaction = regex.compile("^{[^\]]+}$")
-    index = -1
-    for i in args: #Get user-defined reactions ( [:reaction:] )
-        index += 1
-        if findWantedReaction.search(i):
-            wantedReactions.append(i[1:-1])
-            args[index] = None
-    args[0] = None
-    msgContent = ""
-    for i in args:
-        if i: #mhm
-            msgContent = msgContent+i+" "
-    voteMsg = await msg.channel.send(embed=fromdict({"author":{"name":f"{author.name}#{author.discriminator} is calling a vote","icon_url":str(author.avatar_url)},"description":msgContent,"image":{"url":imageUrl},"color":colours["info"]}))
-    try:
-        await msg.delete()
-    except:
-        pass
+    for arg in args: #Get user-defined reactions ( {:reaction:} )
+        if findWantedReaction.search(arg):
+            wantedReactions.append(arg[1:-1])
+            args.remove(arg)
+    args.remove(args[0])
+    await msg.delete()
+    voteMsg = await msg.channel.send(embed=fromdict({"author":{"name":f"{author} is calling a vote","icon_url":str(author.avatar_url)},"description":" ".join(args),"image":{"url":imageUrl},"color":colours["info"]}))
     if wantedReactions == []:
         await voteMsg.add_reaction("⬆️")
         await voteMsg.add_reaction("⬇")
@@ -723,7 +733,7 @@ async def publicVote(msg,args):
             try:
                 await voteMsg.add_reaction(i)
             except:
-                pass #User input sanitasion cause some guys gonna go [haha]
+                pass #Incase it doesnt have access to the emoji
 Command("vote",publicVote,10,"Make a public vote about anything with an optional image",{"text":True,"imagefile":False},None,"General")
 
 #Module importing
@@ -731,22 +741,20 @@ log("attempting import")
 ''' Load modules from the modules folder
 Only use this for storing commands, as load order is random
 This is so i dont clog up the entirety of this main script with like 2k lines '''
-def loadModules(origin=None):
+def loadModules(origin):
     log("Loading modules origin = "+origin)
-    exec_list = []
-    for fname in os.listdir("modules"):
-        if not fname.endswith(".py"):
+    execList = {}
+    for file in os.listdir("modules"):
+        if not file.endswith(".py"):
             continue
-        if not os.path.isfile("modules/"+fname):
+        if not os.path.isfile("modules/"+file):
             continue
-        if fname == "__main__.py":
-            continue
-        exec_list.append(bytes("#coding: utf-8\n","utf-8")+open("modules/"+fname,"rb").read())
-    for contents in exec_list:
+        execList[file] = bytes("#coding: utf-8\n","utf-8")+open("modules/"+file,"rb").read()
+    for file,contents in execList.items():
         try:
             exec(contents,globals())
         except Exception as exc:
-            log("[Modules] Module import error -> "+str(exc))
+            log(f"[Modules] Module {file} import error -> {exc}")
 loadModules("bootup")
 async def loadModulesAsync(msg,args):
     loadModules("User "+msg.author.name)
@@ -760,10 +768,10 @@ for i in os.listdir("storage/settings"):
     except:
         log("[JSON] Load failed for file "+i)
     else:
-        try:
-            getMegaTable(j["Guild"]).LoadSave(j)
-        except:
-            log("[JSON] Guild index failed for file "+i)
+        if not exists(j,"Guild"):
+            log("[JSON] Guild index missing for file "+i)
+            continue
+        getMegaTable(j["Guild"]).LoadSave(j)
 log("loaded config")
 
 #On-boot tests
