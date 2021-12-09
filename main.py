@@ -29,41 +29,30 @@ def tempFile(extension="txt"):
     return name
 def currentDate():
     return str(datetime.fromtimestamp(time.time()//1))
-def log(content):
-    print(f"[Log {currentDate()[11:]}]",content)
+def safeWriteToFile(filename,content,mode="w",encoding="UTF-8"):
+    #Writes contents to a file, auto-creating the directory should it be missing
     try:
-        open(f"storage/logs/{currentDate()[:10]}.log","a").write(f"[{currentDate()[11:]}] {content}\n")
-        return True
-    except Exception as exc:
-        print("[Log] Failed to log!",currentDate(),exc)
-log(f"Starting main - the time is {time.time()} or {currentDate()}")
-def safeWriteToFile(filename,content,encoding="UTF-8"):
-    #Change design, this is too safe
-    #Just make it auto create folder path if its missing or somethin
-    backup = None
-    if os.path.isfile(filename):
-        try:
-            backup = open(filename,"rb").read()
-        except:
-            log(f"[SafeWrite] Failed to open {filename} - Probably access issues")
-            return False
-    try:
-        file = open(filename,"w",encoding=encoding)
+        os.makedirs("/".join(filename.replace("\\","/").split("/")[:-1]),exist_ok=True)
     except:
-        log(f"[SafeWrite] Failed to open {filename} - Probably access issues")
-        return False
+        return False,f"Couldnt make directory for {filename}"
+    try:
+        file = open(filename,mode,encoding=encoding,newline="")
+    except:
+        return False,f"Failed to open {filename}"
     try:
         file.write(content)
     except Exception as exc:
         file.close()
-        if backup:
-            open(filename,"wb").write(backup)
-            log(f"[SafeWrite] Failed to write to {filename}: {exc}")
-        else:
-            log(f"[SafeWrite] Failed to write to {filename} with no backup available: {exc}")
-        return False
-    print("[SafeWrite] Successfully wrote to "+filename)
-    return True
+        return False,f"Failed to write content for {filename}"
+    file.close()
+    return True,f"Successfully wrote to {filename}"
+def log(content):
+    print(f"[Log {currentDate()[11:]}]",content)
+    success,result = safeWriteToFile(f"storage/logs/{currentDate()[:10]}.log",f"[{currentDate()[11:]}] {content}\n","a")
+    if not success:
+        print(f"[Log {currentDate()[11:]}] Failed to write to log file: {result}")
+    return success
+log(f"Starting main - the time is {time.time()} or {currentDate()}")
 timeMultList = {"s":1,"m":60,"h":3600,"d":86400}
 def strToTimeAdd(duration):
     timeMult = duration[-1].lower()
@@ -78,7 +67,7 @@ def strToTimeAdd(duration):
         return False,"Time period must be s, m, h or d"
 def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
     if seconds <= 0:
-        return "0 seconds" #Maybe set it to "now"?
+        return "0 seconds"
     days,seconds = seconds//86400,seconds%86400
     hours,seconds = seconds//3600,seconds%3600
     minutes,seconds = seconds//60,seconds%60
@@ -635,7 +624,8 @@ async def updateConfigFiles():
     #Runs through all the GMTs and updates them
     try:
         for guild in client.guilds:
-            safeWriteToFile(f"storage/settings/{guild.id}.json",json.dumps(getMegaTable(guild).CreateSave()))
+            success,result = safeWriteToFile(f"storage/settings/{guild.id}.json",json.dumps(getMegaTable(guild).CreateSave()))
+            print(f"[GuildObject {guild.id}] Saving: {result}")
     except Exception as exc:
         log("[!] UpdateConfig Exception: "+str(exc))
 updateConfigFiles.start()

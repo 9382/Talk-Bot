@@ -28,28 +28,16 @@ for i in os.listdir("update"): #What a mess
         log("Please update __start__ manually instead of through auto-update")
         continue
     trueName = i.replace("^","/")
+    os.makedirs("/".join(trueName.split("/")[:-1]),exist_ok=True)
     if trueName != i:
-        log("Sub-folder detected: "+str(i.split("^")))
-    newFile = open("update/"+i,newline="").read()
-    backup = None
-    if os.path.isfile(i):
-        backup = open(trueName,newline="").read()
-    else:
-        log("No backup can be made for "+trueName)
+        log(f"Sub-folder detected: {i.split('^')}")
+    newContent = open("update/"+i,newline="").read()
     oldFile = open(trueName,"w",newline="")
     try:
-        oldFile.write(newFile)
-        log("Successfully written update for "+trueName)
+        oldFile.write(newContent)
+        log(f"Successfully written update for {trueName}")
     except Exception as exc:
-        if backup:
-            try:
-                oldFile.write(backup)
-            except:
-                log(f"[!] Update for {trueName} failed (Backup failed): "+str(exc))
-            else:
-                log(f"[!] Update for {trueName} failed (Backup written): "+str(exc))
-        else:
-            log(f"[!] Update for {trueName} failed (No backup): "+str(exc))
+        log(f"[!] Update for {trueName} failed: {exc}")
     else:
         os.remove("update/"+i)
     oldFile.close()
