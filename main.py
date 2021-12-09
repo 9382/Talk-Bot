@@ -624,7 +624,10 @@ async def updateConfigFiles():
     try:
         for guild in client.guilds:
             success,result = safeWriteToFile(f"storage/settings/{guild.id}.json",json.dumps(getMegaTable(guild).CreateSave()))
-            print(f"[GuildObject {guild.id}] Saving: {result}")
+            if success:
+                print(f"[GuildObject {guild.id}] Saving: {result}")
+            else:
+                log(f"[GuildObject {guild.id}] Saving: {result}")
     except Exception as exc:
         log("[!] UpdateConfig Exception: "+str(exc))
 updateConfigFiles.start()
