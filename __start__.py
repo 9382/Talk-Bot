@@ -20,7 +20,7 @@ else:
     try:
         client.run(auth)
     except Exception as exc:
-        log("[!] client.run exited: "+str(exc))
+        log(f"[!] client.run exited: {exc}")
 log("Checking for updates for client...")
 for i in os.listdir("update"): #What a mess
     log("[Updater] "+i)

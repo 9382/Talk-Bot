@@ -562,12 +562,11 @@ async def on_member_join(member):
     invitesAfter = await getGuildInviteStats(guild)
     if not invitesAfter:
         return
-    for inviteId in invitesAfter:
-        inviteInfo = invitesAfter[inviteId]
+    for invId,invInfo in invitesAfter.items():
         if not exists(invitesBefore,inviteId):
-            invitesBefore[inviteId] = {"m":inviteInfo["m"],"u":0}
-        if invitesBefore[inviteId]["u"] < inviteInfo["u"]:
-            await gmt.Log(embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}> ({member}) has joined through <@{inviteInfo['m'].id}> ({inviteInfo['m']})'s invite (discord.gg/{inviteId})\nInvite is at {inviteInfo['u']} uses","color":colours["info"]}))
+            invitesBefore[inviteId] = {"m":invInfo["m"],"u":0}
+        if invitesBefore[inviteId]["u"] < invInfo["u"]:
+            await gmt.Log(embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}> ({member}) has joined through <@{invInfo['m'].id}> ({invInfo['m']})'s invite (discord.gg/{inviteId})\nInvite is at {invInfo['u']} uses","color":colours["info"]}))
             break
     gmt.InviteTrack = invitesAfter
 
@@ -646,8 +645,7 @@ async def keepGuildInviteUpdated():
     #Keeps the guild invite tracking updated if there is none
     for guild in client.guilds:
         gmt = getMegaTable(guild)
-        if not gmt.InviteTrack:
-            gmt.InviteTrack = await getGuildInviteStats(guild)
+        gmt.InviteTrack = gmt.InviteTrack or await getGuildInviteStats(guild)
 keepGuildInviteUpdated.start()
 
 #User Commands
