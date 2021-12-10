@@ -346,7 +346,7 @@ class Command:
             await self.Function(msg,args)
         await checkHistoryClear(msg)
         return True,0
-async def doTheCheck(msg,args,commandTable):
+async def checkCommandList(msg,args,commandTable):
     #Checks a command table against a message, and looks for a match
     arg0 = args[0]
     if "\n" in arg0:
@@ -522,12 +522,12 @@ async def on_message(msg):
         return await checkHistoryClear(msg)
     args = msg.content.split(" ") #Please keep in mind the first argument (normally) is the calling command
     if msg.author.id == DevID:
-        if await doTheCheck(msg,args,devCommands):
+        if await checkCommandList(msg,args,devCommands):
             return
     if msg.author.guild_permissions.administrator:
-        if await doTheCheck(msg,args,adminCommands):
+        if await checkCommandList(msg,args,adminCommands):
             return
-    if await doTheCheck(msg,args,userCommands):
+    if await checkCommandList(msg,args,userCommands):
         return
     await checkHistoryClear(msg) #Since its fired after a command, add a check here
 @client.event
@@ -752,7 +752,7 @@ async def loadModulesAsync(msg,args):
 Command("d -reload modules",loadModulesAsync,0,"Reloads all the modules",{},None,"dev")
 
 #Finish off - load configs
-log("done commands")
+log("done commands, loading configs")
 for i in os.listdir("storage/settings"):
     try:
         j = json.loads(open("storage/settings/"+i).read())
@@ -763,7 +763,7 @@ for i in os.listdir("storage/settings"):
             log("[JSON] Guild index missing for file "+i)
             continue
         getMegaTable(j["Guild"]).LoadSave(j)
-log("loaded config")
+log("loaded configs")
 
 #On-boot tests
 if exists(globals(),"FakeMessage"):
