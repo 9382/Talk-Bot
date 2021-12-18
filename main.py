@@ -68,9 +68,9 @@ def strToTimeAdd(duration):
 def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
     if seconds <= 0:
         return "0 seconds"
-    days,seconds = seconds//86400,seconds%86400
-    hours,seconds = seconds//3600,seconds%3600
-    minutes,seconds = seconds//60,seconds%60
+    days,seconds = int(seconds//86400),seconds%86400
+    hours,seconds = int(seconds//3600),seconds%3600
+    minutes,seconds = int(seconds//60),seconds%60
     returnString = ""
     p = 0
     if seconds > 0:
