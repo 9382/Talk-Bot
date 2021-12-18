@@ -25,6 +25,12 @@ async def d_execa(msg,args):
         await msg.channel.send(":+1:")
 Command("d -execa",d_execa,0,"Executes the given function from globals asynchronously",{"function":True},None,"dev")
 
+async def togglePerformanceCheck(msg,args):
+    global performanceCheck
+    performanceCheck = not performanceCheck
+    await msg.channel.send(f"Performance check state set to {performanceCheck}")
+Command("measure performance",togglePerformanceCheck,3,"Toggles the perfomance check of commands",{},None,"dev")
+
 async def sendLogFile(msg,args):
     try:
         await msg.channel.send("Successfully sent file",file=discord.File("storage/logs/"+str(args[1])+".log"))

@@ -299,6 +299,7 @@ async def checkHistoryClear(msg):
                 await msg.channel.delete_messages(channelHistory[msgLimit:])
             except Exception as exc:
                 print("[History] Failed to do:",msg.guild.id,exc)
+performanceCheck = False
 devCommands = {} #basically testing and back-end commands
 adminCommands = {} #This will take priority over user commands should a naming conflict exist
 userCommands = {}
@@ -340,10 +341,14 @@ class Command:
                 else:
                     return False,-1
         self.RateLimitList[user] = {"t":time.time()+self.RateLimit,"r":False}
+        timeToExecute = time.perf_counter()
         if self.ExtraArg != None:
             await self.Function(msg,args,self.ExtraArg)
         else:
             await self.Function(msg,args)
+        timeToExecute = time.perf_counter() - timeToExecute
+        if user == DevID and performanceCheck:
+            await msg.channel.send(f"[DEV] Processing time for {self.Name}: {timeToExecute}")
         await checkHistoryClear(msg)
         return True,0
 async def checkCommandList(msg,args,commandTable):
