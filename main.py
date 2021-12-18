@@ -694,8 +694,8 @@ async def cmds(msg,args):
         for command,cmdInfo in group.items():
             argMessageContent = ""
             for argName,argRequired in cmdInfo.DescArgs.items():
-                argMessageContent += (argRequired and f"<{argName}>") or f"[{argName}]"
-            finalText.append(f"`{command} {argMessageContent}` - {cmdInfo.Description}")
+                argMessageContent += (argRequired and f" <{argName}>") or f" [{argName}]"
+            finalText.append(f"`{command}{argMessageContent}` - {cmdInfo.Description}")
         await createPagedEmbed(msg.author,msg.channel,"Commands within "+args[1],finalText,10,"**Syntax**\n`<>` is a required argument, `[]` is an optional argument\n\n**Commands**\n")
     else: # Generalised (No group)
         finalText = f"do `{args[0]} <group>` to get more information on a group"
