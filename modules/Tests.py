@@ -10,9 +10,10 @@ async def forceOnReady(msg,args):
     await on_ready()
 AddCommand("d -test onready",forceOnReady,0,"Runs the on_ready function",{},None)
 async def testConfirmations2(msg,args):
-    await msg.channel.send("Got past confirmation")
+    await msg.channel.send("Got past confirmation, adding a wait")
+    await asyncio.sleep(3)
+    await msg.channel.send("Confirmation over")
 async def testConfirmations(msg,args):
-    print("Testing confirmations")
     await getMegaTable(msg).CreateConfirmation(msg,args,testConfirmations2)
 AddCommand("d -test confirmations",testConfirmations,0,"Tests the Confirmations feature",{},None)
 async def testReactionListener2(msg,emoji,score):

@@ -127,7 +127,7 @@ class Confirmation:
         content = msg.content.lower()
         if content == "yes" or content == "y":
             await msg.channel.send("Alright, continuing...")
-            await self.Function(self.msg,self.args)
+            return True #Function must be called later to avoid a race condition
         else:
             await msg.channel.send("Alright, aborting...",delete_after=5)
 class GuildObject:
@@ -252,11 +252,11 @@ class GuildObject:
         confirmationObj = exists(self.Confirmations,user) and self.Confirmations[user]
         if not confirmationObj:
             return
-        if confirmationObj.Expired():
-            self.Confirmations.pop(user)
-            return
-        await confirmationObj.Check(msg)
         self.Confirmations.pop(user)
+        if confirmationObj.Expired():
+            return
+        if await confirmationObj.Check(msg):
+            await confirmationObj.Function(confirmationObj.msg,confirmationObj.args)
         return True
 def getMegaTable(obj):
     gid = None
