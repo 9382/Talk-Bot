@@ -568,10 +568,10 @@ async def on_member_join(member):
     if not invitesAfter:
         return
     for invId,invInfo in invitesAfter.items():
-        if not exists(invitesBefore,inviteId):
-            invitesBefore[inviteId] = {"m":invInfo["m"],"u":0}
-        if invitesBefore[inviteId]["u"] < invInfo["u"]:
-            await gmt.Log(embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}> ({member}) has joined through <@{invInfo['m'].id}> ({invInfo['m']})'s invite (discord.gg/{inviteId})\nInvite is at {invInfo['u']} uses","color":colours["info"]}))
+        if not exists(invitesBefore,invId):
+            invitesBefore[invId] = {"m":invInfo["m"],"u":0}
+        if invitesBefore[invId]["u"] < invInfo["u"]:
+            await gmt.Log(embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}> ({member}) has joined through <@{invInfo['m'].id}> ({invInfo['m']})'s invite (discord.gg/{invId})\nInvite is at {invInfo['u']} uses","color":colours["info"]}))
             break
     gmt.InviteTrack = invitesAfter
 
