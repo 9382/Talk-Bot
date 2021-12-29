@@ -564,6 +564,7 @@ async def on_reaction_add(reaction,user):
         await listener.Check(reaction.message,user,reaction.emoji)
 @client.event
 async def on_guild_join(guild):
+    log(f"Entered new guild: {guild.id}")
     guildMegaTable[guild.id] = GuildObject(guild.id) #Force default settings
     getMegaTable(guild).InviteTrack = await getGuildInviteStats(guild) #Does this even work?
 @client.event
@@ -761,7 +762,7 @@ def loadModules(origin):
             log(f"[Modules] Module {file} import error -> {exc}")
 loadModules("bootup")
 async def loadModulesAsync(msg,args):
-    loadModules("User "+msg.author.name)
+    loadModules(f"User {msg.author}")
 Command("d -reload modules",loadModulesAsync,0,"Reloads all the modules",{},None,"dev")
 
 #Finish off - load configs
