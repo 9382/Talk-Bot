@@ -11,16 +11,18 @@ async def setLogChannel(msg,args):
 Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided",{"channel":True},None,"admin")
 
 async def prune(msg,args):
-    pruneAmount = exists(args,1) and numRegex.search(args[1]) and numRegex.search(args[1]).group()
+    pruneAmount = exists(args,1) and numRegex.search(args[1]) and min(400,max(0,int(numRegex.search(args[1]).group())))
     if pruneAmount:
-        try:
-            await msg.channel.delete_messages(await msg.channel.history(limit=int(pruneAmount)+1).flatten()) #+1 due to command message
-            await msg.channel.send(embed=fromdict({"title":"Success","description":pruneAmount+" messages have been cleared","color":colours["success"]}))
-        except:
-            await msg.channel.send(embed=fromdict({"title":"Error","description":"The bot failed to prune the messages. Check its permissions, or try again","color":colours["error"]}))
+        #await msg.channel.delete_messages(await msg.channel.history(limit=pruneAmount+1).flatten()) #+1 due to command message
+        success,result = await clearMessageList(msg.channel,await msg.channel.history(limit=pruneAmount+1).flatten()) #+1 due to command message
+        if success:
+            await msg.channel.send(embed=fromdict({"title":"Success","description":f"{pruneAmount} message(s) have been cleared","color":colours["success"]}))
+        else:
+            await msg.channel.send(embed=fromdict({"title":"Error","description":f"The bot failed to prune the messages. Check its permissions, or try again\n`{result}`","color":colours["error"]}))
+            log(f"[Prune {msg.guild.id}] Failed to prune {pruneAmount}+1: {result}")
     else:
         await msg.channel.send(embed=fromdict({"title":"Error","description":"Prune amount must be an integer","color":colours["error"]}))
-Command("prune",prune,10,"Prunes a set amount of messages in the channel",{"messages":True},None,"admin")
+Command("prune",prune,10,"Prunes a set amount of messages in the channel (Max 400)",{"messages":True},None,"admin")
 
 list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ProtectedMessages","ChannelClearList","QueuedChannels","ChannelLimits"]
 async def list_func(msg,args):
@@ -37,9 +39,9 @@ async def list_func(msg,args):
     parser = None
     if section in ["WordBlockList","MediaFilters","ChannelClearList","QueuedChannels"]:
         parser = lambda i,k,v : f"{i}. `{k}` -> {simplifySeconds(v)}"
-    if section in ["NSFWBlockList","ProtectedMessages"]:
+    elif section in ["NSFWBlockList","ProtectedMessages"]:
         parser = lambda i,v : f"{i}. `{v}`"
-    if section == "ChannelLimits":
+    elif section == "ChannelLimits":
         parser = lambda i,k,v : f"{i}. `{k}` -> {v} Messages"
     array = getattr(getMegaTable(msg),section)
     finalString = []

@@ -299,7 +299,7 @@ async def checkHistoryClear(msg):
                 await msg.channel.delete_messages(channelHistory[msgLimit:])
             except Exception as exc:
                 print("[History] Failed to do:",msg.guild.id,exc)
-performanceCheck = False
+performanceCheck = False #For timing the time taken of a command to execute
 devCommands = {} #basically testing and back-end commands
 adminCommands = {} #This will take priority over user commands should a naming conflict exist
 userCommands = {}
@@ -428,6 +428,17 @@ async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText=""):
     return embed
 
 #Random functions
+async def clearMessageList(channel,messages): #Max of 100 for bulkdelete, so we split it
+    index = 0
+    lOfM = len(messages)
+    while index*100 < lOfM:
+        try:
+            await channel.delete_messages(messages[index*100:100+index*100])
+        except Exception as exc:
+            log(f"[BulkDelete {channel.id}] Failed to delete {len(messages[index*100:100+index*100])} messages: {exc}")
+            return False,exc
+        index += 1
+    return True,None
 async def cloneChannel(channelid):
     #Clones a channel, essentially clearing it. The channel retains all bot-set and regular settings
     try:
@@ -599,10 +610,7 @@ async def constantMessageCheck():
                     toDeleteList[message.Channel].append(messageObj)
                     gmt.LoggedMessages.pop(msgid)
         for channel,msglist in toDeleteList.items():
-            try:
-                await client.get_channel(channel).delete_messages(msglist)
-            except Exception as exc:
-                log(f"BulkDelete Exception C={channel} #ML={len(msglist)} - {exc}")
+            await clearMessageList(client.get_channel(channel),msglist)
     except Exception as exc:
         log("[!] LoggedMessages Exception: "+str(exc))
 constantMessageCheck.start()
