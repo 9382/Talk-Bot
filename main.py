@@ -486,30 +486,24 @@ async def connectToVC(channel,idleTimeout=60,ignorePlaying=False):
 #Client
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True))
 @client.event
-async def on_error(error,*args,**kwargs):
+async def on_error(event,*args,**kwargs):
     #Error handler
-    if exists(args,0):
-        try:
-            causingCommand = args[0].content
-        except:
-            causingCommand = str(args[0])
-    else:
-        causingCommand = "<none>"
-    log(f"[Fatal Error] Causing command: {causingCommand}\nError:")
-    traceback.print_exc(file=sys.stderr)
+    args = "\n".join([str(v) for v in args])
+    error = traceback.format_exc()
+    log(f"[Fatal Error {event}] Command Arguments: {args}\nError: {error}")
     try: #Logging
         errorFile = tempFile()
         file = open(errorFile,"w",encoding="UTF-16",newline="") #UTF-16 just incase it all goes to hell
         try:
-            traceback.print_exc(file=file)
+            file.write(error)
         except Exception as exc:
-            log("[Fatal Error] Error Log file failed to write: "+str(exc))
+            log(f"[Fatal Error {event}] Error Log file failed to write: {exc}")
             pass
         file.close()
-        await client.get_channel(logChannels["errors"]).send(f"Error in client\nTime: {currentDate()}\nCausing command: {causingCommand}",file=discord.File(errorFile))
+        await client.get_channel(logChannels["errors"]).send(f"Error in client {event}\nTime: {currentDate()}\nCommand Arguments: {args}",file=discord.File(errorFile))
         os.remove(errorFile)
     except Exception as exc:
-        log(f"[Fatal Error] Failed to log error: {currentDate()} {exc}")
+        log(f"[Fatal Error {event}] Failed to log error at {currentDate()}: {exc}")
 uptime = 0
 @client.event
 async def on_ready():

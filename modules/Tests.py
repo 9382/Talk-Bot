@@ -4,7 +4,10 @@ def AddCommand(a,b,c,d,e,f):
     TestCommandList.append(Command(a,b,c,d,e,f,"dev"))
 
 async def forceOnError(msg,args):
-    await on_error(msg)
+    try:
+        _[_] #Cause safe error
+    except:
+        await on_error("on_message",msg) #Cause on_error response
 AddCommand("d -test onerror",forceOnError,0,"Forces an error to test the error logging",{},None)
 async def forceOnReady(msg,args):
     await on_ready()
