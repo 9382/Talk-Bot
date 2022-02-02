@@ -771,12 +771,4 @@ for i in os.listdir("storage/settings"):
             log("[JSON] Guild index missing for file "+i)
             continue
         getMegaTable(j["Guild"]).LoadSave(j)
-log("loaded configs")
-
-#On-boot tests
-if exists(globals(),"FakeMessage"):
-    log("Doing final tests")
-    asyncio.run(on_message(FakeMessage("##d -test advanced",gid=-1,uid=DevID)))
-    log("Finished tests")
-else:
-    log("No tests module found, skipping final tests")
+log("loaded configs, main is finished")
