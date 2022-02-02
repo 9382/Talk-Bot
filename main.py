@@ -284,9 +284,12 @@ async def getGuildInviteStats(guild):
     return toReturn
 
 #Commands
+CustomMessageCache = {} #Incase of a reboot, we use recent history as a custom "cache message" system
+#NOTE: Consider clearing messages after they are stupidly old
 HistoryClearRatelimit = {}
 async def checkHistoryClear(msg):
     #Checks for and removes messages beyond the message count limit
+    #This is always ran last, and therefore how long this takes really doesnt matter
     gmt = getMegaTable(msg)
     cid = str(msg.channel.id) #Dumb storage logic by JSON
     if exists(gmt.ChannelLimits,cid):
@@ -296,9 +299,18 @@ async def checkHistoryClear(msg):
             HistoryClearRatelimit[cid] = time.time() + 2
             try:
                 channelHistory = await msg.channel.history(limit=msgLimit+15).flatten()
+                for message in channelHistory:
+                    if not exists(CustomMessageCache,message.id):
+                        CustomMessageCache[message.id] = message
                 await msg.channel.delete_messages(channelHistory[msgLimit:])
             except Exception as exc:
                 print("[History] Failed to do:",msg.guild.id,exc)
+    else: #Just store the last 150 messages into CustomMessagesCache, and dont care about history clearing
+        channelHistory = await msg.channel.history(limit=150).flatten()
+        for message in channelHistory:
+            if not exists(CustomMessageCache,message.id):
+                CustomMessageCache[message.id] = message
+
 performanceCheck = False #For timing the time taken of a command to execute
 devCommands = {} #basically testing and back-end commands
 adminCommands = {} #This will take priority over user commands should a naming conflict exist
@@ -542,13 +554,26 @@ async def on_message(msg):
     await checkHistoryClear(msg) #Since its fired after a command, add a check here
 @client.event
 async def on_raw_message_edit(msg):
-    #On message edit to avoid filter bypassing
+    #On message edit to avoid filter bypassing and to log
     try:
         messageObj = await discord.PartialMessage(channel=client.get_channel(int(msg.data["channel_id"])),id=int(msg.data["id"])).fetch()
     except:
-        pass
-    else:
-        await getMegaTable(messageObj).FilterMessage(messageObj)
+        return
+    gmt = getMegaTable(messageObj)
+    await gmt.FilterMessage(messageObj)
+    content = exists(msg.data,"content") and msg.data["content"]
+    if content and not(client.user and messageObj.author.id == client.user.id): #Not worried about logging embed edits
+        msgid = msg.message_id
+        cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]
+        await gmt.Log(embed=fromdict({"title":"Message Edited","description":f"[This Message]({messageObj.jump_url}) was edited by {messageObj.author} in <#{messageObj.channel.id}>\n(ID {messageObj.id})\n**Previous Content**\n{cached and cached.content or '<unknown>'}\n**New Content**\n{content}","color":colours["info"]}))
+@client.event
+async def on_raw_message_delete(msg):
+    #For logging deleted messages
+    msgid = msg.message_id
+    cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]
+    if cached: #No point logging a deletion if we dont know what was deleted (maybe? might be worth posting anyways, unsure)
+        #NOTE: Currently, this WILL log messages deleted by the bot. Possibly consider making it so this doesnt happen?
+        await getMegaTable(cached).Log(embed=fromdict({"title":"Message Deleted","description":f"A message from {cached.author} was deleted from <#{cached.channel.id}>\n**Old Content**\n{cached.content}","color":colours["info"]}))
 @client.event
 async def on_reaction_add(reaction,user):
     if user.id == client.user.id: #If its the bot
