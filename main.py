@@ -284,6 +284,20 @@ async def getGuildInviteStats(guild):
     return toReturn
 
 #Commands
+MessageLogBlacklist = {} #Dont log self-deleted messages
+async def clearMessageList(channel,messages): #Max of 100 for bulkdelete, so we split it
+    index = 0
+    lOfM = len(messages)
+    for message in messages:
+        MessageLogBlacklist[message.id] = True
+    while index*100 < lOfM:
+        try:
+            await channel.delete_messages(messages[index*100:100+index*100])
+        except Exception as exc:
+            log(f"[BulkDelete {channel.id}] Failed to delete {len(messages[index*100:100+index*100])} messages: {exc}")
+            return False,exc
+        index += 1
+    return True,None
 CustomMessageCache = {} #Incase of a reboot, we use recent history as a custom "cache message" system
 #NOTE: Consider clearing messages after they are stupidly old
 HistoryClearRatelimit = {}
@@ -302,7 +316,7 @@ async def checkHistoryClear(msg):
                 for message in channelHistory:
                     if not exists(CustomMessageCache,message.id):
                         CustomMessageCache[message.id] = message
-                await msg.channel.delete_messages(channelHistory[msgLimit:])
+                await clearMessageList(msg.channel,channelHistory[msgLimit:])
             except Exception as exc:
                 print("[History] Failed to do:",msg.guild.id,exc)
     else: #Just store the last 150 messages into CustomMessagesCache, and dont care about history clearing
@@ -440,17 +454,6 @@ async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText=""):
     return embed
 
 #Random functions
-async def clearMessageList(channel,messages): #Max of 100 for bulkdelete, so we split it
-    index = 0
-    lOfM = len(messages)
-    while index*100 < lOfM:
-        try:
-            await channel.delete_messages(messages[index*100:100+index*100])
-        except Exception as exc:
-            log(f"[BulkDelete {channel.id}] Failed to delete {len(messages[index*100:100+index*100])} messages: {exc}")
-            return False,exc
-        index += 1
-    return True,None
 async def cloneChannel(channelid):
     #Clones a channel, essentially clearing it. The channel retains all bot-set and regular settings
     try:
@@ -571,8 +574,7 @@ async def on_raw_message_delete(msg):
     #For logging deleted messages
     msgid = msg.message_id
     cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]
-    if cached: #No point logging a deletion if we dont know what was deleted (maybe? might be worth posting anyways, unsure)
-        #NOTE: Currently, this WILL log messages deleted by the bot. Possibly consider making it so this doesnt happen?
+    if cached and not exists(MessageLogBlacklist,msgid): #No point logging a deletion if we dont know what was deleted (maybe? might be worth posting anyways, unsure)
         await getMegaTable(cached).Log(embed=fromdict({"title":"Message Deleted","description":f"A message from {cached.author} was deleted from <#{cached.channel.id}>\n**Old Content**\n{cached.content}","color":colours["info"]}))
 @client.event
 async def on_reaction_add(reaction,user):
