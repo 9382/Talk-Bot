@@ -308,11 +308,11 @@ async def checkHistoryClear(msg):
     #This is always ran last, and therefore how long this takes really doesnt matter
     gmt = getMegaTable(msg)
     cid = str(msg.channel.id) #Dumb storage logic by JSON
-    if exists(gmt.ChannelLimits,cid):
-        msgLimit = gmt.ChannelLimits[cid]
-        lastCheck = (exists(HistoryClearRatelimit,cid) and HistoryClearRatelimit[cid]) or 0
-        if lastCheck < time.time(): #Limit cause history call is quite hard
-            HistoryClearRatelimit[cid] = time.time() + 2
+    lastCheck = (exists(HistoryClearRatelimit,cid) and HistoryClearRatelimit[cid]) or 0
+    if lastCheck < time.time(): #Limit cause history call is quite intensive
+        HistoryClearRatelimit[cid] = time.time() + 2.5
+        if exists(gmt.ChannelLimits,cid):
+            msgLimit = gmt.ChannelLimits[cid]
             try:
                 channelHistory = await msg.channel.history(limit=msgLimit+15).flatten()
                 for message in channelHistory:
@@ -321,11 +321,11 @@ async def checkHistoryClear(msg):
                 await clearMessageList(msg.channel,channelHistory[msgLimit:])
             except Exception as exc:
                 print("[History] Failed to do:",msg.guild.id,exc)
-    else: #Just store the last 150 messages into CustomMessagesCache, and dont care about history clearing
-        channelHistory = await msg.channel.history(limit=150).flatten()
-        for message in channelHistory:
-            if not exists(CustomMessageCache,message.id):
-                CustomMessageCache[message.id] = message
+        else: #Just store the last 150 messages into CustomMessagesCache, and dont care about history clearing
+            channelHistory = await msg.channel.history(limit=150).flatten()
+            for message in channelHistory:
+                if not exists(CustomMessageCache,message.id):
+                    CustomMessageCache[message.id] = message
 
 performanceCheck = False #For timing the time taken of a command to execute
 devCommands = {} #basically testing and back-end commands
