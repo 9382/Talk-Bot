@@ -153,7 +153,9 @@ class GuildObject:
         if self.LogChannel:
             channel = client.get_channel(self.LogChannel)
             if channel:
-                await channel.send(content=content,embed=embed)
+                dictVersion = embed.to_dict()
+                dictVersion["description"] = f"<t:{math.floor(time.time())}:R>\n"+dictVersion["description"] #Timestamp all logged messages using <t:TIME:R>
+                await channel.send(content=content,embed=fromdict(dictVersion))
                 return True
     def GetMediaFilter(self,channel):
         if exists(self.MediaFilters,channel):
@@ -568,14 +570,14 @@ async def on_raw_message_edit(msg):
     if content and not(client.user and messageObj.author.id == client.user.id): #Not worried about logging embed edits
         msgid = msg.message_id
         cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]
-        await gmt.Log(embed=fromdict({"title":"Message Edited","description":f"[This Message]({messageObj.jump_url}) was edited by {messageObj.author} in <#{messageObj.channel.id}>\n(ID {messageObj.id})\n**Previous Content**\n{cached and cached.content or '<unknown>'}\n**New Content**\n{content}","color":colours["info"]}))
+        await gmt.Log(embed=fromdict({"title":"Message Edited","description":f"[This Message]({messageObj.jump_url}) was edited by {messageObj.author} in <#{messageObj.channel.id}>\n(ID {messageObj.id})\n**Previous Content**\n{cached and cached.content or '<unknown>'}\n**New Content**\n{content}","color":colours["warning"]}))
 @client.event
 async def on_raw_message_delete(msg):
     #For logging deleted messages
     msgid = msg.message_id
     cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]
     if cached and not exists(MessageLogBlacklist,msgid): #No point logging a deletion if we dont know what was deleted (maybe? might be worth posting anyways, unsure)
-        await getMegaTable(cached).Log(embed=fromdict({"title":"Message Deleted","description":f"A message from {cached.author} was deleted from <#{cached.channel.id}>\n**Old Content**\n{cached.content}","color":colours["info"]}))
+        await getMegaTable(cached).Log(embed=fromdict({"title":"Message Deleted","description":f"A message from {cached.author} was deleted from <#{cached.channel.id}>\n**Old Content**\n{cached.content}","color":colours["error"]}))
 @client.event
 async def on_reaction_add(reaction,user):
     if user.id == client.user.id: #If its the bot
