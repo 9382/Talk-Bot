@@ -150,7 +150,7 @@ class GuildObject:
         guildMegaTable[gid] = self
     async def Log(self,category,*,content=None,embed=None):
         #Logs content to a server's set log channel
-        if exists(self.LogChannels,catagory):
+        if exists(self.LogChannels,category):
             channel = client.get_channel(self.LogChannels[category])
             if channel:
                 embed.set_footer(text=currentDate())
