@@ -1,14 +1,23 @@
+validLogChannels = ["invites","messages"] #Adjust this manually
 async def setLogChannel(msg,args):
     if not exists(args,1):
-        await msg.channel.send(embed=fromdict({"title":"No channel","description":"Please provide a channel, either by mentioning it or by putting its ID","color":colours["error"]}))
+        await msg.channel.send(embed=fromdict({"title":"Log channel categories","description":"Valid log channel categories:\n"+"\n".join([f"`{c}`" for c in validLogChannels]),"color":colours["info"]}))
         return
-    wantedChannel = numRegex.search(args[1]) and client.get_channel(int(numRegex.search(args[1]).group()))
-    if not wantedChannel or wantedChannel.guild.id != msg.guild.id:
-        await msg.channel.send(embed=fromdict({"title":"Not found","description":"The channel provided either doesnt exist, or i cant access it","color":colours["error"]}))
+    category = args[1].lower()
+    if not category in validLogChannels:
+        await msg.channel.send(embed=fromdict({"title":"Invalid category","description":f"{category} is not a valid category","color":colours["error"]}))
         return
-    getMegaTable(msg).LogChannel = wantedChannel.id
-    await msg.channel.send(embed=fromdict({"title":"Success","description":"Set log channel successfully","color":colours["success"]}))
-Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided",{"channel":True},None,"admin")
+    if exists(args,2):
+        wantedChannel = numRegex.search(args[2]) and client.get_channel(int(numRegex.search(args[2]).group()))
+        if not wantedChannel or wantedChannel.guild.id != msg.guild.id:
+            await msg.channel.send(embed=fromdict({"title":"Not found","description":"The channel provided either doesnt exist, or i cant access it","color":colours["error"]}))
+            return
+        getMegaTable(msg).LogChannels[category] = wantedChannel.id
+        await msg.channel.send(embed=fromdict({"title":"Success","description":f"Set log channel for {category} successfully","color":colours["success"]}))
+    else: #Maybe make this a seperate command?
+        getMegaTable(msg).LogChannels[category] = None
+        await msg.channel.send(embed=fromdict({"title":"Success","description":f"No longer logging {category}","color":colours["success"]}))
+Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided (provide no arguments for a list of log channels)",{"category":False,"channel":False},None,"admin")
 
 async def prune(msg,args):
     pruneAmount = exists(args,1) and numRegex.search(args[1]) and min(400,max(0,int(numRegex.search(args[1]).group())))

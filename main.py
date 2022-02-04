@@ -137,7 +137,7 @@ class GuildObject:
         self.WordBlockList = {}
         self.NSFWBlockList = []
         self.InviteTrack = None
-        self.LogChannel = None
+        self.LogChannels = {}
         self.MediaFilters = {}
         self.ChannelClearList = {}
         self.QueuedChannels = {}
@@ -148,10 +148,10 @@ class GuildObject:
         if exists(guildMegaTable,gid):
             log(f"[GMT] Guild {gid} was declared twice")
         guildMegaTable[gid] = self
-    async def Log(self,content=None,embed=None):
+    async def Log(self,category,*,content=None,embed=None):
         #Logs content to a server's set log channel
-        if self.LogChannel:
-            channel = client.get_channel(self.LogChannel)
+        if exists(self.LogChannels,catagory):
+            channel = client.get_channel(self.LogChannels[category])
             if channel:
                 embed.set_footer(text=currentDate())
                 await channel.send(content=content,embed=embed)
@@ -220,7 +220,7 @@ class GuildObject:
                 "WordBlockList":self.WordBlockList,
                 "ChannelClearList":self.ChannelClearList,
                 "NSFWBlockList":self.NSFWBlockList,
-                "LogChannel":self.LogChannel,
+                "LogChannels":self.LogChannels,
                 "MediaFilters":self.MediaFilters,
                 "QueuedChannels":self.QueuedChannels,
                 "ChannelLimits":self.ChannelLimits,
@@ -569,7 +569,7 @@ async def on_raw_message_edit(msg):
     if content and not(client.user and messageObj.author.id == client.user.id): #Not worried about logging embed edits
         msgid = msg.message_id
         cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]
-        await gmt.Log(embed=fromdict({"title":"Message Edited","description":f"[This Message]({messageObj.jump_url}) was edited by {messageObj.author} in <#{messageObj.channel.id}>\n(ID {messageObj.id})\n**Previous Content**\n{cached and cached.content or '<unknown>'}\n**New Content**\n{content}","color":colours["warning"]}))
+        await gmt.Log("messages",embed=fromdict({"title":"Message Edited","description":f"[This Message]({messageObj.jump_url}) was edited by {messageObj.author} in <#{messageObj.channel.id}>\n(ID {messageObj.id})\n**Previous Content**\n{cached and cached.content or '<unknown>'}\n**New Content**\n{content}","color":colours["warning"]}))
 @client.event
 async def on_raw_message_delete(msg):
     #For logging deleted messages
@@ -577,7 +577,7 @@ async def on_raw_message_delete(msg):
     cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]
     if cached and not exists(MessageLogBlacklist,msgid): #No point logging a deletion if we dont know what was deleted (maybe? might be worth posting anyways, unsure)
         if (client.user and client.user.id != cached.author.id): #Dont report self
-            await getMegaTable(cached).Log(embed=fromdict({"title":"Message Deleted","description":f"A message from {cached.author} was deleted from <#{cached.channel.id}>\n**Old Content**\n{cached.content}","color":colours["error"]}))
+            await getMegaTable(cached).Log("messages",embed=fromdict({"title":"Message Deleted","description":f"A message from {cached.author} was deleted from <#{cached.channel.id}>\n**Old Content**\n{cached.content}","color":colours["error"]}))
 @client.event
 async def on_reaction_add(reaction,user):
     if user.id == client.user.id: #If its the bot
@@ -606,7 +606,7 @@ async def on_member_join(member):
         if not exists(invitesBefore,invId):
             invitesBefore[invId] = {"m":invInfo["m"],"u":0}
         if invitesBefore[invId]["u"] < invInfo["u"]:
-            await gmt.Log(embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}> ({member}) has joined through <@{invInfo['m'].id}> ({invInfo['m']})'s invite (discord.gg/{invId})\nInvite is at {invInfo['u']} uses","color":colours["info"]}))
+            await gmt.Log("invites",embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}> ({member}) has joined through <@{invInfo['m'].id}> ({invInfo['m']})'s invite (discord.gg/{invId})\nInvite is at {invInfo['u']} uses","color":colours["info"]}))
             break
     gmt.InviteTrack = invitesAfter
 
