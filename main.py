@@ -717,7 +717,7 @@ async def cmds(msg,args):
         for catagory in cmdList:
             if args[1].lower() == catagory.lower():
                 group = cmdList[catagory]
-        if msg.author.id == 260016427900076033 and args[1].lower() == "dev":
+        if msg.author.id == DevID and args[1].lower() == "dev":
             group = devCommands
         if not group:
             await msg.channel.send(embed=fromdict({"title":"Invalid group","description":f"The group '{args[1]}' doesnt exist","color":colours["error"]}))
