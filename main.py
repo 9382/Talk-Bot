@@ -144,7 +144,7 @@ class GuildObject:
         self.LoggedMessages = {}
         self.Confirmations = {}
         self.ChannelLimits = {}
-        self.ProtectedMessages = []
+        self.ProtectedMessages = {}
         if exists(guildMegaTable,gid):
             log(f"[GMT] Guild {gid} was declared twice")
         guildMegaTable[gid] = self
@@ -171,6 +171,8 @@ class GuildObject:
             self.QueuedChannels.pop(channel)
     async def AddToFilter(self,msg,buffer): 
         #Helper of FilterMessage
+        if msg.id in self.ProtectedMessages and self.ProtectedMessages[msg.id] > time.time():
+            return False
         print("[Filter] Msg Filtered ->",buffer,msg.content)
         if buffer <= 0:
             try:
@@ -236,11 +238,14 @@ class GuildObject:
                         for message,expirey in messages.items():
                             self.LoggedMessages[message] = FilteredMessage(expirey,int(message),int(channel))
                 elif hasattr(self,catagory):
-                    setattr(self,catagory,data)
+                    if type(data) != type(getattr(self,catagory)):
+                        log(f"[GuildObject {self.Guild}] Invalid data type for {catagory} ({type(data)} vs {type(getattr(self,catagory))})")
+                    else:
+                        setattr(self,catagory,data)
                 else:
                     log(f"[GuildObject {self.Guild}] Unknown catagory {catagory}")
-            except:
-                log(f"[GuildObject {self.Guild}] Invalid catagory data {catagory}")
+            except Exception as exc:
+                log(f"[GuildObject {self.Guild}] Invalid catagory data in {catagory} leading to {exc}")
     async def CreateConfirmation(self,msg,args,function):
         #Creates a yes/no confirmation for the user
         confirmationObj = Confirmation(msg,args,function)
@@ -259,6 +264,8 @@ class GuildObject:
         if await confirmationObj.Check(msg):
             await confirmationObj.Function(confirmationObj.msg,confirmationObj.args)
         return True
+    def ProtectMessage(self,msgid,expirey):
+        self.ProtectedMessages[msgid] = time.time() + expirey #Just more convenient
 def getMegaTable(obj):
     gid = None
     t = type(obj)
@@ -436,7 +443,7 @@ async def changePageEmbed(msg,emoji,args):
     page = min(max(0,page),maxPage) #Limit page
     await msg.edit(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[page]),"footer":{"text":f"Page {page+1}/{maxPage+1}"},"color":colours["info"]}))
     await UpdateReactionWatch(msg,"all",[title,preText,pagedContent,maxPage,page])
-async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText=""):
+async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText="",deleteAfter=None):
     #Automatically creates an embed with multiple pages when data is too large to display
     pagedContent = []
     index = 0
@@ -447,8 +454,8 @@ async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText=""):
         index += 1
     maxPage = index//pageLimit
     if maxPage == 0:
-        return await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"color":colours["info"]}))
-    embed = await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"footer":{"text":f"Page 1/{maxPage+1}"},"color":colours["info"]}))
+        return await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"color":colours["info"]}),delete_after=deleteAfter)
+    embed = await channel.send(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[0]),"footer":{"text":f"Page 1/{maxPage+1}"},"color":colours["info"]}),delete_after=deleteAfter)
     for e in ["⬅️","➡️"]:
         await embed.add_reaction(e)
         WatchReaction(embed,user,e,changePageEmbed,[title,preText,pagedContent,maxPage,0])
@@ -624,7 +631,7 @@ async def constantMessageCheck():
         toDeleteList = {}
         for guild,gmt in guildMegaTable.items():
             for msgid,message in list(gmt.LoggedMessages.items()):
-                if msgid in gmt.ProtectedMessages:
+                if msgid in gmt.ProtectedMessages and gmt.ProtectedMessages[msgid] > time.time():
                     gmt.LoggedMessages.pop(msgid)
                     continue
                 messageObj = message.Expired() and message.GetMessageObj()
@@ -657,7 +664,7 @@ async def constantChannelCheck():
 constantChannelCheck.start()
 @tasks.loop(seconds=150)
 async def updateConfigFiles():
-    #Runs through all the GMTs and updates them
+    #Runs through all the GMTs and updates their relevant json
     try:
         for guild in client.guilds:
             success,result = safeWriteToFile(f"storage/settings/{guild.id}.json",json.dumps(getMegaTable(guild).CreateSave()))
