@@ -794,6 +794,7 @@ def loadModules(origin):
 loadModules("bootup")
 async def loadModulesAsync(msg,args):
     loadModules(f"User {msg.author}")
+    await msg.channel.send(":+1:") #Confirmation
 Command("d -reload modules",loadModulesAsync,0,"Reloads all the modules",{},None,"dev")
 
 #Finish off - load configs
