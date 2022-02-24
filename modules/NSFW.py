@@ -36,7 +36,7 @@ async def getPostList(msg,sitetype,tags):
         postList = regex.sub("\nboots","boots",postList) #Tag bug
         postList = regex.sub("\n[ a-z]","▓",postList) #General tag bug catch
         getPostIDRegex = regex.compile(' id="\d+"')
-        getImageURLRegex = regex.compile(' file_url="https://(api-cdn(-\w*)*\.rule34\.xxx|realbooru\.com)/images/\d+/[\w\d]+\.(\w)+')
+        getImageURLRegex = regex.compile(' file_url="https://(api-cdn(-\w*)*\.rule34\.xxx|realbooru\.com)/images/[\w\d]+(/[\w\d]+)?/[\w\d]+\.\w+')
         getPostTagsRegex = regex.compile(' tags="[^"]*"')
         for i in postList.split("\n"):
             if i.find("<post ") > -1: #If false, ive hit end (<posts>)
