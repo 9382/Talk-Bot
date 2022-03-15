@@ -660,7 +660,7 @@ async def on_member_update(before,after):
                 except:
                     pass #Lacking permissions
     if before.nick != after.nick:
-        logmsg = await gmt.Log("users",embed=fromdict({"title":"Use Log","description":f"User <@{before.id}> ({before}) has changed their nickname from {before.nick} to {after.nick}","color":colours["info"]}))
+        logmsg = await gmt.Log("users",embed=fromdict({"title":"User Log","description":f"User <@{before.id}> ({before}) has changed their nickname from {before.nick} to {after.nick}","color":colours["info"]}))
         if logmsg:
             gmt.ProtectMessage(logmsg.id,9e9)
 
