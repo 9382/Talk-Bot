@@ -168,12 +168,12 @@ class GuildObject:
                     embed.set_footer(text=currentDate())
                     file = None
                     if len(embed.description) > 4050: #We dont use truncateText here because it could be important
-                        tempembed = embed.to_dict() #Can only be set in intialising when in object form
-                        tempembed["description"] = "[Embed description passed 3900 Byte limit. Check the file provided for the embed description]"
-                        embed = fromdict(tempembed)
                         logfile = tempFile()
                         open(logfile,"w",encoding="UTF-16",newline="").write(embed.description)
                         file = discord.File(logfile) #This feels slightly weirdly done, but eh
+                        tempembed = embed.to_dict() #Can only be set in intialising when in object form
+                        tempembed["description"] = "[Embed description passed 4050 Byte limit. Check the file provided for the embed description]"
+                        embed = fromdict(tempembed)
                 content = content and truncateText(content)
                 await channel.send(content=content,embed=embed,file=file)
                 return True
