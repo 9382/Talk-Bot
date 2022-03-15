@@ -100,7 +100,7 @@ async def protectMessage(msg,args): #Prevents a message from being filtered
     except:
         await msg.channel.send(embed=fromdict({"title":"Error","description":"message ID must be a number","color":colours["error"]}),delete_after=10)
     else:
-        getMegaTable(msg).ProtectedMessages.append(msgid)
+        getMegaTable(msg).ProtectMessage(msgid,9e9)
         await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is now protected","color":colours["success"]}))
 Command("protect",protectMessage,2,"Prevents a message from being filtered",{"messageid":True},None,"admin")
 async def unprotectMessage(msg,args):
