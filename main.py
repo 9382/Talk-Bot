@@ -156,6 +156,7 @@ class GuildObject:
         self.Confirmations = {}
         self.ChannelLimits = {}
         self.ProtectedMessages = {}
+        self.FilterNicknames = False
         if exists(guildMegaTable,gid):
             log(f"[GMT] Guild {gid} was declared twice")
         guildMegaTable[gid] = self
@@ -175,8 +176,7 @@ class GuildObject:
                         tempembed["description"] = "[Embed description passed 4050 Byte limit. Check the file provided for the embed description]"
                         embed = fromdict(tempembed)
                 content = content and truncateText(content)
-                await channel.send(content=content,embed=embed,file=file)
-                return True
+                return await channel.send(content=content,embed=embed,file=file)
     def GetMediaFilter(self,channel):
         if exists(self.MediaFilters,channel):
             return self.MediaFilters[channel]
@@ -248,6 +248,7 @@ class GuildObject:
                 "QueuedChannels":self.QueuedChannels,
                 "ChannelLimits":self.ChannelLimits,
                 "ProtectedMessages":self.ProtectedMessages,
+                "FilterNicknames":self.FilterNicknames,
                 "LoggedMessages":self.FormatLoggedMessages()}
     def LoadSave(self,settings):
         #Loads a dictionary as the guild's settings
@@ -650,8 +651,16 @@ async def on_member_update(before,after):
     #Log nickname changes.
     #TODO: Add filtering the new nickname here too
     gmt = getMegaTable(before)
+    if after.nick and gmt.FilterNicknames:
+        for word in gmt.WordBlockList:
+            if after.nick.lower().find(word) > -1:
+                try:
+                    await after.edit(nick=before.nick,reason=f"User nickname violated filter of '{word}'")
+                    return
+                except:
+                    pass #Lacking permissions
     if before.nick != after.nick:
-        await gmt.Log("users",embed=fromdict({"title":"Use Log","description":f"User <@{before.id}> ({before}) has chanegd their nickname from {before.nick} to {after.nick}","color":colours["info"]}))
+        gmt.ProtectMessage((await gmt.Log("users",embed=fromdict({"title":"Use Log","description":f"User <@{before.id}> ({before}) has changed their nickname from {before.nick} to {after.nick}","color":colours["info"]}))).id,9e9)
 
 #Tasks
 stopCycling = False

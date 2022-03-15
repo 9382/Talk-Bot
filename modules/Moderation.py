@@ -132,7 +132,7 @@ async def blockWord(msg,args):
     word = args[1].lower()
     getMegaTable(msg).WordBlockList[word] = result
     await msg.channel.send(embed=fromdict({"title":"Success","description":f"Any messages containing {word} will be deleted after {simplifySeconds(result)}","color":colours["success"]}))
-Command("blockword",blockWord,0,"Add a word to the filter list",{"word":True,"deletion time":True},None,"admin")
+Command("blockword",blockWord,1,"Add a word to the filter list",{"word":True,"deletion time":True},None,"admin")
 async def unblockWord(msg,args):
     if not exists(args,1):
         await msg.channel.send(embed=fromdict({"title":"Error","description":"You must include a word to unban","color":colours["error"]}),delete_after=10)
@@ -144,7 +144,13 @@ async def unblockWord(msg,args):
         await msg.channel.send(embed=fromdict({"title":"Not Blocked","description":f"{word} was not blocked","color":colours["warning"]}))
     else:
         await msg.channel.send(embed=fromdict({"title":"Success","description":f"{word} is allowed again","color":colours["success"]}))
-Command("unblockword",unblockWord,0,"Remove a word from the filter list",{"word":True},None,"admin")
+Command("unblockword",unblockWord,1,"Remove a word from the filter list",{"word":True},None,"admin")
+
+async def setNickFilterState(msg,args):
+    gmt = getMegaTable(msg)
+    gmt.FilterNicknames = not gmt.FilterNicknames
+    await msg.channel.send(embed=fromdict({"title":"Toggled","description":gmt.FilterNicknames and "Any new nicknames will now be filtered" or "Nicknames will no longer be filtered","color":colours["success"]}))
+Command("filternicknames",setNickFilterState,1,"Toggle whether or not nicknames should be subject to the word filter",{},None,"admin")
 
 async def clearChannel(msg,args):
     if len(args) < 2:
