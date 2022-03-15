@@ -93,7 +93,7 @@ def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
 def truncateText(text,limit=2000):
     #For avoiding issues with message max length
     Ltext = len(text)
-    if text < limit:
+    if Ltext < limit:
         return text
     return text[:limit] + f"... [Excluded {Ltext-limit} bytes]"
 fromdict = discord.Embed.from_dict
