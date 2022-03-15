@@ -603,7 +603,8 @@ async def on_raw_message_edit(msg):
     if content and not(client.user and messageObj.author.id == client.user.id): #Not worried about logging embed edits
         msgid = msg.message_id
         cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]
-        await gmt.Log("messages",embed=fromdict({"title":"Message Edited","description":f"<@{messageObj.author.id}> ({messageObj.author}) edited a message in <#{messageObj.channel.id}>\n(ID [{messageObj.id}]({messageObj.jump_url}))\n**Previous Content**\n{cached and cached.content or '<unknown>'}\n**New Content**\n{content}","color":colours["warning"]}))
+        attachments = " ".join([o.url for o in messageObj.attachments]) #Attachments cant change via edits, so only get one
+        await gmt.Log("messages",embed=fromdict({"title":"Message Edited","description":f"<@{messageObj.author.id}> ({messageObj.author}) edited a message in <#{messageObj.channel.id}>\n(ID [{messageObj.id}]({messageObj.jump_url}))\n**Attached Files**\n{attachments}\n**Previous Content**\n{cached and cached.content or '<unknown>'}\n**New Content**\n{content}","color":colours["warning"]}))
 @client.event
 async def on_raw_message_delete(msg):
     #For logging deleted messages
@@ -611,7 +612,8 @@ async def on_raw_message_delete(msg):
     cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]
     if cached and not exists(MessageLogBlacklist,msgid): #No point logging a deletion if we dont know what was deleted (maybe? might be worth posting anyways, unsure)
         if (client.user and client.user.id != cached.author.id): #Dont report self
-            await getMegaTable(cached).Log("messages",embed=fromdict({"title":"Message Deleted","description":f"A message from <@{cached.author.id}> ({cached.author}) was deleted from <#{cached.channel.id}>\n**Old Content**\n{cached.content}","color":colours["error"]}))
+            attachments = " ".join([o.url for o in cached.attachments]) #Attachments cant change via edits, so only get one
+            await getMegaTable(cached).Log("messages",embed=fromdict({"title":"Message Deleted","description":f"A message from <@{cached.author.id}> ({cached.author}) was deleted from <#{cached.channel.id}>\n**Attached Files**\n{attachments}\n**Old Content**\n{cached.content}","color":colours["error"]}))
 @client.event
 async def on_reaction_add(reaction,user):
     if user.id == client.user.id: #If its the bot
