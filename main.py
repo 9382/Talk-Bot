@@ -529,11 +529,16 @@ async def connectToVC(channel,idleTimeout=60,ignorePlaying=False):
 
 #Client
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True))
+ErrorTermBlacklist = ["Connection reset by peer","403 Forbidden","404 Not Found","500 Internal Server Error"]
 @client.event
 async def on_error(event,*args,**kwargs):
     #Error handler
     args = truncateText("\n".join([str(v) for v in args]))
     error = traceback.format_exc()
+    for term in ErrorTermBlacklist:
+        if error.find(term) > -1:
+            log(f"[Fatal Error {event}] Ignored uncaught exception - matched term '{term}'")
+            return
     log(f"[Fatal Error {event}] Command Arguments: {args}\nError: {error}")
     try: #Logging
         errorFile = tempFile()
