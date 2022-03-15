@@ -1,4 +1,4 @@
-validLogChannels = ["invites","messages"] #Adjust this manually
+validLogChannels = ["invites","messages","users"] #Adjust this manually
 async def setLogChannel(msg,args):
     if not exists(args,1):
         await msg.channel.send(embed=fromdict({"title":"Log channel categories","description":"Valid log channel categories:\n"+"\n".join([f"`{c}`" for c in validLogChannels]),"color":colours["info"]}))

@@ -645,6 +645,13 @@ async def on_member_join(member):
             await gmt.Log("invites",embed=fromdict({"title":"Invite Log","description":f"User <@{member.id}> ({member}) has joined through <@{invInfo['m'].id}> ({invInfo['m']})'s invite (discord.gg/{invId})\nInvite is at {invInfo['u']} uses","color":colours["info"]}))
             break
     gmt.InviteTrack = invitesAfter
+@client.event
+async def on_member_update(before,after):
+    #Log nickname changes.
+    #TODO: Add filtering the new nickname here too
+    gmt = getMegaTable(before)
+    if before.nick != after.nick:
+        await gmt.Log("users",embed=fromdict({"title":"Use Log","description":f"User <@{before.id}> ({before}) has chanegd their nickname from {before.nick} to {after.nick}","color":colours["info"]}))
 
 #Tasks
 stopCycling = False
