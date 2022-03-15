@@ -24,10 +24,12 @@ def exists(table,value):
     except:
         return False
 def tempFile(extension="txt"):
-    name = f"storage/temp/{time.time()}.{extension}"
+    #Create a temporary file name and its file - helps avoid naming conflicts
+    name = f"storage/temp/Talk-Bot-{time.time()}.{extension}"
     open(name,"x")
     return name
 def currentDate():
+    #The current date in YYYY-MM-DD hh:mm:ss
     return str(datetime.fromtimestamp(time.time()//1))
 def safeWriteToFile(filename,content,mode="w",encoding="UTF-8"):
     #Writes contents to a file, auto-creating the directory should it be missing
@@ -47,6 +49,7 @@ def safeWriteToFile(filename,content,mode="w",encoding="UTF-8"):
     file.close()
     return True,f"Successfully wrote to {filename}"
 def log(content):
+    #Manages the writing to a daily log file for debugging
     print(f"[Log {currentDate()[11:]}]",content)
     success,result = safeWriteToFile(f"storage/logs/{currentDate()[:10]}.log",f"[{currentDate()[11:]}] {content}\n","a")
     if not success:
@@ -55,6 +58,7 @@ def log(content):
 log(f"Starting main - the time is {time.time()} or {currentDate()}")
 timeMultList = {"s":1,"m":60,"h":3600,"d":86400}
 def strToTimeAdd(duration):
+    #Converts stringtime to seconds
     timeMult = duration[-1].lower()
     timeAmount = duration[:-1]
     try:
@@ -66,6 +70,7 @@ def strToTimeAdd(duration):
     else:
         return False,"Time period must be s, m, h or d"
 def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
+    #Turn seconds into full sentence D/H/M/S
     if seconds <= 0:
         return "0 seconds"
     days,seconds = int(seconds//86400),seconds%86400
@@ -269,7 +274,7 @@ class GuildObject:
 def getMegaTable(obj):
     gid = None
     t = type(obj)
-    if t == discord.Message or t == discord.PartialMessage:
+    if t in [discord.Message,discord.PartialMessage,discord.Member]:
         gid = obj.guild.id
     elif t == int:
         gid = obj
@@ -305,6 +310,7 @@ async def clearMessageList(channel,messages): #Max of 100 for bulkdelete, so we 
             log(f"[BulkDelete {channel.id}] Failed to delete {len(messages[index*100:100+index*100])} messages: {exc}")
             return False,exc
         index += 1
+    #NOTE: Consider adding delayed task to remove these from MLB later for memory saving
     return True,None
 CustomMessageCache = {} #Incase of a reboot, we use recent history as a custom "cache message" system
 #NOTE: Consider clearing messages after they are stupidly old
@@ -403,7 +409,7 @@ async def checkCommandList(msg,args,commandTable):
 #Reaction listening
 #Note that reactions will not continue to be listened to when the bot updates/refreshes
 #Consider adding a save into GMT for certain things (E.g. reaction roles)
-ReactionListenList = []
+ReactionListenList = [] #NOTE: Theres gotta be a better system
 class WatchReaction:
     #Creates a listener for a message and its reactions
     def __init__(self,msg,user,emoji,function,args):
@@ -432,13 +438,12 @@ class WatchReaction:
         self.Expirey = time.time()+60
         return True
 async def UpdateReactionWatch(msg,emoji,args):
-    ListenListCache = ReactionListenList #NOTE: Change this
-    for listener in ListenListCache:
+    for listener in ReactionListenList:
         if listener.MsgId == msg.id and (emoji == "all" or emoji == listener.Emoji):
             listener.Update(args)
 async def changePageEmbed(msg,emoji,args):
     #Helper of createPagedEmbed
-    title,preText,pagedContent,maxPage,page = args[0],args[1],args[2],args[3],args[4]
+    title,preText,pagedContent,maxPage,page = args[0],args[1],args[2],args[3],args[4] #:cringe:
     page += (emoji=="➡️" and 1) or -1
     page = min(max(0,page),maxPage) #Limit page
     await msg.edit(embed=fromdict({"title":title,"description":preText+"\n".join(pagedContent[page]),"footer":{"text":f"Page {page+1}/{maxPage+1}"},"color":colours["info"]}))
