@@ -90,6 +90,12 @@ def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
     if days > 0:
         returnString = (p==0 and str(days)+" day(s)") or (p==1 and str(days)+" day(s) and "+returnString) or str(days)+" day(s), "+returnString
     return returnString
+def truncateText(text,limit=2000):
+    #For avoiding issues with message max length
+    Ltext = len(text)
+    if text < limit:
+        return text
+    return text[:limit] + f"... [Excluded {Ltext-limit} bytes]"
 fromdict = discord.Embed.from_dict
 numRegex = regex.compile("\d+")
 findMediaRegex = regex.compile("https?://((cdn|media)\.discordapp\.(com|net)/attachments/|tenor\.com/view/)") #See FilterMessage
@@ -158,8 +164,18 @@ class GuildObject:
         if exists(self.LogChannels,category):
             channel = client.get_channel(self.LogChannels[category])
             if channel:
-                embed.set_footer(text=currentDate())
-                await channel.send(content=content,embed=embed)
+                if embed:
+                    embed.set_footer(text=currentDate())
+                    file = None
+                    if len(embed.description) > 4050: #We dont use truncateText here because it could be important
+                        tempembed = embed.to_dict() #Can only be set in intialising when in object form
+                        tempembed["description"] = "[Embed description passed 3900 Byte limit. Check the file provided for the embed description]"
+                        embed = fromdict(tempembed)
+                        logfile = tempFile()
+                        open(logfile,"w",encoding="UTF-16",newline="").write(embed.description)
+                        file = discord.File(logfile) #This feels slightly weirdly done, but eh
+                content = content and truncateText(content)
+                await channel.send(content=content,embed=embed,file=file)
                 return True
     def GetMediaFilter(self,channel):
         if exists(self.MediaFilters,channel):
@@ -516,7 +532,7 @@ client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.In
 @client.event
 async def on_error(event,*args,**kwargs):
     #Error handler
-    args = "\n".join([str(v) for v in args])
+    args = truncateText("\n".join([str(v) for v in args]))
     error = traceback.format_exc()
     log(f"[Fatal Error {event}] Command Arguments: {args}\nError: {error}")
     try: #Logging
