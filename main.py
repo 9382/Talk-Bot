@@ -530,7 +530,7 @@ async def connectToVC(channel,idleTimeout=60,ignorePlaying=False):
 
 #Client
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True))
-ErrorTermBlacklist = ["Connection reset by peer","403 Forbidden","404 Not Found","500 Internal Server Error"]
+ErrorTermBlacklist = ["Connection reset by peer","403 Forbidden","404 Not Found","500 Internal Server Error","503 Service Unavailable"]
 @client.event
 async def on_error(event,*args,**kwargs):
     #Error handler
