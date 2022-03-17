@@ -655,7 +655,7 @@ async def on_member_update(before,after):
         for word in gmt.WordBlockList:
             if after.nick.lower().find(word) > -1:
                 try:
-                    await after.edit(nick=before.nick,reason=f"User nickname violated filter of '{word}'")
+                    await after.edit(nick=None,reason=f"User nickname violated filter of '{word}'")
                     return
                 except:
                     pass #Lacking permissions
