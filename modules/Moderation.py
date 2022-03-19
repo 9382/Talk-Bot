@@ -88,7 +88,7 @@ async def refilter(msg,args):
             stats["Filt"] += 1
     await imNotDead.delete()
     await msg.channel.send(embed=fromdict({"title":"Success","description":f"Successfully checked {len(messageList)} messages.\n{stats['Filt']} were filtered, and {stats['PreFilt']} were already filtered","color":colours["success"]}))
-Command("refilter",refilter,300,"Re-Filter's all messages of a chat within the last 10 days",{},None,"admin")
+Command("refilter",refilter,30,"Re-Filter's all messages of a chat within the last 10 days",{},None,"admin")
 
 async def protectMessage(msg,args): #Prevents a message from being filtered
     msgid = exists(args,1) and args[1]
