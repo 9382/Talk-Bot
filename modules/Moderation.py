@@ -179,8 +179,10 @@ async def unclearChannel(msg,args):
         await msg.channel.send(embed=fromdict({"title":"Error","description":"You must include a channel name to stop clearing","color":colours["error"]}),delete_after=10)
         return
     channelName = args[1]
-    getMegaTable(msg).RemoveChannelClear(channelName)
-    await msg.channel.send(embed=fromdict({"title":"Success","description":channelName+" will no longer be cleared","color":colours["success"]}))
+    if getMegaTable(msg).RemoveChannelClear(channelName):
+        await msg.channel.send(embed=fromdict({"title":"Success","description":channelName+" will no longer be cleared","color":colours["success"]}))
+    else:
+        await msg.channel.send(embed=fromdict({"title":"Error","description":channelName+" was not being cleared","color":colours["error"]}),delete_after=10)
 Command("unclearchannel",unclearChannel,0,"Stop a channel from being auto-cleared",{"channelName":True},None,"admin")
 
 async def blockMedia(msg,args):

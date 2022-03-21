@@ -188,8 +188,11 @@ class GuildObject:
         #Read above
         if exists(self.ChannelClearList,channel):
             self.ChannelClearList.pop(channel)
+        else:
+            return False
         if exists(self.QueuedChannels,channel):
             self.QueuedChannels.pop(channel)
+        return True
     async def AddToFilter(self,msg,buffer): 
         #Helper of FilterMessage
         if msg.id in self.ProtectedMessages and self.ProtectedMessages[msg.id] > time.time():
