@@ -487,11 +487,11 @@ async def createPagedEmbed(user,channel,title,content,pageLimit=10,preText="",de
     return embed
 
 #Random functions
-async def cloneChannel(channelid):
+async def cloneChannel(channelid,cause):
     #Clones a channel, essentially clearing it. The channel retains all bot-set and regular settings
     try:
         channel = client.get_channel(channelid)
-        newchannel = await channel.clone(reason="Recreating text channel")
+        newchannel = await channel.clone(reason=f"Recreating text channel | {cause}")
         gmt = getMegaTable(channel.guild) # Move over channel settings
         if channelid in gmt.MediaFilters:
             gmt.MediaFilters[newchannel.id] = gmt.MediaFilters[channelid]
@@ -499,13 +499,13 @@ async def cloneChannel(channelid):
         if channelid in gmt.ChannelLimits:
             gmt.ChannelLimits[newchannel.id] = gmt.ChannelLimits[channelid]
             gmt.ChannelLimits.pop(channelid)
-        await channel.delete()
+        await channel.delete() #Delete after creation of replacement incase it freaks
         newchannel.position = channel.position #Because clone doesnt include position
         await newchannel.send(embed=fromdict({"title":"Success","description":channel.name+" has been re-made and cleared","color":colours["success"]}),delete_after=60)
         print("[CloneChannel] Successfully cloned channel",channel.name)
         return newchannel
     except Exception as exc:
-        log("[CloneChannel] Exception: "+str(exc)) #Maybe unrequired?
+        log("[CloneChannel] Exception: "+str(exc)) #NOTE: Check for permission errors to avoid clogging of logs
 #The voice functions below could be removable, as the bot doesnt have any VC functions right now
 def findVoiceClient(guildId):
     #Returns any existing voice client object for the guild
@@ -708,7 +708,7 @@ async def constantChannelCheck():
                 channelTime = gmt.QueuedChannels[channel.name]
                 if channelTime < time.time():
                     gmt.QueuedChannels[channel.name] = time.time()+gmt.ChannelClearList[channel.name]
-                    await cloneChannel(channel.id)
+                    await cloneChannel(channel.id,"Queued deletion")
     except Exception as exc:
         log("[!] ChannelClear Exception: "+str(exc))
 constantChannelCheck.start()

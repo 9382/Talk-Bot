@@ -156,7 +156,7 @@ async def clearChannel(msg,args):
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({"title":"Error","description":"You must include a channel name","color":colours["error"]}),delete_after=10)
         return
-    channelName = args[1] # Cant do ID cause deleting a channel removes the ID :)
+    channelName = numRegex.search(args[1]) and client.get_channel(int(numRegex.search(args[1]).group())).name or args[1] #We need name as ID wont work after clearing
     frequency = exists(args,2) and args[2]
     if frequency:
         success,result = strToTimeAdd(frequency)
@@ -172,13 +172,13 @@ async def clearChannel(msg,args):
         guildChannelList = msg.guild.text_channels
         for t in guildChannelList:
             if channelName == t.name:
-                await cloneChannel(t.id)
+                await cloneChannel(t.id,f"{msg.author} {msg.author.id}")
 Command("clearchannel",clearChannel,0,"Add a channel to be cleared every so often OR clear now (no frequency)",{"channelName":True,"frequency":False},None,"admin")
 async def unclearChannel(msg,args):
     if len(args) < 2:
         await msg.channel.send(embed=fromdict({"title":"Error","description":"You must include a channel name to stop clearing","color":colours["error"]}),delete_after=10)
         return
-    channelName = args[1]
+    channelName = numRegex.search(args[1]) and client.get_channel(int(numRegex.search(args[1]).group())).name or args[1] #We need name as ID wont work after clearing
     if getMegaTable(msg).RemoveChannelClear(channelName):
         await msg.channel.send(embed=fromdict({"title":"Success","description":channelName+" will no longer be cleared","color":colours["success"]}))
     else:
