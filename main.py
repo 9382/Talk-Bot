@@ -69,27 +69,23 @@ def strToTimeAdd(duration):
         return True,timeAmount*timeMultList[timeMult]
     else:
         return False,"Time period must be s, m, h or d"
-def simplifySeconds(seconds): #Feels like it could be cleaner, but eh
+def simplifySeconds(seconds):
     #Turn seconds into full sentence D/H/M/S
     if seconds <= 0:
         return "0 seconds"
     days,seconds = int(seconds//86400),seconds%86400
     hours,seconds = int(seconds//3600),seconds%3600
     minutes,seconds = int(seconds//60),seconds%60
-    returnString = ""
-    p = 0
-    if seconds > 0:
-        returnString = str(seconds)+" second(s)"
-        p += 1
-    if minutes > 0:
-        returnString = (p==0 and str(minutes)+" minute(s)") or str(minutes)+" minute(s) and "+returnString
-        p += 1
-    if hours > 0:
-        returnString = (p==0 and str(hours)+" hour(s)") or (p==1 and str(hours)+" hour(s) and "+returnString) or str(hours)+" hour(s), "+returnString
-        p += 1
+    totalSet = []
     if days > 0:
-        returnString = (p==0 and str(days)+" day(s)") or (p==1 and str(days)+" day(s) and "+returnString) or str(days)+" day(s), "+returnString
-    return returnString
+        totalSet.append(f"{days} day(s)")
+    if hours > 0:
+        totalSet.append(f"{hours} hour(s)")
+    if minutes > 0:
+        totalSet.append(f"{minutes} minute(s)")
+    if seconds > 0:
+        totalSet.append(f"{seconds} second(s)")
+    return ", ".join(totalSet[:-1])+(totalSet[:-1] and " and " or "")+totalSet[-1]
 def truncateText(text,limit=2000):
     #For avoiding issues with message max length
     Ltext = len(text)
