@@ -365,7 +365,6 @@ class Command:
         if type(cmd) == list: #Declaring multiple aliases
             for cmdalias in cmd:
                 Command(cmdalias,function,ratelimit,description,descriptionArgs,extraArg,group) #Feels a lil clunky?
-                description = cmd[0]
             return
         self.Name = cmd
         self.Function = function
