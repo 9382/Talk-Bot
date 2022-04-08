@@ -59,7 +59,7 @@ async def presetAudioTest(msg,args):
     if not exists(args,1):
         args.insert(1,"sigma")
     file = f"storage/temp/{args[1]}.mp3"
-    vc = await connectToVC(msg.author.voice.channel,idleTimeout=1,ignorePlaying=True) #Join
+    vc = await connectToVC(msg.author.voice.channel,1,True) #Join
     if not vc:
         await msg.channel.send("Couldnt join the vc, probably cause i was busy")
         return

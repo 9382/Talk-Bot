@@ -502,15 +502,13 @@ async def cloneChannel(channelid,cause):
         return newchannel
     except Exception as exc:
         log("[CloneChannel] Exception: "+str(exc)) #NOTE: Check for permission errors to avoid clogging of logs
-#The voice functions below could be removable, as the bot doesnt have any VC functions right now
 def findVoiceClient(guildId):
     #Returns any existing voice client object for the guild
     for voiceObj in client.voice_clients:
         if voiceObj.guild.id == guildId:
             return voiceObj
-VCList = {} #Unmaintained and possibly broken
+VCList = {} #Unmaintained due to minimal use
 async def connectToVC(channel,idleTimeout=60,ignorePlaying=False):
-    #This randomly broke itself after some time - channel.connect is hanging? I cant fix this
     vc = findVoiceClient(channel.guild.id)
     if vc:
         if vc.is_playing():
@@ -528,7 +526,7 @@ async def connectToVC(channel,idleTimeout=60,ignorePlaying=False):
     return vc
 
 #Client
-client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True))
+client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True,voice_states=True))
 ErrorTermBlacklist = ["Connection reset by peer","403 Forbidden","404 Not Found","500 Internal Server Error","503 Service Unavailable"]
 @client.event
 async def on_error(event,*args,**kwargs):
