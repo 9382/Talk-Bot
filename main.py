@@ -382,7 +382,7 @@ class Command:
         else:
             wantedTable = userCommands
         if exists(wantedTable,cmd): #Only warns, still replaces
-            print(f"[AddCmd] Command {cmd} was declared twice")
+            log(f"[AddCmd] Command {cmd} was declared twice for group {group}")
         wantedTable[cmd] = self
     async def Run(self,msg,args,bypassRL=False):
         #Runs a command, first doing a ratelimit check
@@ -586,7 +586,6 @@ async def on_message(msg):
     if await checkCommandList(msg,args,userCommands):
         return
     await checkHistoryClear(msg) #Since its fired after a command, add a check here
-#NOTE: Logging seems to fail to catch links, even when in pure text form. Patch this at some point
 @client.event
 async def on_raw_message_edit(msg):
     #On message edit to avoid filter bypassing and to log
