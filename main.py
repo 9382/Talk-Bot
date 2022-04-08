@@ -86,7 +86,7 @@ def simplifySeconds(seconds):
     if seconds > 0:
         totalSet.append(f"{seconds} second(s)")
     return ", ".join(totalSet[:-1])+(totalSet[:-1] and " and " or "")+totalSet[-1]
-def truncateText(text,limit=2000):
+def truncateText(text,limit=1950):
     #For avoiding issues with message max length
     Ltext = len(text)
     if Ltext < limit:
@@ -164,12 +164,12 @@ class GuildObject:
                 if embed:
                     embed.set_footer(text=currentDate())
                     file = None
-                    if len(embed.description) > 4050: #We dont use truncateText here because it could be important
+                    if len(embed.description) > 3950: #We dont use truncateText here because it could be important
                         logfile = tempFile()
                         open(logfile,"w",encoding="UTF-16",newline="").write(embed.description)
                         file = discord.File(logfile) #This feels slightly weirdly done, but eh
                         tempembed = embed.to_dict() #Can only be set in intialising when in object form
-                        tempembed["description"] = "[Embed description passed 4050 Byte limit. Check the file provided for the embed description]"
+                        tempembed["description"] = "[Embed description passed 3950 Byte limit. Check the file provided for the embed description]"
                         embed = fromdict(tempembed)
                 content = content and truncateText(content)
                 return await channel.send(content=content,embed=embed,file=file)

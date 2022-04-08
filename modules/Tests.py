@@ -31,6 +31,9 @@ AddCommand("d -test reactions",testReactionListener,0,"Tests the Reaction Listen
 async def testPagedEmbed(msg,args): #user, channel, title, content, pagelimit
     await createPagedEmbed(msg.author,msg.channel,msg.author.name,["A","B","C","D","E","F","G","H","I","J"],4)
 AddCommand("d -test pagedembed",testPagedEmbed,0,"Runs the createPagedEmbed function",{},None)
+async def testContentLimit(msg,args):
+    await msg.channel.send(truncateText("a"*3200))
+AddCommand("d -test truncate",testContentLimit,0,"Tests the truncateText feature",{},None)
 
 async def testAll(msg,args):
     score = [0,0]
