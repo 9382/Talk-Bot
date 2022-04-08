@@ -237,7 +237,7 @@ class GuildObject:
                 LoggedMessagesSave[message.Channel] = {}
             LoggedMessagesSave[message.Channel][message.MessageId] = message.Deletion
         return LoggedMessagesSave
-    def CreateSave(self):
+    def CreateConfig(self):
         #Creates a dictionary with the guild's settings
         return {"Guild":self.Guild,
                 "WordBlockList":self.WordBlockList,
@@ -251,7 +251,7 @@ class GuildObject:
                 "FilterNicknames":self.FilterNicknames,
                 "ModRole":self.ModRole,
                 "LoggedMessages":self.FormatLoggedMessages()}
-    def LoadSave(self,settings):
+    def LoadConfig(self,settings):
         #Loads a dictionary as the guild's settings
         for catagory,data in settings.items():
             try:
@@ -717,7 +717,7 @@ async def updateConfigFiles():
     #Runs through all the GMTs and updates their relevant json
     try:
         for guild in client.guilds:
-            success,result = safeWriteToFile(f"storage/settings/{guild.id}.json",json.dumps(getMegaTable(guild).CreateSave()))
+            success,result = safeWriteToFile(f"storage/settings/{guild.id}.json",json.dumps(getMegaTable(guild).CreateConfig()))
             if success:
                 print(f"[GuildObject {guild.id}] Saving: {result}")
             else:
@@ -800,5 +800,5 @@ for i in os.listdir("storage/settings"):
         if not exists(j,"Guild"):
             log("[JSON] Guild index missing for file "+i)
             continue
-        getMegaTable(j["Guild"]).LoadSave(j)
+        getMegaTable(j["Guild"]).LoadConfig(j)
 log("loaded configs, main is finished")
