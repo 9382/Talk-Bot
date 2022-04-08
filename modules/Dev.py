@@ -38,12 +38,6 @@ async def sendLogFile(msg,args):
         await msg.channel.send("No such log file "+str(exists(args,1) and args[1]))
 Command("sendlog",sendLogFile,0,"Sends the log file specified if it exists",{"log":True},None,"dev")
 
-async def getPing(msg,args):
-    startTime = time.time()
-    message = await msg.channel.send("<???> ms")
-    await message.edit(content=str(round((time.time()-startTime)*1000))+" ms")
-Command("ping",getPing,0,"Uses the time it takes to send a message to calculate its ping",{},None,"dev")
-
 async def currentDateAsync(msg,args):
     await msg.channel.send(currentDate())
 Command("cdate",currentDateAsync,0,"Sends the current date and time as a message",{},None,"dev")
