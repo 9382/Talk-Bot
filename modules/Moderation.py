@@ -20,7 +20,7 @@ async def setLogChannel(msg,args):
 Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided (provide no arguments for a list of log channels)",{"category":False,"channel":False},None,"admin")
 
 async def prune(msg,args):
-    pruneAmount = exists(args,1) and numRegex.search(args[1]) and min(400,max(0,int(numRegex.search(args[1]).group())))
+    pruneAmount = exists(args,1) and numRegex.search(args[1]) and min(1000,max(0,int(numRegex.search(args[1]).group())))
     if pruneAmount:
         #await msg.channel.delete_messages(await msg.channel.history(limit=pruneAmount+1).flatten()) #+1 due to command message
         success,result = await clearMessageList(msg.channel,await msg.channel.history(limit=pruneAmount+1).flatten()) #+1 due to command message
@@ -31,7 +31,7 @@ async def prune(msg,args):
             log(f"[Prune {msg.guild.id}] Failed to prune {pruneAmount}+1: {result}")
     else:
         await msg.channel.send(embed=fromdict({"title":"Error","description":"Prune amount must be an integer","color":colours["error"]}))
-Command("prune",prune,10,"Prunes a set amount of messages in the channel (Max 400)",{"messages":True},None,"admin")
+Command("prune",prune,10,"Prunes a set amount of messages in the channel (Max 1000)",{"messages":True},None,"admin")
 
 list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ProtectedMessages","ChannelClearList","QueuedChannels","ChannelLimits"]
 async def list_func(msg,args):
