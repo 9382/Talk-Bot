@@ -31,7 +31,7 @@ async def prune(msg,args):
             log(f"[Prune {msg.guild.id}] Failed to prune {pruneAmount}+1: {result}")
     else:
         await msg.channel.send(embed=fromdict({"title":"Error","description":"Prune amount must be an integer","color":colours["error"]}),delete_after=10)
-Command("prune",prune,10,"Prunes a set amount of messages in the channel (Max 1000)",{"messages":True},None,"admin")
+Command("prune",prune,10,"Prunes a set amount of messages in the channel (Max 1000)",{"messages":True},None,"mod")
 
 async def setmodrole(msg,args,removing):
     gmt = getMegaTable(msg)
@@ -87,7 +87,7 @@ async def list_func(msg,args):
     else:
         #Below message lasts 180 seconds, due to what it may contain. Im noting it here because this is a nightmare to read (NOTE: fixup somehow)
         getMegaTable(msg).ProtectMessage((await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString,8,(section=="QueuedChannels" and "(Time until the next cycle)") or "",180)).id,180)
-Command("list",list_func,0,"View the list of settings to do with the server's administration",{"subsection":False},None,"admin")
+Command("list",list_func,0,"View the list of settings to do with the server's administration",{"subsection":False},None,"mod")
 
 async def refilter(msg,args):
     imNotDead = await msg.channel.send(embed=fromdict({"Title":"Trying...","description":"Trying to refilter all messages. Give me a moment...","color":colours["info"]}))
@@ -107,7 +107,7 @@ async def refilter(msg,args):
             stats["Filt"] += 1
     await imNotDead.delete()
     await msg.channel.send(embed=fromdict({"title":"Success","description":f"Successfully checked {len(messageList)} messages.\n{stats['Filt']} were filtered, and {stats['PreFilt']} were already filtered","color":colours["success"]}))
-Command("refilter",refilter,30,"Re-Filter's all messages of a chat within the last 10 days",{},None,"admin")
+Command("refilter",refilter,30,"Re-Filter's all messages of a chat within the last 10 days",{},None,"mod")
 
 async def protectMessage(msg,args): #Prevents a message from being filtered
     msgid = exists(args,1) and args[1]
@@ -121,7 +121,7 @@ async def protectMessage(msg,args): #Prevents a message from being filtered
     else:
         getMegaTable(msg).ProtectMessage(msgid,9e9)
         await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is now protected","color":colours["success"]}))
-Command("protect",protectMessage,2,"Prevents a message from being filtered",{"messageid":True},None,"admin")
+Command("protect",protectMessage,2,"Prevents a message from being filtered",{"messageid":True},None,"mod")
 async def unprotectMessage(msg,args):
     msgid = exists(args,1) and args[1]
     if not msgid:
@@ -138,7 +138,7 @@ async def unprotectMessage(msg,args):
         await msg.channel.send(embed=fromdict({"title":"Error","description":str(msgid)+" was never protected","color":colours["error"]}))
     else:
         await msg.channel.send(embed=fromdict({"title":"Success","description":str(msgid)+" is no longer protected","color":colours["success"]}))
-Command("unprotect",unprotectMessage,2,"Removes a message ID from the protected list",{"messageid":True},None,"admin")
+Command("unprotect",unprotectMessage,2,"Removes a message ID from the protected list",{"messageid":True},None,"mod")
 
 async def blockWord(msg,args):
     if not exists(args,2):
@@ -274,4 +274,4 @@ async def panic(msg,args): #Unfinished!
     await msg.channel.send(embed=fromdict({"title":"Panic results:","description":finalString,"color":colours["info"]}))
 async def confirmPanic(msg,args):
     await getMegaTable(msg).CreateConfirmation(msg,args,panic)
-Command("panic",confirmPanic,60,"Locks down the server, clearing invites and locking channels. Use this sparingly",{},None,"dev")
+Command("panic",confirmPanic,60,"Locks down the server, clearing invites and locking channels. Use this sparingly (UNFINISHED)",{},None,"dev")
