@@ -28,9 +28,9 @@ for i in os.listdir("update"): #What a mess
         log("Please update __start__ manually instead of through auto-update")
         continue
     trueName = i.replace("^","/")
-    os.makedirs("/".join(trueName.split("/")[:-1]),exist_ok=True)
     if trueName != i:
         log(f"Sub-folder detected: {i.split('^')}")
+        os.makedirs("/".join(trueName.split("/")[:-1]),exist_ok=True)
     newContent = open("update/"+i,newline="").read()
     oldFile = open(trueName,"w",newline="")
     try:
