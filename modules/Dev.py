@@ -57,6 +57,12 @@ async def presetAudioTest(msg,args):
     if not vc:
         await msg.channel.send("Couldnt join the vc, probably cause i was busy")
         return
+    #-vol XYZ
+    #-af
+    # aecho=0.8:0.88:6:0.4
+    # aemphasis=level_in=1:level_out=1:mode=reproduction:type=col
+    # aeval=val(0)|-val(1)
+    # afftfilt=\"'real=re * (1-clip((b/nb)*b,0,1))':imag='im * (1-clip((b/nb)*b,0,1))'\"
     vc.play(await discord.FFmpegOpusAudio.from_probe(file)) #Audio
 Command("presetaudio",presetAudioTest,0,"Test playing preset audio files",{"file":False},None,"dev")
 
