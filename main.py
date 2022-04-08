@@ -153,6 +153,7 @@ class GuildObject:
         self.ChannelLimits = {}
         self.ProtectedMessages = {}
         self.FilterNicknames = False
+        self.ModRole = None #NOTE: Consider auto-checking if they fit a certain permission? E.g. manage roles. Could be more elegant
         if exists(guildMegaTable,gid):
             log(f"[GMT] Guild {gid} was declared twice")
         guildMegaTable[gid] = self
@@ -248,6 +249,7 @@ class GuildObject:
                 "ChannelLimits":self.ChannelLimits,
                 "ProtectedMessages":self.ProtectedMessages,
                 "FilterNicknames":self.FilterNicknames,
+                "ModRole":self.ModRole,
                 "LoggedMessages":self.FormatLoggedMessages()}
     def LoadSave(self,settings):
         #Loads a dictionary as the guild's settings
@@ -358,6 +360,7 @@ async def checkHistoryClear(msg):
 performanceCheck = False #For timing the time taken of a command to execute
 devCommands = {} #basically testing and back-end commands
 adminCommands = {} #This will take priority over user commands should a naming conflict exist
+modCommands = {} #These are moderation commands that dont need to be hidden behind admin. Mid priority
 userCommands = {}
 class Command:
     def __init__(self,cmd,function,ratelimit,description,descriptionArgs,extraArg,group):
@@ -379,6 +382,8 @@ class Command:
             wantedTable = devCommands
         elif group == "admin":
             wantedTable = adminCommands
+        elif group == "mod":
+            wantedTable = modCommands
         else:
             wantedTable = userCommands
         if exists(wantedTable,cmd): #Only warns, still replaces
@@ -582,6 +587,9 @@ async def on_message(msg):
             return
     if msg.author.guild_permissions.administrator:
         if await checkCommandList(msg,args,adminCommands):
+            return
+    if gmt.ModRole in msg.author.roles or msg.author.guild_permissions.administrator:
+        if await checkCommandList(msg,args,modCommands):
             return
     if await checkCommandList(msg,args,userCommands):
         return

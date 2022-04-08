@@ -1,5 +1,5 @@
 async def cmds(msg,args):
-    cmdList = {"Admin":adminCommands}
+    cmdList = {"Admin":adminCommands,"Moderator":modCommands}
     for command,cmdInfo in userCommands.items():
         if not exists(cmdList,cmdInfo.Group):
             cmdList[cmdInfo.Group] = {}

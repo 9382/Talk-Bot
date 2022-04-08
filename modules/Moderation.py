@@ -33,6 +33,25 @@ async def prune(msg,args):
         await msg.channel.send(embed=fromdict({"title":"Error","description":"Prune amount must be an integer","color":colours["error"]}),delete_after=10)
 Command("prune",prune,10,"Prunes a set amount of messages in the channel (Max 1000)",{"messages":True},None,"admin")
 
+async def setmodrole(msg,args,removing):
+    gmt = getMegaTable(msg)
+    if removing:
+        gmt.ModRole = None
+        await msg.channel.send(embed=fromdict({"title":"Success","description":"Removed any active moderator level role","color":colours["success"]}))
+        return
+    wantedRole = exists(args,1) and numRegex.search(args[1]) and int(numRegex.search(args[1]).group())
+    if not wantedRole:
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"You must provide a role to become the moderator role","color":colours["error"]}),delete_after=10)
+        return
+    modrole = msg.guild.get_role(wantedRole)
+    if not modrole:
+        await msg.channel.send(embed=fromdict({"title":"Error","description":f"{wantedRole} does not point to a valid role","color":colours["error"]}),delete_after=10)
+        return
+    await msg.channel.send(embed=fromdict({"title":"Success","description":f"<@&{wantedRole}> now has moderator command permissions{gmt.ModRole and f', and <@&{gmt.ModRole.id}> has lost them' or ''}","color":colours["success"]}))
+    gmt.ModRole = modrole
+Command("setmodrole",setmodrole,3,"Set the role that allows people to run moderator level commands",{"role":True},False,"admin")
+Command("removemodrole",setmodrole,3,"Remove the current mdoerator level role",{},True,"admin")
+
 list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ProtectedMessages","ChannelClearList","QueuedChannels","ChannelLimits"]
 async def list_func(msg,args):
     if len(args) < 2:
