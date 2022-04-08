@@ -30,7 +30,7 @@ async def prune(msg,args):
             await msg.channel.send(embed=fromdict({"title":"Error","description":f"The bot failed to prune the messages. Check its permissions, or try again\n`{result}`","color":colours["error"]}))
             log(f"[Prune {msg.guild.id}] Failed to prune {pruneAmount}+1: {result}")
     else:
-        await msg.channel.send(embed=fromdict({"title":"Error","description":"Prune amount must be an integer","color":colours["error"]}))
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"Prune amount must be an integer","color":colours["error"]}),delete_after=10)
 Command("prune",prune,10,"Prunes a set amount of messages in the channel (Max 1000)",{"messages":True},None,"admin")
 
 list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ProtectedMessages","ChannelClearList","QueuedChannels","ChannelLimits"]
@@ -43,7 +43,7 @@ async def list_func(msg,args):
         return
     section = args[1]
     if not section in list_validSections:
-        await msg.channel.send(embed=fromdict({"title":"Invalid","description":section+" is not a valid catagory","color":colours["error"]}))
+        await msg.channel.send(embed=fromdict({"title":"Invalid","description":section+" is not a valid catagory","color":colours["error"]}),delete_after=10)
         return
     parser = None
     if section in ["WordBlockList","MediaFilters","ChannelClearList","QueuedChannels"]:
@@ -173,6 +173,8 @@ async def clearChannel(msg,args):
         for t in guildChannelList:
             if channelName == t.name:
                 await cloneChannel(t.id,f"{msg.author} {msg.author.id}")
+                return
+        await msg.channel.send(embed=fromdict({"title":"Error","description":f"Couldnt find a channel with the name {channelName}","color":colours["error"]}),delete_after=10)
 Command("clearchannel",clearChannel,0,"Add a channel to be cleared every so often OR clear now (no frequency)",{"channelName":True,"frequency":False},None,"admin")
 async def unclearChannel(msg,args):
     if len(args) < 2:
@@ -228,11 +230,9 @@ async def clearAllInvites(msg,args,silent=False):
     try:
         invites = await msg.guild.invites()
     except:
-        if silent:
-            return False,None
-        else:
-            await msg.channel.send(embed=fromdict({"title":"Error","description":"Failed to get invites. Maybe try again, or check the bot's permissions","color":colours["error"]}))
-            return
+        if not silent:
+            await msg.channel.send(embed=fromdict({"title":"Error","description":"Failed to get invites. Maybe try again, or check the bot's permissions","color":colours["error"]}),delete_after=10)
+        return False,None
     successRate,totalCount = 0,0
     for invite in invites:
         try:
@@ -241,10 +241,9 @@ async def clearAllInvites(msg,args,silent=False):
         except:
             pass
         totalCount += 1
-    if silent:
-        return True,f"{str(successRate)}/{str(totalCount)}"
-    else:
+    if not silent:
         await msg.channel.send(embed=fromdict({"title":"Success","description":f"{successRate} out of {totalCount} invites were successfully cleared","color":colours["success"]}))
+    return True,f"{str(successRate)}/{str(totalCount)}"
 async def clearInvitesConfirm(msg,args):
     await getMegaTable(msg).CreateConfirmation(msg,args,clearAllInvites)
 Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},None,"admin")
