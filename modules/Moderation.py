@@ -265,7 +265,7 @@ async def clearAllInvites(msg,args,silent=False):
     return True,f"{str(successRate)}/{str(totalCount)}"
 async def clearInvitesConfirm(msg,args):
     await getMegaTable(msg).CreateConfirmation(msg,args,clearAllInvites)
-Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},None,"admin")
+Command("clearinvites",clearInvitesConfirm,5,"Clears all invites in the server, deleting them",{},None,"mod")
 
 async def panic(msg,args): #Unfinished!
     finalString = ""
