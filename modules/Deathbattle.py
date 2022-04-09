@@ -90,5 +90,5 @@ async def fastDeathBattle(msg,args):
     total = ""
     for i in dbResults['log']:
         total += f"{i.hitMsg} | u1 {i.u1hp} u2 {i.u2hp}\n"
-    await msg.channel.send(total)
+    await msg.channel.send(embed=fromdict({"description":truncateText(total,limit=3950)}))
 Command("fastdeathbattle",fastDeathBattle,10,"Fight someone to the death??",{"@user":False},None,"dev")
