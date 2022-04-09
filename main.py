@@ -33,10 +33,11 @@ def currentDate():
     return str(datetime.fromtimestamp(time.time()//1))
 def safeWriteToFile(filename,content,mode="w",encoding="UTF-8"):
     #Writes contents to a file, auto-creating the directory should it be missing
-    try:
-        os.makedirs("/".join(filename.replace("\\","/").split("/")[:-1]),exist_ok=True)
-    except:
-        return False,f"Couldnt make directory for {filename}"
+    if filename.find("\\") > -1:
+        try:
+            os.makedirs("/".join(filename.replace("\\","/").split("/")[:-1]),exist_ok=True)
+        except:
+            return False,f"Couldnt make directory for {filename}"
     try:
         file = open(filename,mode,encoding=encoding,newline="")
     except:
