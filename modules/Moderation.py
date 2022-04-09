@@ -50,7 +50,7 @@ async def setmodrole(msg,args,removing):
     await msg.channel.send(embed=fromdict({"title":"Success","description":f"<@&{wantedRole}> now has moderator command permissions{gmt.ModRole and f', and <@&{gmt.ModRole.id}> has lost them' or ''}","color":colours["success"]}))
     gmt.ModRole = modrole
 Command("setmodrole",setmodrole,3,"Set the role that allows people to run moderator level commands",{"role":True},False,"admin")
-Command("removemodrole",setmodrole,3,"Remove the current mdoerator level role",{},True,"admin")
+Command("removemodrole",setmodrole,3,"Removes the current mdoerator level role",{},True,"admin")
 
 list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ProtectedMessages","ChannelClearList","QueuedChannels","ChannelLimits"]
 async def list_func(msg,args):
