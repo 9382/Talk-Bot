@@ -39,7 +39,7 @@ async def guideSetup(msg,args):
 Command("setup",guideSetup,1,"Not made yet",{},None,"dev")
 async def publicVote(msg,args):
     if len(args) < 2:
-        await msg.channel.send(embed=fromdict({"title":"Error","description":"You gotta include the thing to vote on","color":colours["error"]}),delete_after=10)
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"You have to include the thing to vote on","color":colours["error"]}),delete_after=10)
         return
     attachments = msg.attachments
     imageUrl = (exists(attachments,0) and attachments[0].url) or ""
