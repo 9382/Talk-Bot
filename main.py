@@ -101,11 +101,11 @@ findMediaRegex = regex.compile("https?://((cdn|media)\.discordapp\.(com|net)/att
 guildMegaTable = {}
 class FilteredMessage:
     #Object used to represent a filtered message
-    def __init__(self,expirey,msgid=None,channelid=None,messageObj=None):
+    def __init__(self,expiry,msgid=None,channelid=None,messageObj=None):
         if messageObj:
             msgid = messageObj.id
             channelid = messageObj.channel.id
-        self.Deletion = expirey
+        self.Deletion = expiry
         self.Message = messageObj # Do not get directly, use GetMessageObj
         self.MessageId = msgid
         self.Channel = channelid
@@ -125,12 +125,12 @@ class Confirmation:
         self.msg = msg
         self.args = args
         self.Function = function
-        self.Expirey = time.time()+20
+        self.Expiry = time.time()+20
     async def Alert(self):
         if not self.Expired():
-            await self.msg.channel.send("Hey, are you sure? Reply (y/yes) or (n/no) - Expires in 20 seconds",delete_after=self.Expirey-time.time())
+            await self.msg.channel.send("Hey, are you sure? Reply (y/yes) or (n/no) - Expires in 20 seconds",delete_after=self.Expiry-time.time())
     def Expired(self):
-        return time.time() > self.Expirey
+        return time.time() > self.Expiry
     async def Check(self,msg):
         content = msg.content.lower()
         if content == "yes" or content == "y":
@@ -259,8 +259,8 @@ class GuildObject:
                 if catagory == "LoggedMessages":
                     self.LoggedMessages = {}
                     for channel,messages in data.items():
-                        for message,expirey in messages.items():
-                            self.LoggedMessages[message] = FilteredMessage(expirey,int(message),int(channel))
+                        for message,expiry in messages.items():
+                            self.LoggedMessages[message] = FilteredMessage(expiry,int(message),int(channel))
                 elif hasattr(self,catagory):
                     if type(data) != type(getattr(self,catagory)):
                         log(f"[GuildObject {self.Guild}] Invalid data type for {catagory} ({type(data)} vs {type(getattr(self,catagory))})")
@@ -288,8 +288,8 @@ class GuildObject:
         if await confirmationObj.Check(msg):
             await confirmationObj.Function(confirmationObj.msg,confirmationObj.args)
         return True
-    def ProtectMessage(self,msgid,expirey):
-        self.ProtectedMessages[msgid] = time.time() + expirey #Just more convenient
+    def ProtectMessage(self,msgid,expiry):
+        self.ProtectedMessages[msgid] = time.time() + expiry #Just more convenient
 def getMegaTable(obj):
     gid = None
     t = type(obj)
@@ -439,15 +439,15 @@ class WatchReaction:
         self.Emoji = emoji
         self.Function = function
         self.Args = args
-        self.Expirey = time.time()+60 #If unused, it becomes unwatched
+        self.Expiry = time.time()+60 #If unused, it becomes unwatched
         ReactionListenList.append(self)
     def Expired(self):
-        return time.time() > self.Expirey
+        return time.time() > self.Expiry
     async def Check(self,msg,user,emoji):
         if self.Expired():
             ReactionListenList.remove(self)
         elif msg.id == self.MsgId and user.id == self.UserId:
-            self.Expirey = time.time()+60
+            self.Expiry = time.time()+60
             if emoji == self.Emoji:
                 await self.Function(msg,self.Emoji,self.Args)
                 return True
@@ -456,7 +456,7 @@ class WatchReaction:
             ReactionListenList.remove(self)
             return
         self.Args = args
-        self.Expirey = time.time()+60
+        self.Expiry = time.time()+60
         return True
 async def UpdateReactionWatch(msg,emoji,args):
     for listener in ReactionListenList:
