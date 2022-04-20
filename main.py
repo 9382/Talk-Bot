@@ -434,7 +434,7 @@ ReactionListenList = [] #NOTE: Theres gotta be a better system
 class WatchReaction:
     #Creates a listener for a message and its reactions
     def __init__(self,msg,user,emoji,function,args):
-        self.MsgId = (type(msg) == int and msg) or msg.id
+        self.Message = msg #For easier usage, it must be a message object. PartialMessage should still work
         self.UserId = (type(user) == int and user) or user.id #The user whitelisted to react to it
         self.Emoji = emoji
         self.Function = function
@@ -443,10 +443,13 @@ class WatchReaction:
         ReactionListenList.append(self)
     def Expired(self):
         return time.time() > self.Expiry
+    async def RemoveReaction(self):
+        await self.Message.remove_reaction(self.Emoji,client.user)
     async def Check(self,msg,user,emoji):
         if self.Expired():
+            await self.RemoveReaction()
             ReactionListenList.remove(self)
-        elif msg.id == self.MsgId and user.id == self.UserId:
+        elif msg.id == self.Message.id and user.id == self.UserId:
             self.Expiry = time.time()+60
             if emoji == self.Emoji:
                 await self.Function(msg,self.Emoji,self.Args)
@@ -459,8 +462,8 @@ class WatchReaction:
         self.Expiry = time.time()+60
         return True
 async def UpdateReactionWatch(msg,emoji,args):
-    for listener in ReactionListenList:
-        if listener.MsgId == msg.id and (emoji == "all" or emoji == listener.Emoji):
+    for listener in list(ReactionListenList):
+        if listener.Message.id == msg.id and (emoji == "all" or emoji == listener.Emoji):
             listener.Update(args)
 async def changePageEmbed(msg,emoji,args):
     #Helper of createPagedEmbed
@@ -625,8 +628,7 @@ async def on_raw_message_delete(msg):
 async def on_reaction_add(reaction,user):
     if user.id == client.user.id: #If its the bot
         return
-    ListenListCache = ReactionListenList
-    for listener in ListenListCache:
+    for listener in list(ReactionListenList):
         await listener.Check(reaction.message,user,reaction.emoji)
 @client.event
 async def on_guild_join(guild):
@@ -728,6 +730,17 @@ async def updateConfigFiles():
     except Exception as exc:
         log("[!] UpdateConfig Exception: "+str(exc))
 updateConfigFiles.start()
+@tasks.loop(seconds=5)
+async def clearBacklogs():
+    #Clears old entires in large lists or dictionaries
+    try:
+        for reaction in list(ReactionListenList): #Temporary copy to avoid size-change issues
+            if reaction.Expired():
+                await reaction.RemoveReaction()
+                ReactionListenList.remove(reaction)
+    except Exception as exc:
+        log("[!] ClearBacklogs Exception: "+str(exc))
+clearBacklogs.start()
 @tasks.loop(seconds=2)
 async def VCCheck():
     #Auto disconnects from a VC after inactivity
