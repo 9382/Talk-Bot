@@ -738,11 +738,6 @@ async def clearBacklogs():
             if reaction.Expired():
                 await reaction.RemoveReaction()
                 ReactionListenList.remove(reaction)
-        for message in dict(CustomMessageCache):
-            msgAge = datetime.today()-message.created_at
-            #Only used for the edit/deletion logs, so we dont need it critically. Begin to clear after 2 days
-            if msgAge > 172800:
-                CustomMessageCache.pop(message)
     except Exception as exc:
         log("[!] ClearBacklogs Exception: "+str(exc))
 clearBacklogs.start()
