@@ -439,10 +439,10 @@ class WatchReaction:
         self.Emoji = emoji
         self.Function = function
         self.Args = args
-        self.Expiry = time.time()+60 #If unused, it becomes unwatched
+        self.Expiry = time.time() #If unused, it becomes unwatched
         ReactionListenList.append(self)
     def Expired(self):
-        return time.time() > self.Expiry
+        return time.time() > self.Expiry+300
     async def RemoveReaction(self):
         await self.Message.remove_reaction(self.Emoji,client.user)
     async def Check(self,msg,user,emoji):
@@ -450,7 +450,7 @@ class WatchReaction:
             await self.RemoveReaction()
             ReactionListenList.remove(self)
         elif msg.id == self.Message.id and user.id == self.UserId:
-            self.Expiry = time.time()+60
+            self.Expiry = time.time()
             if emoji == self.Emoji:
                 await self.Function(msg,self.Emoji,self.Args)
                 return True
@@ -459,7 +459,7 @@ class WatchReaction:
             ReactionListenList.remove(self)
             return
         self.Args = args
-        self.Expiry = time.time()+60
+        self.Expiry = time.time()
         return True
 async def UpdateReactionWatch(msg,emoji,args):
     for listener in list(ReactionListenList):
