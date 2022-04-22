@@ -444,7 +444,10 @@ class WatchReaction:
     def Expired(self):
         return time.time() > self.Expiry+300
     async def RemoveReaction(self):
-        await self.Message.remove_reaction(self.Emoji,client.user)
+        try:
+            await self.Message.remove_reaction(self.Emoji,client.user)
+        except:
+            pass #Message has probably been deleted. (Note: Couldnt find a property saying if it was deleted, so you get try except instead)
     async def Check(self,msg,user,emoji):
         if self.Expired():
             await self.RemoveReaction()
