@@ -346,7 +346,7 @@ async def checkHistoryClear(msg):
                 channelHistory = await msg.channel.history(limit=msgLimit+15).flatten()
                 for message in channelHistory:
                     if not exists(CustomMessageCache,message.id):
-                        CustomMessageCache[message.id] = message
+                        CustomMessageCache[message.id] = {"m":message,"t":time.time()}
                 await clearMessageList(msg.channel,channelHistory[msgLimit:])
             except Exception as exc:
                 print("[History] Failed to do:",msg.guild.id,exc)
@@ -354,7 +354,7 @@ async def checkHistoryClear(msg):
             channelHistory = await msg.channel.history(limit=150).flatten()
             for message in channelHistory:
                 if not exists(CustomMessageCache,message.id):
-                    CustomMessageCache[message.id] = message
+                    CustomMessageCache[message.id] = {"m":message,"t":time.time()}
 
 performanceCheck = False #For timing the time taken of a command to execute
 devCommands = {} #basically testing and back-end commands
@@ -611,7 +611,7 @@ async def on_raw_message_edit(msg):
     content = exists(msg.data,"content") and msg.data["content"]
     if content and not(client.user and messageObj.author.id == client.user.id): #Not worried about logging embed edits
         msgid = msg.message_id
-        cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]
+        cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]["m"]
         attachments = " ".join([o.url for o in messageObj.attachments]) #Attachments cant change via edits, so only get one
         attachmentfinal = attachments and f"\n**Attached Files**\n{attachments}" or "" #If i make this embed line any longer i might just cry, so we move a bit here
         await gmt.Log("messages",embed=fromdict({"title":"Message Edited","description":f"<@{messageObj.author.id}> ({messageObj.author}) edited a message in <#{messageObj.channel.id}>\n(ID [{messageObj.id}]({messageObj.jump_url})){attachmentfinal}\n**Previous Content**\n{cached and cached.content or '<unknown>'}\n**New Content**\n{content}","color":colours["warning"]}))
@@ -619,7 +619,7 @@ async def on_raw_message_edit(msg):
 async def on_raw_message_delete(msg):
     #For logging deleted messages
     msgid = msg.message_id
-    cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]
+    cached = msg.cached_message or exists(CustomMessageCache,msgid) and CustomMessageCache[msgid]["m"]
     if cached and not exists(MessageLogBlacklist,msgid): #No point logging a deletion if we dont know what was deleted (maybe? might be worth posting anyways, unsure)
         if (client.user and client.user.id != cached.author.id): #Dont report self
             attachments = " ".join([o.url for o in cached.attachments])
@@ -742,6 +742,9 @@ async def clearBacklogs():
         for msgid,queuetime in dict(MessageLogBlacklist).items():
             if time.time() > queuetime+30: #Probably deleted by now
                 MessageLogBlacklist.pop(msgid)
+        for msgid,msgdata in dict(CustomMessageCache).items():
+            if time.time() > msgdata["t"]+172800: #2 Days. Hopefully, the bot wont reboot often and this wont matter. (Possibly too long?)
+                CustomMessageCache.pop(msgid)
     except Exception as exc:
         log("[!] ClearBacklogs Exception: "+str(exc))
 clearBacklogs.start()
