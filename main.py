@@ -319,17 +319,15 @@ async def getGuildInviteStats(guild):
 MessageLogBlacklist = {} #Dont log self-deleted messages
 async def clearMessageList(channel,messages): #Max of 100 for bulkdelete, so we split it
     index = 0
-    lOfM = len(messages)
     for message in messages:
-        MessageLogBlacklist[message.id] = True
-    while index*100 < lOfM:
+        MessageLogBlacklist[message.id] = time.time() #Cleared from MLB by clearBacklogs
+    while index*100 < len(messages):
         try:
             await channel.delete_messages(messages[index*100:100+index*100])
         except Exception as exc:
             log(f"[BulkDelete {channel.id}] Failed to delete {len(messages[index*100:100+index*100])} messages: {exc}")
             return False,exc
         index += 1
-    #NOTE: Consider adding delayed task to remove these from MLB later for memory saving
     return True,None
 CustomMessageCache = {} #Incase of a reboot, we use recent history as a custom "cache message" system
 #NOTE: Consider clearing messages after they are stupidly old
@@ -741,6 +739,9 @@ async def clearBacklogs():
             if reaction.Expired():
                 await reaction.RemoveReaction()
                 ReactionListenList.remove(reaction)
+        for msgid,queuetime in dict(MessageLogBlacklist).items():
+            if time.time() > queuetime+30: #Probably deleted by now
+                MessageLogBlacklist.pop(msgid)
     except Exception as exc:
         log("[!] ClearBacklogs Exception: "+str(exc))
 clearBacklogs.start()
