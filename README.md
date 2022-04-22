@@ -8,6 +8,6 @@ If you run into any technical issues <sub>(or are extremely confused due to the 
 ## Requirements for hosting
 Working python (Tested on 3.8, but should work on higher and some lower)
 
-The discord module, the requests module, and the python-dotenv module (the rest come with python)
+The discord module, the requests module (Only if using the NSFW module), and the python-dotenv module. The rest should come with python
 
 The bot auth goes in the .env file (See the example)
