@@ -265,6 +265,17 @@ class GuildObject:
                     if type(data) != type(getattr(self,catagory)):
                         log(f"[GuildObject {self.Guild}] Invalid data type for {catagory} ({type(data)} vs {type(getattr(self,catagory))})")
                     else:
+                        if type(data) == dict:
+                            #Auto-translate keys that could be an integer into an integer, as JSON can only store keys as string
+                            #This'll prevent bad str() practice in some functions relying on data
+                            for key in list(data.keys()):
+                                try:
+                                    keyint = int(key)
+                                except ValueError:
+                                    pass
+                                else:
+                                    data[keyint] = data[key]
+                                    data.pop(key)
                         setattr(self,catagory,data)
                 else:
                     log(f"[GuildObject {self.Guild}] Unknown catagory {catagory}")
@@ -336,11 +347,11 @@ async def checkHistoryClear(msg):
     #Checks for and removes messages beyond the message count limit
     #This is always ran last, and therefore how long this takes really doesnt matter
     gmt = getMegaTable(msg)
-    cid = str(msg.channel.id) #Dumb storage logic by JSON
-    lastCheck = (exists(HistoryClearRatelimit,cid) and HistoryClearRatelimit[cid]) or 0
+    cid = msg.channel.id
+    lastCheck = (cid in HistoryClearRatelimit and HistoryClearRatelimit[cid]) or 0
     if lastCheck < time.time(): #Limit cause history call is quite intensive
         HistoryClearRatelimit[cid] = time.time() + 2.5
-        if exists(gmt.ChannelLimits,cid):
+        if cid in gmt.ChannelLimits:
             msgLimit = gmt.ChannelLimits[cid]
             try:
                 channelHistory = await msg.channel.history(limit=msgLimit+15).flatten()
@@ -349,7 +360,7 @@ async def checkHistoryClear(msg):
                         CustomMessageCache[message.id] = {"m":message,"t":time.time()}
                 await clearMessageList(msg.channel,channelHistory[msgLimit:])
             except Exception as exc:
-                print("[History] Failed to do:",msg.guild.id,exc)
+                print(f"[History {msg.guild.id}] Failed to do a ChannelLimit clear: {exc}")
         else: #Just store the last 150 messages into CustomMessagesCache, and dont care about history clearing
             channelHistory = await msg.channel.history(limit=150).flatten()
             for message in channelHistory:

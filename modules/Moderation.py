@@ -236,7 +236,7 @@ async def controlMessageLimit(msg,args,removing):
             return
         if msgLimit <= 0:
             await channel.send(embed=fromdict({"title":"No","description":"1 or more, no less","color":colours["error"]}),delete_after=10)
-        gmt.ChannelLimits[str(channel.id)] = msgLimit #JSON Logic
+        gmt.ChannelLimits[channel.id] = msgLimit
         await channel.send(embed=fromdict({"title":"Success","description":f"All messages after #{msgLimit} will be auto-deleted","color":colours["success"]}))
     else:
         if exists(gmt.ChannelLimits,channel.id):
