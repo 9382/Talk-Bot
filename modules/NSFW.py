@@ -42,7 +42,7 @@ async def getPostList(msg,sitetype,tags):
             #If not "<post ", ive hit end (<posts>)
             #If not "/>", its a broken post tha for some reason newlines in the tags. Will break regex if searched
             #Either way, skip the post if both conditions are not met
-            if i.find("<post ") > -1 and if i.find("/>") > -1:
+            if i.find("<post ") > -1 and i.find("/>") > -1:
                 postInfo = {}
                 postID = numRegex.search(getPostIDRegex.search(i).group()).group()
                 postInfo["postPage"] = f"https://{site}/index.php?page=post&s=view&id="+postID
