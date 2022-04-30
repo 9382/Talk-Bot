@@ -346,6 +346,9 @@ HistoryClearRatelimit = {}
 async def checkHistoryClear(msg):
     #Checks for and removes messages beyond the message count limit
     #This is always ran last, and therefore how long this takes really doesnt matter
+    if type(msg.channel) == discord.VoiceChannel:
+        #Discord decided they would add chat channels to voice channels. and discord.py does NOT like it :) (Temporary fix)
+        return
     gmt = getMegaTable(msg)
     cid = msg.channel.id
     lastCheck = (cid in HistoryClearRatelimit and HistoryClearRatelimit[cid]) or 0
