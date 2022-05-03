@@ -430,7 +430,7 @@ async def checkCommandList(msg,args,commandTable):
     if "\n" in arg0:
         args[0] = arg0.split("\n")[0]
         args.insert(1,arg0.split("\n")[1])
-    c = msg.content
+    c = msg.content.lower()
     for command in commandTable:
         cregion = len(prefix+command) #cregion = command region
         if prefix+command == c[:cregion] and (not exists(c,cregion) or c[cregion] == " " or c[cregion] == "\n"):
