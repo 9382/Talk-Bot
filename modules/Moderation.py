@@ -47,8 +47,8 @@ async def setmodrole(msg,args,removing):
     if not modrole:
         await msg.channel.send(embed=fromdict({"title":"Error","description":f"{wantedRole} does not point to a valid role","color":colours["error"]}),delete_after=10)
         return
-    await msg.channel.send(embed=fromdict({"title":"Success","description":f"<@&{wantedRole}> now has moderator command permissions{gmt.ModRole and f', and <@&{gmt.ModRole.id}> has lost them' or ''}","color":colours["success"]}))
-    gmt.ModRole = modrole
+    await msg.channel.send(embed=fromdict({"title":"Success","description":f"<@&{wantedRole}> now has moderator command permissions{gmt.ModRole and f', and <@&{gmt.ModRole}> has lost them' or ''}","color":colours["success"]}))
+    gmt.ModRole = wantedRole #Have to use ID to allow saving
 Command("setmodrole",setmodrole,3,"Set the role that allows people to run moderator level commands",{"role":True},False,"admin")
 Command("removemodrole",setmodrole,3,"Removes the current mdoerator level role",{},True,"admin")
 

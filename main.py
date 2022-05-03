@@ -154,7 +154,7 @@ class GuildObject:
         self.ChannelLimits = {}
         self.ProtectedMessages = {}
         self.FilterNicknames = False
-        self.ModRole = None #NOTE: Consider auto-checking if they fit a certain permission? E.g. manage roles. Could be more elegant
+        self.ModRole = 0 #NOTE: Consider auto-checking if they fit a certain permission? E.g. manage roles. Could be more elegant
         if exists(guildMegaTable,gid):
             log(f"[GMT] Guild {gid} was declared twice")
         guildMegaTable[gid] = self
@@ -613,7 +613,7 @@ async def on_message(msg):
     if msg.author.guild_permissions.administrator:
         if await checkCommandList(msg,args,adminCommands):
             return
-    if gmt.ModRole in msg.author.roles or msg.author.guild_permissions.administrator:
+    if gmt.ModRole in [role.id for role in msg.author.roles] or msg.author.guild_permissions.administrator:
         if await checkCommandList(msg,args,modCommands):
             return
     if await checkCommandList(msg,args,userCommands):
