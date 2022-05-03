@@ -308,6 +308,8 @@ def getMegaTable(obj):
         gid = obj.guild.id
     elif t == int:
         gid = obj
+    elif hasattr(obj,"guild"): #Guild or FakeXYZ
+        gid = obj.guild.id
     elif hasattr(obj,"id"): #Guild or FakeXYZ
         gid = obj.id
     if gid:
