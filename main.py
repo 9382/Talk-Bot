@@ -467,6 +467,10 @@ class WatchReaction:
         elif msg.id == self.Message.id and user.id == self.UserId:
             self.Expiry = time.time()
             if emoji == self.Emoji:
+                try: #Remove user's reaction for convenience
+                    await msg.remove_reaction(emoji,user)
+                except: #Dont care if it doesnt work
+                    pass
                 await self.Function(msg,self.Emoji,self.Args)
                 return True
     def Update(self,args):

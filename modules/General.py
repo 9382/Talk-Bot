@@ -1,3 +1,8 @@
+async def helpcommand(msg,args):
+    await msg.channel.send(embed=fromdict({"title":"Talk-Bot","description":f"""
+
+"""}))
+# Command("help",helpcommand,1,"Gives assistance")
 async def cmds(msg,args):
     cmdList = {"Admin":adminCommands,"Moderator":modCommands}
     for command,cmdInfo in userCommands.items():
