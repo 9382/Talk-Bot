@@ -743,7 +743,7 @@ async def updateConfigFiles():
     #Runs through all the GMTs and updates their relevant json
     try:
         for guild in client.guilds:
-            success,result = safeWriteToFile(f"storage/settings/{guild.id}.json",json.dumps(getMegaTable(guild).CreateConfig()))
+            success,result = safeWriteToFile(f"storage/settings/{guild.id}.json",json.dumps(getMegaTable(guild).CreateConfig(),separators=(',', ':')))
             if success:
                 print(f"[GuildObject {guild.id}] Saving: {result}")
             else:
