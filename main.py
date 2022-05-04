@@ -260,7 +260,7 @@ class GuildObject:
                     self.LoggedMessages = {}
                     for channel,messages in data.items():
                         for message,expiry in messages.items():
-                            self.LoggedMessages[message] = FilteredMessage(expiry,int(message),int(channel))
+                            self.LoggedMessages[int(message)] = FilteredMessage(expiry,int(message),int(channel))
                 elif hasattr(self,catagory):
                     if type(data) != type(getattr(self,catagory)):
                         log(f"[GuildObject {self.Guild}] Invalid data type for {catagory} ({type(data)} vs {type(getattr(self,catagory))})")
