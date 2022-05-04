@@ -718,8 +718,8 @@ async def constantMessageCheck():
                     gmt.LoggedMessages.pop(msgid)
         for channel,msglist in toDeleteList.items():
             await clearMessageList(client.get_channel(channel),msglist)
-    except Exception as exc:
-        log("[!] LoggedMessages Exception: "+str(exc))
+    except:
+        await on_error("Task CheckMessages")
 constantMessageCheck.start()
 @tasks.loop(seconds=10)
 async def constantChannelCheck():
@@ -735,8 +735,8 @@ async def constantChannelCheck():
                 if channelTime < time.time():
                     gmt.QueuedChannels[channel.name] = time.time()+gmt.ChannelClearList[channel.name]
                     await cloneChannel(channel.id,"Queued deletion")
-    except Exception as exc:
-        log("[!] ChannelClear Exception: "+str(exc))
+    except:
+        await on_error("Task CheckChannels")
 constantChannelCheck.start()
 @tasks.loop(seconds=150)
 async def updateConfigFiles():
@@ -748,8 +748,8 @@ async def updateConfigFiles():
                 print(f"[GuildObject {guild.id}] Saving: {result}")
             else:
                 log(f"[GuildObject {guild.id}] Saving: {result}")
-    except Exception as exc:
-        log("[!] UpdateConfig Exception: "+str(exc))
+    except:
+        await on_error("Task UpdateConfig")
 updateConfigFiles.start()
 @tasks.loop(seconds=5)
 async def clearBacklogs():
@@ -765,8 +765,8 @@ async def clearBacklogs():
         for msgid,msgdata in dict(CustomMessageCache).items():
             if time.time() > msgdata["t"]+172800: #2 Days. Hopefully, the bot wont reboot often and this wont matter. (Possibly too long?)
                 CustomMessageCache.pop(msgid)
-    except Exception as exc:
-        log("[!] ClearBacklogs Exception: "+str(exc))
+    except:
+        await on_error("Task ClearBacklogs")
 clearBacklogs.start()
 @tasks.loop(seconds=2)
 async def VCCheck():
@@ -777,8 +777,8 @@ async def VCCheck():
                 VCList[vc]["lastActiveTime"] = time.time()
             elif time.time()-VCList[vc]["idleTimeout"] > VCList[vc]["lastActiveTime"]:
                 await vc.disconnect()
-    except Exception as exc:
-        log("[!] VCCheck Exception: "+str(exc))
+    except:
+        await on_error("Task VCCheck")
 VCCheck.start()
 @tasks.loop(seconds=15)
 async def keepGuildInviteUpdated():
