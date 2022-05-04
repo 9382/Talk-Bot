@@ -691,7 +691,7 @@ async def on_member_update(before,after):
     if before.nick != after.nick:
         logmsg = await gmt.Log("users",embed=fromdict({"title":"User Log","description":f"User <@{before.id}> ({before}) has changed their nickname from {before.nick} to {after.nick}","color":colours["info"]}))
         if logmsg:
-            gmt.ProtectMessage(logmsg.id,9e9)
+            gmt.ProtectMessage(logmsg.id,1209600) #14 Days
 
 #Tasks
 stopCycling = False
