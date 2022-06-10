@@ -717,7 +717,8 @@ async def constantMessageCheck():
                     toDeleteList[message.Channel].append(messageObj)
                     gmt.LoggedMessages.pop(msgid)
         for channel,msglist in toDeleteList.items():
-            await clearMessageList(client.get_channel(channel),msglist)
+            if client.get_channel(channel): #This can somehow be None
+                await clearMessageList(client.get_channel(channel),msglist)
     except:
         await on_error("Task CheckMessages")
 constantMessageCheck.start()
