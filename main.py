@@ -9,7 +9,6 @@ import random
 import math
 import json
 import time
-import sys
 import os
 prefix = "##"
 DevID = 260016427900076033
