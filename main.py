@@ -195,12 +195,12 @@ class GuildObject:
         if msg.id in self.ProtectedMessages and self.ProtectedMessages[msg.id] > time.time():
             return False
         print("[Filter] Msg Filtered ->",buffer,msg.content)
-        if buffer <= 0:
-            try:
-                await msg.delete()
-                return buffer
-            except:
-                pass
+        # if buffer <= 0: #May conflict with ratelimits or filter protection
+        #     try:
+        #         await msg.delete()
+        #         return buffer
+        #     except:
+        #         pass
         self.LoggedMessages[msg.id] = FilteredMessage(time.time()+buffer,messageObj=msg)
         return buffer
     async def FilterMessage(self,msg,forced=False):
