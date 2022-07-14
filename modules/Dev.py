@@ -47,6 +47,43 @@ async def whatIsUpTime(msg,args):
     await msg.channel.send(currentUpTime)
 Command("uptime",whatIsUpTime,0,"Sends and logs the bot's uptime since the last on_ready",{},None,"dev")
 
+list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ProtectedMessages","ChannelClearList","QueuedChannels","ChannelLimits"]
+async def list_func(msg,args):
+    if len(args) < 2:
+        finalString = ""
+        for item in list_validSections:
+            finalString += f"\n`{item}`"
+        await msg.channel.send(embed=fromdict({"title":"Settings List","description":"To get a list of what you are looking for, please use one of the following sub-commands:"+finalString,"color":colours["info"]}))
+        return
+    section = args[1]
+    if not section in list_validSections:
+        await msg.channel.send(embed=fromdict({"title":"Invalid","description":section+" is not a valid catagory","color":colours["error"]}),delete_after=10)
+        return
+    parser = None
+    if section in ["WordBlockList","MediaFilters","ChannelClearList","QueuedChannels"]:
+        parser = lambda i,k,v : f"{i}. `{k}` -> {simplifySeconds(v)}"
+    elif section in ["NSFWBlockList","ProtectedMessages"]:
+        parser = lambda i,v : f"{i}. `{v}`"
+    elif section == "ChannelLimits":
+        parser = lambda i,k,v : f"{i}. `{k}` -> {v} Messages"
+    array = getattr(getMegaTable(msg),section)
+    finalString = []
+    index = 1
+    if type(array) == dict:
+        for k in array:
+            finalString.append(parser(index,k,array[k]))
+            index += 1
+    else:
+        for v in array:
+            finalString.append(parser(index,v))
+            index += 1
+    if finalString == []:
+        await msg.channel.send(embed=fromdict({"title":"No Content","description":"Nothing under this catagory","color":colours["warning"]}),delete_after=15)
+    else:
+        #Below message lasts 180 seconds, due to what it may contain. Im noting it here because this is a nightmare to read (NOTE: fixup somehow)
+        getMegaTable(msg).ProtectMessage((await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString,8,(section=="QueuedChannels" and "(Time until the next cycle)") or "",180)).id,180)
+Command("list",list_func,0,"View the raw list of settings to do with the server's administration",{"subsection":False},None,"dev")
+
 async def presetAudioTest(msg,args):
     if not msg.author.voice:
         return
