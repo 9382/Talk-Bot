@@ -47,7 +47,7 @@ async def whatIsUpTime(msg,args):
     await msg.channel.send(currentUpTime)
 Command("uptime",whatIsUpTime,0,"Sends and logs the bot's uptime since the last on_ready",{},None,"dev")
 
-list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ProtectedMessages","ChannelClearList","QueuedChannels","ChannelLimits"]
+list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ProtectedMessages","ChannelClearList","QueuedChannels","ChannelLimits","InviteTrack"]
 async def list_func(msg,args):
     if len(args) < 2:
         finalString = ""
@@ -64,8 +64,10 @@ async def list_func(msg,args):
         parser = lambda i,k,v : f"{i}. `{k}` -> {simplifySeconds(v)}"
     elif section in ["NSFWBlockList","ProtectedMessages"]:
         parser = lambda i,v : f"{i}. `{v}`"
-    elif section == "ChannelLimits":
+    elif section in ["ChannelLimits"]:
         parser = lambda i,k,v : f"{i}. `{k}` -> {v} Messages"
+    elif section in ["InviteTrack"]:
+        parser = lambda i,k,v : f"{i}. `{k}` -> {v}"
     array = getattr(getMegaTable(msg),section)
     finalString = []
     index = 1
