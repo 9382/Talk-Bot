@@ -55,6 +55,31 @@ async def setmodrole(msg,args,removing):
 Command("setmodrole",setmodrole,3,"Set the role that allows people to run moderator level commands",{"role":True},False,"admin")
 Command("removemodrole",setmodrole,3,"Removes the current mdoerator level role",{},True,"admin")
 
+async def serverModerationInfo(msg,args):
+    gmt = getMegaTable(msg)
+    description = ""
+    #Display current filters
+    description += f"**Filters**\nWord block list: {len(gmt.WordBlockList)} entries\nNSFW tag blacklist: {len(gmt.NSFWBlockList)} entries\n"
+    description += f"Message limits: {len(gmt.ChannelLimits)} entries\nMedia filters: {len(gmt.MediaFilters)} entries\n(For more info, see `{prefix}filters`)\n\n"
+    #Display certain guild settings
+    description += f"**Mod Role**\n{gmt.ModRole and f'<@&{gmt.ModRole}>' or 'None'}\n\n**Nickname Filtering**\n{gmt.FilterNicknames and 'Enabled' or 'Disabled'}\n\n"
+    #Display channels used for logging
+    description += "**Log Channels**\n"
+    lc = gmt.LogChannels
+    for logtype in validLogChannels:
+        description += f"{logtype}: {logtype in lc and f'<#{lc[logtype]}>' or 'None'}\n"
+    #Display channel clear timings
+    description += "\n**Channel Timers**\n"
+    ccl,qc = gmt.ChannelClearList,gmt.QueuedChannels
+    if len(ccl) > 0:
+        for channel,timer in ccl.items():
+            description += f"<#{getChannelByName(msg.guild,channel).id}>: Cleared every {simplifySeconds(timer)}\n"
+    else:
+        description += "None\n"
+    #Send final message
+    gmt.ProtectMessage((await msg.channel.send(embed=fromdict({"title":"Moderation Info","description":description,"color":colours["info"]}))),180)
+Command("modinfo",serverModerationInfo,0,"Get information about the moderation settings of the server",{},None,"mod")
+
 async def refilterbase(channel):
     gmt = getMegaTable(channel)
     try:

@@ -557,6 +557,10 @@ async def connectToVC(channel,idleTimeout=60,ignorePlaying=False):
     VCList[vc]["idleTimeout"] = idleTimeout
     VCList[vc]["lastActiveTime"] = time.time()
     return vc
+def getChannelByName(guild,channelname):
+    for channel in guild.text_channels:
+        if channel.name == channelname:
+            return channel
 
 #Client
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True,voice_states=True))
