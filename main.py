@@ -298,8 +298,10 @@ class GuildObject:
         if await confirmationObj.Check(msg):
             await confirmationObj.Function(confirmationObj.msg,confirmationObj.args)
         return True
-    def ProtectMessage(self,msgid,expiry):
-        self.ProtectedMessages[msgid] = time.time() + expiry #Just more convenient
+    def ProtectMessage(self,msg,expiry):
+        if hasattr(msg,"id"):
+            msg = msg.id
+        self.ProtectedMessages[msg] = time.time() + expiry #Just more convenient
 def getMegaTable(obj):
     gid = None
     t = type(obj)

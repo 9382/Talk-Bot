@@ -81,7 +81,7 @@ async def list_func(msg,args):
         await msg.channel.send(embed=fromdict({"title":"No Content","description":"Nothing under this catagory","color":colours["warning"]}),delete_after=15)
     else:
         #Below message lasts 180 seconds, due to what it may contain. Im noting it here because this is a nightmare to read (NOTE: fixup somehow)
-        getMegaTable(msg).ProtectMessage((await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString,8,(section=="QueuedChannels" and "(Time until the next cycle)") or "",180)).id,180)
+        getMegaTable(msg).ProtectMessage((await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString,8,(section=="QueuedChannels" and "(Time until the next cycle)") or "",180)),180)
 Command("list",list_func,0,"View the raw list of settings to do with the server's administration",{"subsection":False},None,"dev")
 
 async def presetAudioTest(msg,args):
