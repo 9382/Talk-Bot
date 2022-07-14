@@ -34,7 +34,7 @@ async def prune(msg,args):
             log(f"[Prune {msg.guild.id}] Failed to prune {pruneAmount}+1: {result}")
     else:
         await msg.channel.send(embed=fromdict({"title":"Error","description":"Prune amount must be an integer","color":colours["error"]}),delete_after=10)
-Command("prune",prune,10,"Prunes a set amount of messages in the channel (Max 1000)",{"messages":True},None,"mod")
+Command(["prune","purge"],prune,10,"Prunes a set amount of messages in the channel (Max 1000)",{"messages":True},None,"mod")
 
 async def setmodrole(msg,args,removing):
     gmt = getMegaTable(msg)
