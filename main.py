@@ -1,3 +1,4 @@
+from dotenv import dotenv_values
 from discord.ext import commands
 from discord.ext import tasks
 from datetime import datetime
@@ -10,10 +11,12 @@ import math
 import json
 import time
 import os
-prefix = "##"
-DevID = 260016427900076033
-logChannels = {"errors":872153712347467776,"boot-ups":872208035093839932} # These are different from the guild-defined LogChannel channels, these are essentially telemetry
-colours = {"info":0x5555DD,"error":0xFF0000,"success":0x00FF00,"warning":0xFFAA00,"plain":0xAAAAAA}
+#Please modify the below options by utilising the .env file instead of directly editing them
+env = dotenv_values()
+prefix = env["PREFIX"]
+DevID = int(env["DEVID"])
+logChannels = {"errors":int(env["ERRORLOG"]),"boot-ups":int(env["BOOTLOG"])} # These are different from the guild-defined LogChannel and act as telemetry
+colours = {"info":int(env["CINFO"],16),"error":int(env["CERR"],16),"success":int(env["CWORK"],16),"warning":int(env["CWARN"],16),"plain":0xAAAAAA} #Plain is kept plain
 
 #Base functions
 def exists(table,value):
@@ -568,6 +571,8 @@ async def on_error(event,*args,**kwargs):
             log(f"[Fatal Error {event}] Ignored uncaught exception - matched term '{term}'")
             return
     log(f"[Fatal Error {event}] Command Arguments: {args}\nError: {error}")
+    if logChannels["errors"] <= 1: #No log channel set
+        return
     try: #Logging
         errorFile = tempFile()
         file = open(errorFile,"w",encoding="UTF-16",newline="") #UTF-16 just incase it all goes to hell
@@ -588,10 +593,11 @@ async def on_ready():
     await client.change_presence(activity=discord.Game(name="##cmds"))
     log("connected v"+discord.__version__)
     uptime = time.time()//1
-    try: #Notifying of start-up
-        await client.get_channel(logChannels["boot-ups"]).send("Ive connected at "+currentDate())
-    except:
-        log("Failed to alert of bootup at "+currentDate())
+    if logChannels["boot-ups"] > 1: #Check if log channel is set
+        try: #Notifying of start-up
+                await client.get_channel(logChannels["boot-ups"]).send("Ive connected at "+currentDate())
+        except:
+            log("Failed to alert of bootup at "+currentDate())
 @client.event
 async def on_message(msg):
     #Everything trails off from here
