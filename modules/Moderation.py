@@ -15,7 +15,10 @@ async def setLogChannel(msg,args):
         getMegaTable(msg).LogChannels[category] = wantedChannel.id
         await msg.channel.send(embed=fromdict({"title":"Success","description":f"Set log channel for {category} successfully","color":colours["success"]}))
     else: #Maybe make this a seperate command?
-        getMegaTable(msg).LogChannels[category] = None
+        try:
+            getMegaTable(msg).LogChannels.pop(category)
+        except:
+            pass
         await msg.channel.send(embed=fromdict({"title":"Success","description":f"No longer logging {category}","color":colours["success"]}))
 Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided (provide no arguments for a list of log channels)",{"category":False,"channel":False},None,"admin")
 
