@@ -113,7 +113,7 @@ async def unprotectMessage(msg,args):
         await msg.channel.send(embed=fromdict({"title":"Error","description":"You must provide the message ID to protect","color":colours["error"]}),delete_after=10)
         return
     try:
-        msgid = int(msgid)//1
+        msgid = int(msgid)
     except:
         await msg.channel.send(embed=fromdict({"title":"Error","description":"message ID must be a number","color":colours["error"]}),delete_after=10)
         return
