@@ -39,7 +39,7 @@ Command(["prune","purge"],prune,10,"Prunes a set amount of messages in the chann
 async def setmodrole(msg,args,removing):
     gmt = getMegaTable(msg)
     if removing:
-        gmt.ModRole = None
+        gmt.ModRole = 0
         await msg.channel.send(embed=fromdict({"title":"Success","description":"Removed any active moderator level role","color":colours["success"]}))
         return
     wantedRole = exists(args,1) and numRegex.search(args[1]) and int(numRegex.search(args[1]).group())
