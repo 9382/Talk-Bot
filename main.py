@@ -137,7 +137,7 @@ class Confirmation:
         content = msg.content.lower()
         if content == "yes" or content == "y":
             await msg.channel.send("Alright, continuing...")
-            return True #Function must be called later to avoid a race condition
+            return True #Function must be called outside of here to avoid a race condition
         else:
             await msg.channel.send("Alright, aborting...",delete_after=5)
 class GuildObject:
