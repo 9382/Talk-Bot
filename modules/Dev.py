@@ -48,7 +48,7 @@ async def whatIsUpTime(msg,args):
 Command("uptime",whatIsUpTime,0,"Sends and logs the bot's uptime since the last on_ready",{},None,"dev")
 
 list_validSections = ["WordBlockList","NSFWBlockList","MediaFilters","ProtectedMessages","ChannelClearList","QueuedChannels","ChannelLimits","InviteTrack"]
-async def list_func(msg,args):
+async def oldModList(msg,args):
     if len(args) < 2:
         finalString = ""
         for item in list_validSections:
@@ -84,7 +84,7 @@ async def list_func(msg,args):
     else:
         #Below message lasts 180 seconds, due to what it may contain. Im noting it here because this is a nightmare to read (NOTE: fixup somehow)
         getMegaTable(msg).ProtectMessage((await createPagedEmbed(msg.author,msg.channel,"List of moderation content",finalString,8,(section=="QueuedChannels" and "(Time until the next cycle)") or "",180)),180)
-Command("list",list_func,0,"View the raw list of settings to do with the server's administration",{"subsection":False},None,"dev")
+Command("list",oldModList,0,"View the raw list of settings to do with the server's administration",{"subsection":False},None,"dev")
 
 async def presetAudioTest(msg,args):
     if not msg.author.voice:
