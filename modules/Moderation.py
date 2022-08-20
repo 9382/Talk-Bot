@@ -55,6 +55,39 @@ async def setmodrole(msg,args,removing):
 Command("setmodrole",setmodrole,3,"Set the role that allows people to run moderator level commands",{"role":True},False,"admin")
 Command("removemodrole",setmodrole,3,"Removes the current mdoerator level role",{},True,"admin")
 
+async def serverFilterInfo(msg,args):
+    gmt = getMegaTable(msg)
+    description = ""
+    #Word filters
+    description += f"**Word Filters**\n"
+    if len(gmt.WordBlockList) > 0:
+        for word,delay in gmt.WordBlockList.items():
+            description += f"`{word}` - {simplifySeconds(delay)}\n"
+    else:
+        description += f"None\n"
+    #NSFW Tag Blacklist
+    description += "\n**NSFW Tag Blacklist**\n"
+    if len(gmt.NSFWBlockList) > 0:
+        for word in gmt.NSFWBlockList:
+            description += f"`{word}`\n"
+    else:
+        description += f"None\n"
+    #Channel stuff
+    description += f"\n**Message Limits**\n"
+    if len(gmt.ChannelLimits) > 0:
+        for channel,limit in gmt.ChannelLimits.items():
+            description += f"<#{channel}> - {limit} messages\n"
+    else:
+        description += f"None\n"
+    description += f"\n**Media Filters**\n"
+    if len(gmt.MediaFilters) > 0:
+        for channel,delay in gmt.MediaFilters.items():
+            description += f"<#{channel}> - {simplifySeconds(delay)}\n"
+    else:
+        description += f"None\n"
+    gmt.ProtectMessage((await msg.channel.send(embed=fromdict({"title":"Filter Info","description":description,"color":colours["info"]}))),180)
+Command("filters",serverFilterInfo,0,"Get information about the filter settings of the server",{},None,"mod")
+
 async def serverModerationInfo(msg,args):
     gmt = getMegaTable(msg)
     description = ""
