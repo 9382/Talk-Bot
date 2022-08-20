@@ -58,11 +58,12 @@ Command("removemodrole",setmodrole,3,"Removes the current mdoerator level role",
 async def serverModerationInfo(msg,args):
     gmt = getMegaTable(msg)
     description = ""
-    #Display current filters
-    description += f"**Filters**\nWord block list: {len(gmt.WordBlockList)} entries\nNSFW tag blacklist: {len(gmt.NSFWBlockList)} entries\n"
-    description += f"Message limits: {len(gmt.ChannelLimits)} entries\nMedia filters: {len(gmt.MediaFilters)} entries\n(For more info, see `{prefix}filters`)\n\n"
     #Display certain guild settings
-    description += f"**Mod Role**\n{gmt.ModRole and f'<@&{gmt.ModRole}>' or 'None'}\n\n**Nickname Filtering**\n{gmt.FilterNicknames and 'Enabled' or 'Disabled'}\n\n"
+    description += f"**Mod Role**\n{gmt.ModRole and f'<@&{gmt.ModRole}>' or 'None'}\n\n"
+    #Display current filters
+    description += f"**Filters**\nWord block list: {len(gmt.WordBlockList)} words\nNSFW tag blacklist: {len(gmt.NSFWBlockList)} tags\n"
+    description += f"Message limits: {len(gmt.ChannelLimits)} entries\nMedia filters: {len(gmt.MediaFilters)} entries\n(For more information, see `{prefix}filters`)\n\n"
+    description += f"**Nickname Filtering**\n{gmt.FilterNicknames and 'Enabled' or 'Disabled'}\n\n"
     #Display channels used for logging
     description += "**Log Channels**\n"
     lc = gmt.LogChannels
