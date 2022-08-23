@@ -1,6 +1,7 @@
 from dotenv import dotenv_values
 from sys import platform
 from time import sleep
+import traceback
 import asyncio
 import os
 auth = dotenv_values()["BOTAUTH"]
@@ -9,6 +10,7 @@ try:
     from main import client,log
 except Exception as exc:
     print("[!] Import error for client:",exc)
+    print("Traceback:",traceback.format_exc())
     def log(content):
         print("[__start__ no-log]",content)
     sleep(3)
