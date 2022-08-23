@@ -363,7 +363,7 @@ async def checkHistoryClear(msg):
         if cid in gmt.ChannelLimits:
             msgLimit = gmt.ChannelLimits[cid]
             try:
-                channelHistory = await msg.channel.history(limit=msgLimit+15).flatten()
+                channelHistory = [message async for message in msg.channel.history(limit=msgLimit+15)]
                 for message in channelHistory:
                     if not exists(CustomMessageCache,message.id):
                         CustomMessageCache[message.id] = {"m":message,"t":time.time()}
@@ -371,7 +371,7 @@ async def checkHistoryClear(msg):
             except Exception as exc:
                 print(f"[History {msg.guild.id}] Failed to do a ChannelLimit clear: {exc}")
         else: #Just store the last 150 messages into CustomMessagesCache, and dont care about history clearing
-            channelHistory = await msg.channel.history(limit=150).flatten()
+            channelHistory = [message async for message in msg.channel.history(limit=150)]
             for message in channelHistory:
                 if not exists(CustomMessageCache,message.id):
                     CustomMessageCache[message.id] = {"m":message,"t":time.time()}
@@ -563,7 +563,7 @@ def getChannelByName(guild,channelname):
             return channel
 
 #Client creation
-client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True,voice_states=True))
+client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True,voice_states=True,message_content=True))
 
 #Tasks
 stopCycling = False
