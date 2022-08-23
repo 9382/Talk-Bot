@@ -1,10 +1,11 @@
 # Pretty much every command under "dev" will be here
 
 async def d_exec(msg,args):
+    mstart = 8 + len(prefix)
     try:
-        exec(msg.content[10:],globals())
+        exec(msg.content[mstart:],globals())
     except Exception as exc:
-        print("[Dev] Nice custom exec, but it failed. Command:",msg.content[10:],"Exception:",exc)
+        print("[Dev] Nice custom exec, but it failed. Command:",msg.content[mstart:],"Exception:",exc)
         await msg.channel.send(":-1:")
     else:
         print("[Dev] Successful exec")

@@ -705,7 +705,7 @@ uptime = 0
 @client.event
 async def on_ready():
     global uptime
-    await client.change_presence(activity=discord.Game(name="##cmds"))
+    await client.change_presence(activity=discord.Game(name=f"{prefix}cmds"))
     log("connected v"+discord.__version__)
     uptime = time.time()//1
     if logChannels["boot-ups"] > 1: #Check if log channel is set
