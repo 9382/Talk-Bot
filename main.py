@@ -561,6 +561,12 @@ def getChannelByName(guild,channelname):
     for channel in guild.text_channels:
         if channel.name == channelname:
             return channel
+def HasPermission(member,permission,channel=None):
+    assert hasattr(discord.Permissions,permission),f"{permission} is not a valid permission"
+    if channel:
+        return getattr(channel.permissions_for(member),permission)
+    else:
+        return getattr(member.guild_permissions,permission)
 
 #Client creation
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True,voice_states=True,message_content=True))
