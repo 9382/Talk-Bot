@@ -562,8 +562,119 @@ def getChannelByName(guild,channelname):
         if channel.name == channelname:
             return channel
 
-#Client
+#Client creation
 client = commands.Bot(command_prefix=prefix,help_command=None,intents=discord.Intents(guilds=True,messages=True,members=True,reactions=True,voice_states=True))
+
+#Tasks
+stopCycling = False
+finishedLastCycle = False
+@tasks.loop(seconds=2)
+async def constantMessageCheck():
+    #Runs through all the GMTs and deletes any filtered messages past their due time
+    global finishedLastCycle #Weird stop but it works
+    if stopCycling:
+        finishedLastCycle = True
+        return
+    try:
+        toDeleteList = {}
+        for guild,gmt in guildMegaTable.items():
+            for msgid,message in list(gmt.LoggedMessages.items()):
+                if msgid in gmt.ProtectedMessages and gmt.ProtectedMessages[msgid] > time.time():
+                    gmt.LoggedMessages.pop(msgid)
+                    continue
+                messageObj = message.Expired() and message.GetMessageObj()
+                if messageObj:
+                    if not exists(toDeleteList,message.Channel):
+                        toDeleteList[message.Channel] = []
+                    toDeleteList[message.Channel].append(messageObj)
+                    gmt.LoggedMessages.pop(msgid)
+        for channel,msglist in toDeleteList.items():
+            if client.get_channel(channel): #This can somehow be None
+                await clearMessageList(client.get_channel(channel),msglist)
+    except:
+        await on_error("Task CheckMessages")
+
+@tasks.loop(seconds=10)
+async def constantChannelCheck():
+    #Checks and clears channels set to auto-clear after some time
+    try:
+        for guild in client.guilds:
+            gmt = getMegaTable(guild)
+            guildChannelList = guild.text_channels
+            for channel in guildChannelList:
+                if not exists(gmt.QueuedChannels,channel.name):
+                    continue
+                channelTime = gmt.QueuedChannels[channel.name]
+                if channelTime < time.time():
+                    gmt.QueuedChannels[channel.name] = time.time()+gmt.ChannelClearList[channel.name]
+                    await cloneChannel(channel.id,"Queued deletion")
+    except:
+        await on_error("Task CheckChannels")
+
+@tasks.loop(seconds=150)
+async def updateConfigFiles():
+    #Runs through all the GMTs and updates their relevant json
+    try:
+        for guild in client.guilds:
+            success,result = safeWriteToFile(f"storage/settings/{guild.id}.json",json.dumps(getMegaTable(guild).CreateConfig(),separators=(',', ':')))
+            if success:
+                print(f"[GuildObject {guild.id}] Saving: {result}")
+            else:
+                log(f"[GuildObject {guild.id}] Saving: {result}")
+    except:
+        await on_error("Task UpdateConfig")
+
+@tasks.loop(seconds=5)
+async def clearBacklogs():
+    #Clears old entires in large lists or dictionaries
+    try:
+        for reaction in list(ReactionListenList): #Temporary copy to avoid size-change issues
+            if reaction.Expired():
+                await reaction.RemoveReaction()
+                ReactionListenList.remove(reaction)
+        for msgid,queuetime in dict(MessageLogBlacklist).items():
+            if time.time() > queuetime+30: #Probably deleted by now
+                MessageLogBlacklist.pop(msgid)
+        for msgid,msgdata in dict(CustomMessageCache).items():
+            if time.time() > msgdata["t"]+172800: #2 Days. Hopefully, the bot wont reboot often and this wont matter. (Possibly too long?)
+                CustomMessageCache.pop(msgid)
+    except:
+        await on_error("Task ClearBacklogs")
+
+@tasks.loop(seconds=2)
+async def VCCheck():
+    #Auto disconnects from a VC after inactivity
+    try:
+        for vc in VCList:
+            if vc.is_playing():
+                VCList[vc]["lastActiveTime"] = time.time()
+            elif time.time()-VCList[vc]["idleTimeout"] > VCList[vc]["lastActiveTime"]:
+                await vc.disconnect()
+    except:
+        await on_error("Task VCCheck")
+
+@tasks.loop(seconds=15)
+async def keepGuildInviteUpdated():
+    #Keeps the guild invite tracking updated if there is none
+    for guild in client.guilds:
+        gmt = getMegaTable(guild)
+        gmt.InviteTrack = gmt.InviteTrack or await getGuildInviteStats(guild)
+
+@tasks.loop(seconds=600)
+async def heartbeat():
+    log(f"Alive ({currentDate()[11:]})")
+
+@client.event
+async def on_setup():
+    await constantMessageCheck.start()
+    await constantChannelCheck.start()
+    await updateConfigFiles.start()
+    await clearBacklogs.start()
+    await VCCheck.start()
+    await keepGuildInviteUpdated.start()
+    await heartbeat.start()
+
+#Client
 ErrorTermBlacklist = ["Connection reset by peer","403 Forbidden","404 Not Found","500 Internal Server Error","503 Service Unavailable","504 Gateway Time-out"]
 @client.event
 async def on_error(event,*args,**kwargs):
@@ -703,102 +814,6 @@ async def on_member_update(before,after):
         logmsg = await gmt.Log("users",embed=fromdict({"title":"User Log","description":f"User <@{before.id}> ({before}) has changed their nickname from {before.nick} to {after.nick}","color":colours["info"]}))
         if logmsg:
             gmt.ProtectMessage(logmsg.id,1209600) #14 Days
-
-#Tasks
-stopCycling = False
-finishedLastCycle = False
-@tasks.loop(seconds=2)
-async def constantMessageCheck():
-    #Runs through all the GMTs and deletes any filtered messages past their due time
-    global finishedLastCycle #Weird stop but it works
-    if stopCycling:
-        finishedLastCycle = True
-        return
-    try:
-        toDeleteList = {}
-        for guild,gmt in guildMegaTable.items():
-            for msgid,message in list(gmt.LoggedMessages.items()):
-                if msgid in gmt.ProtectedMessages and gmt.ProtectedMessages[msgid] > time.time():
-                    gmt.LoggedMessages.pop(msgid)
-                    continue
-                messageObj = message.Expired() and message.GetMessageObj()
-                if messageObj:
-                    if not exists(toDeleteList,message.Channel):
-                        toDeleteList[message.Channel] = []
-                    toDeleteList[message.Channel].append(messageObj)
-                    gmt.LoggedMessages.pop(msgid)
-        for channel,msglist in toDeleteList.items():
-            if client.get_channel(channel): #This can somehow be None
-                await clearMessageList(client.get_channel(channel),msglist)
-    except:
-        await on_error("Task CheckMessages")
-constantMessageCheck.start()
-@tasks.loop(seconds=10)
-async def constantChannelCheck():
-    #Checks and clears channels set to auto-clear after some time
-    try:
-        for guild in client.guilds:
-            gmt = getMegaTable(guild)
-            guildChannelList = guild.text_channels
-            for channel in guildChannelList:
-                if not exists(gmt.QueuedChannels,channel.name):
-                    continue
-                channelTime = gmt.QueuedChannels[channel.name]
-                if channelTime < time.time():
-                    gmt.QueuedChannels[channel.name] = time.time()+gmt.ChannelClearList[channel.name]
-                    await cloneChannel(channel.id,"Queued deletion")
-    except:
-        await on_error("Task CheckChannels")
-constantChannelCheck.start()
-@tasks.loop(seconds=150)
-async def updateConfigFiles():
-    #Runs through all the GMTs and updates their relevant json
-    try:
-        for guild in client.guilds:
-            success,result = safeWriteToFile(f"storage/settings/{guild.id}.json",json.dumps(getMegaTable(guild).CreateConfig(),separators=(',', ':')))
-            if success:
-                print(f"[GuildObject {guild.id}] Saving: {result}")
-            else:
-                log(f"[GuildObject {guild.id}] Saving: {result}")
-    except:
-        await on_error("Task UpdateConfig")
-updateConfigFiles.start()
-@tasks.loop(seconds=5)
-async def clearBacklogs():
-    #Clears old entires in large lists or dictionaries
-    try:
-        for reaction in list(ReactionListenList): #Temporary copy to avoid size-change issues
-            if reaction.Expired():
-                await reaction.RemoveReaction()
-                ReactionListenList.remove(reaction)
-        for msgid,queuetime in dict(MessageLogBlacklist).items():
-            if time.time() > queuetime+30: #Probably deleted by now
-                MessageLogBlacklist.pop(msgid)
-        for msgid,msgdata in dict(CustomMessageCache).items():
-            if time.time() > msgdata["t"]+172800: #2 Days. Hopefully, the bot wont reboot often and this wont matter. (Possibly too long?)
-                CustomMessageCache.pop(msgid)
-    except:
-        await on_error("Task ClearBacklogs")
-clearBacklogs.start()
-@tasks.loop(seconds=2)
-async def VCCheck():
-    #Auto disconnects from a VC after inactivity
-    try:
-        for vc in VCList:
-            if vc.is_playing():
-                VCList[vc]["lastActiveTime"] = time.time()
-            elif time.time()-VCList[vc]["idleTimeout"] > VCList[vc]["lastActiveTime"]:
-                await vc.disconnect()
-    except:
-        await on_error("Task VCCheck")
-VCCheck.start()
-@tasks.loop(seconds=15)
-async def keepGuildInviteUpdated():
-    #Keeps the guild invite tracking updated if there is none
-    for guild in client.guilds:
-        gmt = getMegaTable(guild)
-        gmt.InviteTrack = gmt.InviteTrack or await getGuildInviteStats(guild)
-keepGuildInviteUpdated.start()
 
 #User Commands
 async def forceUpdate(msg,args):

@@ -20,7 +20,7 @@ else:
         _log("[__start__] "+content)
     log("main imported successfully - running...")
     try:
-        client.run(auth)
+        client.run(auth,log_handler=None)
     except Exception as exc:
         log(f"[!] client.run exited: {exc}")
 log("Checking for updates for client...")
