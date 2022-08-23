@@ -23,10 +23,13 @@ async def setLogChannel(msg,args):
 Command("setlogs",setLogChannel,3,"Set the log channel to the channel provided (provide no arguments for a list of log channels)",{"category":False,"channel":False},None,"admin")
 
 async def prune(msg,args):
+    if not HasPermission(msg.author,"manage_messages",msg.channel):
+        await msg.channel.send(embed=fromdict({"title":"Error","description":"You don't have the permission to use that command here","color":colours["error"]}))
+        return
     pruneAmount = exists(args,1) and numRegex.search(args[1]) and min(1000,max(0,int(numRegex.search(args[1]).group())))
     if pruneAmount:
         #await msg.channel.delete_messages(await msg.channel.history(limit=pruneAmount+1).flatten()) #+1 due to command message
-        success,result = await clearMessageList(msg.channel,await msg.channel.history(limit=pruneAmount+1).flatten()) #+1 due to command message
+        success,result = await clearMessageList(msg.channel,[message async for message in msg.channel.history(limit=pruneAmount+1)]) #+1 due to command message
         if success:
             await msg.channel.send(embed=fromdict({"title":"Success","description":f"{pruneAmount} message(s) have been cleared","color":colours["success"]}))
         else:
@@ -34,7 +37,7 @@ async def prune(msg,args):
             log(f"[Prune {msg.guild.id}] Failed to prune {pruneAmount}+1: {result}")
     else:
         await msg.channel.send(embed=fromdict({"title":"Error","description":"Prune amount must be an integer","color":colours["error"]}),delete_after=10)
-Command(["prune","purge"],prune,10,"Prunes a set amount of messages in the channel (Max 1000)",{"messages":True},None,"mod")
+Command(["prune","purge"],prune,5,"Prunes a set amount of messages in the channel (Max 1000)",{"messages":True},None,"mod")
 
 async def setmodrole(msg,args,removing):
     gmt = getMegaTable(msg)
@@ -117,7 +120,7 @@ Command("modinfo",serverModerationInfo,0,"Get information about the moderation s
 async def refilterbase(channel):
     gmt = getMegaTable(channel)
     try:
-        messageList = await channel.history(limit=None,after=datetime.fromtimestamp(time.time()//1-864000)).flatten() #All messages within 10 days (864000)
+        messageList = [message async for message in channel.history(limit=None,after=datetime.fromtimestamp(time.time()//1-864000))] #All messages within 10 days (864000)
     except:
         return False,"Bot failed to fetch channel history"
     stats = {"Filt":0,"PreFilt":0,"Total":0}
