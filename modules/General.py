@@ -57,7 +57,7 @@ async def publicVote(msg,args):
             args.remove(arg)
     args.remove(args[0])
     await msg.delete()
-    voteMsg = await msg.channel.send(embed=fromdict({"author":{"name":f"{author} is calling a vote","icon_url":str(author.avatar_url)},"description":" ".join(args),"image":{"url":imageUrl},"color":colours["info"]}))
+    voteMsg = await msg.channel.send(embed=fromdict({"author":{"name":f"{author} is calling a vote","icon_url":author.display_avatar.url},"description":" ".join(args),"image":{"url":imageUrl},"color":colours["info"]}))
     if wantedReactions == []:
         await voteMsg.add_reaction("⬆️")
         await voteMsg.add_reaction("⬇")
