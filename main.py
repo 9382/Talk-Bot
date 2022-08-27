@@ -671,14 +671,16 @@ async def heartbeat():
     log(f"Alive ({currentDate()[11:]})")
 
 @client.event
-async def on_setup():
-    await constantMessageCheck.start()
-    await constantChannelCheck.start()
-    await updateConfigFiles.start()
-    await clearBacklogs.start()
-    await VCCheck.start()
-    await keepGuildInviteUpdated.start()
-    await heartbeat.start()
+async def setup_hook():
+    log("Starting setup")
+    constantMessageCheck.start()
+    constantChannelCheck.start()
+    updateConfigFiles.start()
+    clearBacklogs.start()
+    VCCheck.start()
+    keepGuildInviteUpdated.start()
+    heartbeat.start()
+    log("Finished setup")
 
 #Client
 ErrorTermBlacklist = ["Connection reset by peer","403 Forbidden","404 Not Found","500 Internal Server Error","503 Service Unavailable","504 Gateway Time-out"]
