@@ -57,9 +57,9 @@ async def oldModList(msg,args):
         await msg.channel.send(embed=fromdict({"title":"Invalid","description":section+" is not a valid catagory","color":colours["error"]}),delete_after=10)
         return
     parser = None
-    if section in ["WordBlockList","MediaFilters","ChannelClearList","QueuedChannels"]:
+    if section in ["WordBlockList","MediaFilters","ChannelClearList","QueuedChannels","ProtectedMessages"]:
         parser = lambda i,k,v : f"{i}. `{k}` -> {simplifySeconds(v)}"
-    elif section in ["NSFWBlockList","ProtectedMessages"]:
+    elif section in ["NSFWBlockList"]:
         parser = lambda i,v : f"{i}. `{v}`"
     elif section in ["ChannelLimits"]:
         parser = lambda i,k,v : f"{i}. `{k}` -> {v} Messages"
