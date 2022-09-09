@@ -37,7 +37,7 @@ async def getPostList(msg,sitetype,tags):
         postList = regex.sub("\n[ a-z]","▓",postList) #General tag bug catch
         getPostIDRegex = regex.compile(' id="\d+"')
         getImageURLRegex = regex.compile(' file_url="https://(api-cdn(-\w*)*\.rule34\.xxx|realbooru\.com)/images/[\w\d]+(/[\w\d]+)?/[\w\d]+\.\w+')
-        getPostTagsRegex = regex.compile(' tags="[^"]*"')
+        getPostTagsRegex = regex.compile(' tags=" ?([^"]*)"')
         for i in postList.split("\n"):
             #If not "<post ", ive hit end (<posts>)
             #If not "/>", its a broken post tha for some reason newlines in the tags. Will break regex if searched
@@ -52,8 +52,8 @@ async def getPostList(msg,sitetype,tags):
                     continue #Invalid post
                 postInfo["fileURL"] = fileURL
                 postInfo["fileType"] = ((fileURL.find(".mp4") > 0 or fileURL.find(".webm") > 0) and "Video") or "Image"
-                tags = getPostTagsRegex.search(i).group()
-                postInfo["tags"] = tags[8:-2]
+                tags = getPostTagsRegex.search(i).group(1)
+                postInfo["tags"] = tags
                 if not await filterTagList(msg,tags):
                     returnContent.append(postInfo)
                 else:
