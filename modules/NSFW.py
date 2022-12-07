@@ -81,7 +81,7 @@ async def getPostList(msg,sitetype,tags):
         postList = requests.get("https://danbooru.donmai.us/posts.json?limit=100&tags="+tags).text
         loaded = json.loads(postList)
         for i in loaded:
-            if not exists(i,"id"):
+            if not exists(i,"id") or i["is_banned"] == True:
                 continue #Posts without an ID? probably account requirements
             postInfo = {}
             postInfo["postPage"] = "https://danbooru.donmai.us/posts/"+str(i["id"])
