@@ -81,7 +81,7 @@ async def getPostList(msg,sitetype,tags):
         postList = requests.get("https://danbooru.donmai.us/posts.json?limit=100&tags="+tags).text
         loaded = json.loads(postList)
         for i in loaded:
-            if not exists(i,"id") or i["is_banned"] == True:
+            if not exists(i,"id") or i["is_banned"] == True or not ("file_url" in i):
                 continue #Posts without an ID? probably account requirements
             postInfo = {}
             postInfo["postPage"] = "https://danbooru.donmai.us/posts/"+str(i["id"])
@@ -106,7 +106,7 @@ async def nsfwScrape(msg,args,sitetype): #I spent hours on this and idk if i sho
     try:
         postList = await getPostList(msg,sitetype,"+".join(args[1:])) #HTTP Requests, therefore try: it
     except Exception as exc:
-        log(f"[NSFW] {sitetype} GetPosts Exception: "+str(exc))
+        log(f"[NSFW] {sitetype} GetPosts Exception: {exc}\n{traceback.format_exc()}")
         await msg.channel.send(embed=fromdict({"title":"Unexpected Error","description":"Something unexpected went wrong, hopefully it wont happen again","color":colours["error"]}),delete_after=10)
         return
     if postList:
