@@ -31,7 +31,8 @@ async def getPostList(msg,sitetype,tags):
     index = 0
     if sitetype == "rule34" or sitetype == "realbooru": #Identical format for whatever reason
         site = (sitetype == "rule34" and "rule34.xxx") or "realbooru.com"
-        postList = requests.get(f"https://{site}/index.php?page=dapi&s=post&q=index&limit=100&tags="+tags).text
+        postList = requests.get(f"https://{site}/index.php?page=dapi&s=post&q=index&limit=100&tags="+tags, headers={"User-Agent":"TalkBot/1.3"}).text
+        print(postList)
         postList = regex.sub("\nfemale","female",postList) #Tag bug
         postList = regex.sub("\nboots","boots",postList) #Tag bug
         postList = regex.sub("\n[ a-z]","▓",postList) #General tag bug catch
@@ -78,7 +79,7 @@ async def getPostList(msg,sitetype,tags):
             else:
                 anyMessageFiltered = True
     elif sitetype == "danbooru": #Simplest one yet (mostly)
-        postList = requests.get("https://danbooru.donmai.us/posts.json?limit=100&tags="+tags).text
+        postList = requests.get("https://danbooru.donmai.us/posts.json?limit=100&tags="+tags, headers={"User-Agent":"TalkBot/1.3"}).text
         loaded = json.loads(postList)
         for i in loaded:
             if not exists(i,"id") or i["is_banned"] == True or not ("file_url" in i):
