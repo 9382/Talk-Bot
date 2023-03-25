@@ -1,3 +1,6 @@
+# DISCONTINUED
+The primary place this bot was used isn't active anymore, and I don't particularly enjoy maintaining this, so the repository is now archived. No further commits will be forthcoming, and the bot may stop working at any time.
+
 # Talk-Bot
 Talk-Bot is a mostly moderation focused bot for discord servers.
 
